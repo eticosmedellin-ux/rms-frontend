@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '@/api/errors';
 
 export default function RegistroEmpresaPage() {
   const navigate = useNavigate();
+  const [codigoInvitacion, setCodigoInvitacion] = useState('');
   const [nombreEmpresa, setNombreEmpresa] = useState('');
   const [nit, setNit] = useState('');
   const [nombreAdmin, setNombreAdmin] = useState('');
@@ -21,7 +22,7 @@ export default function RegistroEmpresaPage() {
     e.preventDefault();
     setError(null);
 
-    if (!nombreEmpresa.trim() || !nombreAdmin.trim() || !username.trim() || !email.trim() || !password) {
+    if (!codigoInvitacion.trim() || !nombreEmpresa.trim() || !nombreAdmin.trim() || !username.trim() || !email.trim() || !password) {
       setError('Completa los campos obligatorios');
       return;
     }
@@ -33,6 +34,7 @@ export default function RegistroEmpresaPage() {
     setCargando(true);
     try {
       const res = await registrarEmpresa({
+        codigoInvitacion: codigoInvitacion.trim().toUpperCase(),
         nombreEmpresa,
         nit: nit || undefined,
         administrador: {
@@ -77,6 +79,17 @@ export default function RegistroEmpresaPage() {
         <p className="mt-1 text-sm text-ink-400">Crea tu empresa y tu usuario administrador para empezar a usar el sistema.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Código de invitación</span>
+            <input
+              className="input font-mono uppercase"
+              placeholder="XXXX-XXXX"
+              value={codigoInvitacion}
+              onChange={(e) => setCodigoInvitacion(e.target.value)}
+            />
+            <span className="mt-1 block text-xs text-ink-400">Te lo debe compartir quien te invitó al sistema.</span>
+          </label>
+
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Nombre del negocio</span>
             <input className="input" value={nombreEmpresa} onChange={(e) => setNombreEmpresa(e.target.value)} />

@@ -10,6 +10,16 @@ export interface EmpresaPlataforma {
   creadoEn: string;
 }
 
+export interface CodigoInvitacion {
+  id: number;
+  codigo: string;
+  usado: boolean;
+  empresaCreada: string | null;
+  nota: string | null;
+  creadoEn: string;
+  usadoEn: string | null;
+}
+
 export const listarEmpresasPlataforma = async (): Promise<EmpresaPlataforma[]> =>
   (await apiClient.get<EmpresaPlataforma[]>('/plataforma/empresas')).data;
 
@@ -20,3 +30,9 @@ export const suspenderEmpresa = async (id: number): Promise<void> => {
 export const activarEmpresa = async (id: number): Promise<void> => {
   await apiClient.post(`/plataforma/empresas/${id}/activar`);
 };
+
+export const listarCodigosInvitacion = async (): Promise<CodigoInvitacion[]> =>
+  (await apiClient.get<CodigoInvitacion[]>('/plataforma/codigos-invitacion')).data;
+
+export const generarCodigoInvitacion = async (nota?: string): Promise<CodigoInvitacion> =>
+  (await apiClient.post<CodigoInvitacion>('/plataforma/codigos-invitacion', { nota })).data;

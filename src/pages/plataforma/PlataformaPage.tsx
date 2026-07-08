@@ -1,17 +1,54 @@
+import { useState } from 'react';
 import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa } from '@/hooks/usePlataforma';
 import { LoadingState, EmptyState } from '@/components/ui/States';
+import { CodigosInvitacionTab } from '@/pages/plataforma/CodigosInvitacionTab';
+
+const TABS = [
+  { id: 'empresas', label: 'Empresas' },
+  { id: 'codigos', label: 'Códigos de invitación' },
+] as const;
+
+type TabId = (typeof TABS)[number]['id'];
 
 export default function PlataformaPage() {
+  const [tab, setTab] = useState<TabId>('empresas');
+
+  return (
+    <div>
+      <h1 className="font-display text-2xl font-semibold text-ink-800">Plataforma</h1>
+      <p className="mt-1 text-sm text-ink-400">
+        Empresas que rentan el sistema y códigos de invitación. Este panel solo lo ves tú, como superadministrador.
+      </p>
+
+      <div className="mt-5 flex gap-1 border-b border-ink-100">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              tab === id ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5">
+        {tab === 'empresas' && <EmpresasTab />}
+        {tab === 'codigos' && <CodigosInvitacionTab />}
+      </div>
+    </div>
+  );
+}
+
+function EmpresasTab() {
   const { data: empresas, isLoading } = useEmpresasPlataforma();
   const suspender = useSuspenderEmpresa();
   const activar = useActivarEmpresa();
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-ink-800">Plataforma</h1>
-      <p className="mt-1 text-sm text-ink-400">
-        Todas las empresas que rentan el sistema. Este panel solo lo ves tú, como superadministrador.
-      </p>
 
       {isLoading ? (
         <div className="mt-6">

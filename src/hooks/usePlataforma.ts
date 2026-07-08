@@ -20,3 +20,15 @@ export function useActivarEmpresa() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plataforma-empresas'] }),
   });
 }
+
+export function useCodigosInvitacion() {
+  return useQuery({ queryKey: ['codigos-invitacion'], queryFn: plataformaApi.listarCodigosInvitacion });
+}
+
+export function useGenerarCodigoInvitacion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (nota?: string) => plataformaApi.generarCodigoInvitacion(nota),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['codigos-invitacion'] }),
+  });
+}

@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/client';
 
 export interface RegistroEmpresaRequest {
+  codigoInvitacion: string;
   nombreEmpresa: string;
   nombreComercial?: string;
   nit?: string;
