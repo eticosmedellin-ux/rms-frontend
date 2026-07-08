@@ -29,8 +29,8 @@ export function RecepcionFormModal({ isOpen, onClose, orden }: RecepcionFormModa
 
     try {
       await registrar.mutateAsync({
-        ordenId: orden.id,
-        sucursalId: orden.sucursalId,
+        ordenId: orden!.id,
+        sucursalId: orden!.sucursalId,
         detalles: detallesValidos.map((l) => ({
           productoId: Number(l.productoId),
           cantidadRecibida: Number(l.cantidad),
