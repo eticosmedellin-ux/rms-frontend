@@ -12,6 +12,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { puedeVerRuta } from '@/lib/permisos';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -27,6 +28,9 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
+  const permisos = useAuthStore((state) => state.permisos);
+
+  const itemsVisibles = NAV_ITEMS.filter((item) => esSuperadmin || puedeVerRuta(permisos, item.to));
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-ink-800 text-ink-100 md:flex">
@@ -40,7 +44,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+        {itemsVisibles.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}

@@ -12,6 +12,7 @@ export interface LoginResponse {
   empresaId: number;
   nombreEmpresa: string;
   roles: string[];
+  permisos: string[];
   esSuperadmin: boolean;
 }
 

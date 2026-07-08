@@ -12,6 +12,7 @@ interface AuthState {
   empresaId: number | null;
   nombreEmpresa: string | null;
   roles: string[];
+  permisos: string[];
   esSuperadmin: boolean;
   isAuthenticated: boolean;
   setSession: (data: LoginResponse) => void;
@@ -30,6 +31,7 @@ export const useAuthStore = create<AuthState>()(
       empresaId: null,
       nombreEmpresa: null,
       roles: [],
+      permisos: [],
       esSuperadmin: false,
       isAuthenticated: false,
 
@@ -43,6 +45,7 @@ export const useAuthStore = create<AuthState>()(
           empresaId: data.empresaId,
           nombreEmpresa: data.nombreEmpresa,
           roles: data.roles,
+          permisos: data.permisos,
           esSuperadmin: data.esSuperadmin,
           isAuthenticated: true,
         }),
@@ -60,6 +63,7 @@ export const useAuthStore = create<AuthState>()(
           empresaId: null,
           nombreEmpresa: null,
           roles: [],
+          permisos: [],
           esSuperadmin: false,
           isAuthenticated: false,
         });
