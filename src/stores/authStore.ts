@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { LoginResponse } from '@/types/auth';
+import { usePosStore } from '@/stores/posStore';
 
 interface AuthState {
   accessToken: string | null;
@@ -48,7 +49,8 @@ export const useAuthStore = create<AuthState>()(
 
       updateAccessToken: (accessToken) => set({ accessToken }),
 
-      logout: () =>
+      logout: () => {
+        usePosStore.getState().reset();
         set({
           accessToken: null,
           refreshToken: null,
@@ -60,7 +62,8 @@ export const useAuthStore = create<AuthState>()(
           roles: [],
           esSuperadmin: false,
           isAuthenticated: false,
-        }),
+        });
+      },
     }),
     { name: 'rms-auth' }
   )
