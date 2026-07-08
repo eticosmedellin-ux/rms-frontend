@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-ink-50 text-ink-800 font-sans;
+  }
+  /* Foco de teclado visible en toda la app, incluso si se sobreescribe outline en algún componente */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-amber-400;
+  }
+}
+
+@layer components {
+  /* Estilo base compartido por todos los inputs/selects/textareas de los formularios */
+  .input {
+    @apply w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-800 outline-none transition-colors focus:border-ink-500 disabled:bg-ink-50 disabled:text-ink-400;
+  }
+}
+
+/* Cinta de movimientos de kardex del panel de identidad en el Login (LoginPage.tsx) */
+@keyframes kardex-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}

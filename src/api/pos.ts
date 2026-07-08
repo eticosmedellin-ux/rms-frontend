@@ -1,0 +1,73 @@
+import { apiClient } from '@/api/client';
+import type {
+  Cliente,
+  ClienteRequest,
+  CajaSesion,
+  CajaMovimiento,
+  Venta,
+  VentaRequest,
+  DevolucionVentaRequest,
+  CuentaPorCobrar,
+  AbonoClienteRequest,
+  Cotizacion,
+  CotizacionRequest,
+  ConvertirCotizacionRequest,
+} from '@/types/pos';
+
+// --- Clientes ---
+export const listarClientes = async (): Promise<Cliente[]> =>
+  (await apiClient.get<Cliente[]>('/clientes')).data;
+
+export const crearCliente = async (data: ClienteRequest): Promise<Cliente> =>
+  (await apiClient.post<Cliente>('/clientes', data)).data;
+
+// --- Caja ---
+export const obtenerCajaAbierta = async (sucursalId: number): Promise<CajaSesion | null> => {
+  const response = await apiClient.get<CajaSesion>('/caja/abierta', {
+    params: { sucursalId },
+    validateStatus: (status) => status === 200 || status === 204,
+  });
+  return response.status === 204 ? null : response.data;
+};
+
+export const abrirCaja = async (data: { sucursalId: number; montoApertura: number }): Promise<CajaSesion> =>
+  (await apiClient.post<CajaSesion>('/caja/abrir', data)).data;
+
+export const cerrarCaja = async (id: number, montoCierreReal: number): Promise<CajaSesion> =>
+  (await apiClient.post<CajaSesion>(`/caja/${id}/cerrar`, { montoCierreReal })).data;
+
+export const listarMovimientosCaja = async (id: number): Promise<CajaMovimiento[]> =>
+  (await apiClient.get<CajaMovimiento[]>(`/caja/${id}/movimientos`)).data;
+
+export const registrarMovimientoCaja = async (
+  id: number,
+  data: { tipo: 'INGRESO' | 'EGRESO'; concepto: string; monto: number }
+): Promise<CajaMovimiento> => (await apiClient.post<CajaMovimiento>(`/caja/${id}/movimientos`, data)).data;
+
+// --- Ventas ---
+export const listarVentas = async (): Promise<Venta[]> => (await apiClient.get<Venta[]>('/ventas')).data;
+
+export const registrarVenta = async (data: VentaRequest): Promise<Venta> =>
+  (await apiClient.post<Venta>('/ventas', data)).data;
+
+export const registrarDevolucion = async (ventaId: number, data: DevolucionVentaRequest): Promise<void> => {
+  await apiClient.post(`/ventas/${ventaId}/devoluciones`, data);
+};
+
+// --- Cuentas por cobrar ---
+export const listarCuentasPorCobrar = async (clienteId: number): Promise<CuentaPorCobrar[]> =>
+  (await apiClient.get<CuentaPorCobrar[]>(`/cuentas-por-cobrar/cliente/${clienteId}`)).data;
+
+export const abonarCuentaPorCobrar = async (cuentaId: number, data: AbonoClienteRequest): Promise<void> => {
+  await apiClient.post(`/cuentas-por-cobrar/${cuentaId}/abonos`, data);
+};
+
+// --- Cotizaciones ---
+export const listarCotizaciones = async (): Promise<Cotizacion[]> =>
+  (await apiClient.get<Cotizacion[]>('/cotizaciones')).data;
+
+export const crearCotizacion = async (data: CotizacionRequest): Promise<Cotizacion> =>
+  (await apiClient.post<Cotizacion>('/cotizaciones', data)).data;
+
+export const convertirCotizacion = async (id: number, data: ConvertirCotizacionRequest): Promise<Cotizacion> =>
+  (await apiClient.post<Cotizacion>(`/cotizaciones/${id}/convertir`, data)).data;
