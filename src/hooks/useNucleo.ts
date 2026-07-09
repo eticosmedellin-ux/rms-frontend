@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as nucleoApi from '@/api/nucleo';
-import type { RolRequest, SucursalRequest, UsuarioRequest } from '@/types/nucleo';
+import type { RolRequest, SucursalRequest, UsuarioEditRequest, UsuarioRequest } from '@/types/nucleo';
 
 export function useUsuarios() {
   return useQuery({ queryKey: ['usuarios'], queryFn: nucleoApi.listarUsuarios });
@@ -10,6 +10,14 @@ export function useCrearUsuario() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: UsuarioRequest) => nucleoApi.crearUsuario(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
+  });
+}
+
+export function useEditarUsuario() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UsuarioEditRequest }) => nucleoApi.editarUsuario(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
   });
 }

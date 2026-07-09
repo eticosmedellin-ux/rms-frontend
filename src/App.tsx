@@ -3,6 +3,8 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
 import LoginPage from '@/pages/LoginPage';
 import RegistroEmpresaPage from '@/pages/RegistroEmpresaPage';
+import OlvidePasswordPage from '@/pages/OlvidePasswordPage';
+import RestablecerPasswordPage from '@/pages/RestablecerPasswordPage';
 import DashboardPage from '@/pages/DashboardPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import InventarioPage from '@/pages/inventario/InventarioPage';
@@ -20,6 +22,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegistroEmpresaPage />} />
+      <Route path="/olvide-password" element={<OlvidePasswordPage />} />
+      <Route path="/restablecer" element={<RestablecerPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

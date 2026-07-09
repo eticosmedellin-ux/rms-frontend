@@ -8,7 +8,9 @@ export interface UsuarioEmpleado {
   estado: boolean;
   ultimoAcceso: string | null;
   roles: string[];
+  rolIds: number[];
   sucursales: string[];
+  sucursalIds: number[];
   passwordTemporal: string | null;
 }
 
@@ -18,6 +20,15 @@ export interface UsuarioRequest {
   username: string;
   email: string;
   password?: string;
+  telefono?: string;
+  rolIds: number[];
+  sucursalIds?: number[];
+}
+
+export interface UsuarioEditRequest {
+  nombre: string;
+  apellido?: string;
+  email: string;
   telefono?: string;
   rolIds: number[];
   sucursalIds?: number[];

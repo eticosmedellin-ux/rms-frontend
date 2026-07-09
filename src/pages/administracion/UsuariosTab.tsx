@@ -1,16 +1,35 @@
-import { useState } from 'react';
-import { Plus, Loader2, Copy } from 'lucide-react';
-import { useUsuarios, useCrearUsuario, useRoles, useDesactivarUsuario, useReactivarUsuario } from '@/hooks/useNucleo';
+import { useEffect, useState } from 'react';
+import { Plus, Loader2, Copy, Pencil } from 'lucide-react';
+import {
+  useUsuarios,
+  useCrearUsuario,
+  useEditarUsuario,
+  useRoles,
+  useDesactivarUsuario,
+  useReactivarUsuario,
+} from '@/hooks/useNucleo';
 import { useSucursales } from '@/hooks/useSucursales';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
+import type { UsuarioEmpleado } from '@/types/nucleo';
 
 export function UsuariosTab() {
   const { data: usuarios, isLoading } = useUsuarios();
   const desactivar = useDesactivarUsuario();
   const reactivar = useReactivarUsuario();
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [usuarioEditando, setUsuarioEditando] = useState<UsuarioEmpleado | null>(null);
+
+  function abrirCrear() {
+    setUsuarioEditando(null);
+    setModalAbierto(true);
+  }
+
+  function abrirEditar(u: UsuarioEmpleado) {
+    setUsuarioEditando(u);
+    setModalAbierto(true);
+  }
 
   return (
     <div>
@@ -20,7 +39,7 @@ export function UsuariosTab() {
           {usuarios?.length === 1 ? '' : 's'}
         </p>
         <button
-          onClick={() => setModalAbierto(true)}
+          onClick={abrirCrear}
           className="flex items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
         >
           <Plus size={16} />
@@ -61,13 +80,22 @@ export function UsuariosTab() {
                       {u.estado ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => (u.estado ? desactivar.mutate(u.id) : reactivar.mutate(u.id))}
-                      className="text-xs font-medium text-ink-500 hover:text-ink-800"
-                    >
-                      {u.estado ? 'Desactivar' : 'Reactivar'}
-                    </button>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => abrirEditar(u)}
+                        title="Editar usuario"
+                        className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => (u.estado ? desactivar.mutate(u.id) : reactivar.mutate(u.id))}
+                        className="text-xs font-medium text-ink-500 hover:text-ink-800"
+                      >
+                        {u.estado ? 'Desactivar' : 'Reactivar'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -78,15 +106,28 @@ export function UsuariosTab() {
         <EmptyState title="Solo existe tu usuario administrador" description="Crea empleados para que puedan entrar al sistema." />
       )}
 
-      <UsuarioFormModal isOpen={modalAbierto} onClose={() => setModalAbierto(false)} />
+      <UsuarioFormModal
+        isOpen={modalAbierto}
+        onClose={() => setModalAbierto(false)}
+        usuarioEditando={usuarioEditando}
+      />
     </div>
   );
 }
 
-function UsuarioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function UsuarioFormModal({
+  isOpen,
+  onClose,
+  usuarioEditando,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  usuarioEditando: UsuarioEmpleado | null;
+}) {
   const { data: roles } = useRoles();
   const { data: sucursales } = useSucursales();
   const crear = useCrearUsuario();
+  const editar = useEditarUsuario();
 
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -96,6 +137,25 @@ function UsuarioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const [sucursalIds, setSucursalIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [passwordGenerada, setPasswordGenerada] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (usuarioEditando) {
+      setNombre(usuarioEditando.nombre);
+      setApellido(usuarioEditando.apellido ?? '');
+      setUsername(usuarioEditando.username);
+      setEmail(usuarioEditando.email);
+      setRolIds(usuarioEditando.rolIds);
+      setSucursalIds(usuarioEditando.sucursalIds);
+    } else {
+      setNombre('');
+      setApellido('');
+      setUsername('');
+      setEmail('');
+      setRolIds([]);
+      setSucursalIds([]);
+    }
+    setError(null);
+  }, [usuarioEditando, isOpen]);
 
   function toggleRol(id: number) {
     setRolIds((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
@@ -107,37 +167,36 @@ function UsuarioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
   async function handleSubmit() {
     setError(null);
-    if (!nombre.trim() || !username.trim() || !email.trim() || rolIds.length === 0) {
-      setError('Completa nombre, usuario, email y al menos un rol');
+    if (!nombre.trim() || !email.trim() || rolIds.length === 0) {
+      setError('Completa nombre, email y al menos un rol');
+      return;
+    }
+    if (!usuarioEditando && !username.trim()) {
+      setError('El usuario (username) es obligatorio');
       return;
     }
 
     try {
-      const usuario = await crear.mutateAsync({
-        nombre,
-        apellido: apellido || undefined,
-        username,
-        email,
-        rolIds,
-        sucursalIds,
-      });
-      if (usuario.passwordTemporal) {
-        setPasswordGenerada(usuario.passwordTemporal);
-      } else {
+      if (usuarioEditando) {
+        await editar.mutateAsync({
+          id: usuarioEditando.id,
+          data: { nombre, apellido: apellido || undefined, email, rolIds, sucursalIds },
+        });
         handleClose();
+      } else {
+        const usuario = await crear.mutateAsync({ nombre, apellido: apellido || undefined, username, email, rolIds, sucursalIds });
+        if (usuario.passwordTemporal) {
+          setPasswordGenerada(usuario.passwordTemporal);
+        } else {
+          handleClose();
+        }
       }
     } catch (err) {
-      setError(getApiErrorMessage(err, 'No se pudo crear el usuario'));
+      setError(getApiErrorMessage(err, 'No se pudo guardar el usuario'));
     }
   }
 
   function handleClose() {
-    setNombre('');
-    setApellido('');
-    setUsername('');
-    setEmail('');
-    setRolIds([]);
-    setSucursalIds([]);
     setPasswordGenerada(null);
     onClose();
   }
@@ -170,8 +229,10 @@ function UsuarioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     );
   }
 
+  const pendiente = crear.isPending || editar.isPending;
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Nuevo usuario" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title={usuarioEditando ? 'Editar usuario' : 'Nuevo usuario'} size="lg">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <label className="block">
@@ -186,7 +247,13 @@ function UsuarioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         <div className="grid grid-cols-2 gap-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Usuario (username)</span>
-            <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} />
+            <input
+              className="input disabled:bg-ink-50 disabled:text-ink-400"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={!!usuarioEditando}
+            />
+            {usuarioEditando && <span className="mt-1 block text-xs text-ink-400">El usuario no se puede cambiar.</span>}
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Email</span>
@@ -232,9 +299,11 @@ function UsuarioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </div>
         </div>
 
-        <p className="text-xs text-ink-400">
-          Se generará una contraseña temporal automáticamente — la verás una sola vez al confirmar.
-        </p>
+        {!usuarioEditando && (
+          <p className="text-xs text-ink-400">
+            Se generará una contraseña temporal automáticamente — la verás una sola vez al confirmar.
+          </p>
+        )}
 
         {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
 
@@ -244,11 +313,11 @@ function UsuarioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </button>
           <button
             onClick={handleSubmit}
-            disabled={crear.isPending}
+            disabled={pendiente}
             className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
           >
-            {crear.isPending && <Loader2 size={16} className="animate-spin" />}
-            Crear usuario
+            {pendiente && <Loader2 size={16} className="animate-spin" />}
+            {usuarioEditando ? 'Guardar cambios' : 'Crear usuario'}
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/client';
-import type { UsuarioEmpleado, UsuarioRequest, Rol, RolRequest, Permiso, SucursalRequest } from '@/types/nucleo';
+import type { UsuarioEmpleado, UsuarioRequest, UsuarioEditRequest, Rol, RolRequest, Permiso, SucursalRequest } from '@/types/nucleo';
 import type { Sucursal } from '@/api/sucursales';
 
 export const listarUsuarios = async (): Promise<UsuarioEmpleado[]> =>
@@ -7,6 +7,9 @@ export const listarUsuarios = async (): Promise<UsuarioEmpleado[]> =>
 
 export const crearUsuario = async (data: UsuarioRequest): Promise<UsuarioEmpleado> =>
   (await apiClient.post<UsuarioEmpleado>('/usuarios', data)).data;
+
+export const editarUsuario = async (id: number, data: UsuarioEditRequest): Promise<UsuarioEmpleado> =>
+  (await apiClient.put<UsuarioEmpleado>(`/usuarios/${id}`, data)).data;
 
 export const desactivarUsuario = async (id: number): Promise<void> => {
   await apiClient.post(`/usuarios/${id}/desactivar`);
