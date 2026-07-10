@@ -47,7 +47,18 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
           precioVenta: productoEditando.precioVenta,
           esServicio: !productoEditando.manejaInventario,
         }
-      : { esServicio: false },
+      : {
+          codigoInterno: '',
+          codigoBarras: '',
+          nombre: '',
+          descripcion: '',
+          unidadMedida: 'UND',
+          categoriaId: '',
+          marcaId: '',
+          precioCompra: 0,
+          precioVenta: 0,
+          esServicio: false,
+        },
   });
 
   const esServicio = watch('esServicio');
