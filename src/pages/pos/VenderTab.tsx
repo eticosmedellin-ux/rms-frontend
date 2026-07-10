@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText } from 'lucide-react';
 import { useProductos } from '@/hooks/useInventario';
 import { useClientes } from '@/hooks/usePos';
@@ -47,6 +47,7 @@ export function VenderTab() {
   const registrarVenta = useRegistrarVenta();
 
   const [busqueda, setBusqueda] = useState('');
+  const busquedaInputRef = useRef<HTMLInputElement>(null);
   const [carrito, setCarrito] = useState<LineaCarrito[]>([]);
   const [pagos, setPagos] = useState<LineaPago[]>([{ metodoPago: 'EFECTIVO', monto: '' }]);
   const [clienteId, setClienteId] = useState<string>('');
@@ -112,6 +113,16 @@ export function VenderTab() {
       }
       return [...prev, { productoId, nombre, cantidad: 1, precioUnitario: precioVenta, tipoDescuentoId: null }];
     });
+  }
+
+  /** Con un lector de código de barras (o al escribir un código exacto y dar Enter), si
+   *  la búsqueda deja un solo producto visible, se agrega directo sin soltar el teclado. */
+  function manejarEnterBusqueda(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter' || productosVisibles.length !== 1) return;
+    const p = productosVisibles[0];
+    agregarProducto(p.id, p.nombre, p.precioVenta);
+    setBusqueda('');
+    busquedaInputRef.current?.focus();
   }
 
   function actualizarCantidad(productoId: number, cantidad: number) {
@@ -195,6 +206,7 @@ export function VenderTab() {
       setClienteId('');
       setPagos([{ metodoPago: 'EFECTIVO', monto: '' }]);
       cambiarModoDescuento('NINGUNO');
+      busquedaInputRef.current?.focus();
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo registrar la venta'));
     }
@@ -220,10 +232,13 @@ export function VenderTab() {
         <div className="relative mb-4">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-300" />
           <input
+            ref={busquedaInputRef}
+            autoFocus
             className="input pl-10"
-            placeholder="Busca un producto por nombre o código…"
+            placeholder="Escanea o escribe un código, o busca por nombre…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={manejarEnterBusqueda}
           />
         </div>
 
@@ -232,7 +247,10 @@ export function VenderTab() {
             {productosVisibles.map((p) => (
               <button
                 key={p.id}
-                onClick={() => agregarProducto(p.id, p.nombre, p.precioVenta)}
+                onClick={() => {
+                  agregarProducto(p.id, p.nombre, p.precioVenta);
+                  busquedaInputRef.current?.focus();
+                }}
                 className="group rounded-xl border border-ink-100 bg-white p-2 text-left shadow-card transition-all hover:border-ink-300 hover:shadow-md"
               >
                 <div className="aspect-square w-full overflow-hidden rounded-lg bg-ink-50">

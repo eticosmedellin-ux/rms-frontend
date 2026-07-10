@@ -330,6 +330,8 @@ function FacturacionElectronicaCard() {
     </div>
   );
 }
+
+function ImpuestosCard() {
   const { data: impuestos, isLoading } = useImpuestos();
   const crear = useCrearImpuesto();
   const [nombre, setNombre] = useState('');
