@@ -10,6 +10,7 @@ import {
   Bell,
   Users,
   ShieldAlert,
+  Tag,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { puedeVerRuta } from '@/lib/permisos';
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/inventario', label: 'Inventario', icon: Package },
   { to: '/compras', label: 'Compras', icon: ShoppingCart },
   { to: '/pos', label: 'Punto de venta', icon: Store },
+  { to: '/descuentos', label: 'Descuentos', icon: Tag },
   { to: '/gastos', label: 'Gastos', icon: Receipt },
   { to: '/reportes', label: 'Reportes', icon: BarChart3 },
   { to: '/alertas', label: 'Alertas', icon: Bell },

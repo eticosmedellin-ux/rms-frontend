@@ -50,6 +50,8 @@ export interface VentaDetalleResponse {
   producto: string;
   cantidad: number;
   precioUnitario: number;
+  descuentoLinea: number;
+  tipoDescuentoNombre: string | null;
   subtotalLinea: number;
 }
 
@@ -63,6 +65,7 @@ export interface Venta {
   descuento: number;
   descuentoTipo: 'LINEA' | 'FACTURA' | null;
   descuentoPorcentaje: number | null;
+  tipoDescuentoNombre: string | null;
   impuestos: number;
   total: number;
   cambio: number;
@@ -70,15 +73,35 @@ export interface Venta {
   detalles: VentaDetalleResponse[];
 }
 
-export type TipoDescuento = 'MONTO' | 'PORCENTAJE';
+export type TipoValorDescuento = 'MONTO' | 'PORCENTAJE';
+export type AplicaDescuento = 'LINEA' | 'FACTURA' | 'AMBOS';
+
+export interface TipoDescuento {
+  id: number;
+  nombre: string;
+  tipo: TipoValorDescuento;
+  valor: number;
+  aplicaA: AplicaDescuento;
+  fechaVencimiento: string | null;
+  estado: boolean;
+  vigente: boolean;
+}
+
+export interface TipoDescuentoRequest {
+  nombre: string;
+  tipo: TipoValorDescuento;
+  valor: number;
+  aplicaA: AplicaDescuento;
+  fechaVencimiento?: string | null;
+}
 
 export interface VentaRequest {
   sucursalId: number;
   cajaSesionId: number;
   clienteId?: number | null;
-  detalles: { productoId: number; cantidad: number; precioUnitario: number; descuentoLinea?: number }[];
+  detalles: { productoId: number; cantidad: number; precioUnitario: number; tipoDescuentoId?: number | null }[];
   pagos: { metodoPago: MetodoPagoVenta; monto: number }[];
-  descuentoFactura?: { tipo: TipoDescuento; valor: number } | null;
+  tipoDescuentoFacturaId?: number | null;
 }
 
 export interface DevolucionVentaRequest {

@@ -3,6 +3,7 @@ import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag } from 'luci
 import { useProductos } from '@/hooks/useInventario';
 import { useClientes } from '@/hooks/usePos';
 import { useCajaAbierta, useRegistrarVenta } from '@/hooks/usePos';
+import { useTiposDescuento } from '@/hooks/useDescuentos';
 import { usePosStore } from '@/stores/posStore';
 import { getApiErrorMessage } from '@/api/errors';
 import { EmptyState } from '@/components/ui/States';
@@ -13,8 +14,7 @@ interface LineaCarrito {
   nombre: string;
   cantidad: number;
   precioUnitario: number;
-  descuentoValor: string;
-  descuentoTipo: TipoDescuento;
+  tipoDescuentoId: number | null;
 }
 
 interface LineaPago {
@@ -24,12 +24,14 @@ interface LineaPago {
 
 type ModoDescuento = 'NINGUNO' | 'LINEA' | 'FACTURA';
 
-/** Convierte lo que el cajero escribió (monto o %) en el descuento en pesos de esa línea. */
-function calcularDescuentoLinea(linea: LineaCarrito): number {
-  const valor = Number(linea.descuentoValor) || 0;
-  if (valor <= 0) return 0;
+/** Solo para PREVISUALIZAR en pantalla — el backend siempre recalcula esto desde el
+ *  catálogo real antes de guardar la venta, nunca confía en lo que se muestra aquí. */
+function calcularDescuentoLinea(linea: LineaCarrito, catalogo: TipoDescuento[]): number {
+  if (!linea.tipoDescuentoId) return 0;
+  const td = catalogo.find((c) => c.id === linea.tipoDescuentoId);
+  if (!td) return 0;
   const subtotalLinea = linea.cantidad * linea.precioUnitario;
-  const monto = linea.descuentoTipo === 'PORCENTAJE' ? (subtotalLinea * valor) / 100 : valor;
+  const monto = td.tipo === 'PORCENTAJE' ? (subtotalLinea * td.valor) / 100 : td.valor;
   return Math.min(monto, subtotalLinea);
 }
 
@@ -38,6 +40,7 @@ export function VenderTab() {
   const { data: caja } = useCajaAbierta(sucursalId);
   const { data: productos } = useProductos();
   const { data: clientes } = useClientes();
+  const { data: tiposDescuento } = useTiposDescuento();
   const registrarVenta = useRegistrarVenta();
 
   const [busqueda, setBusqueda] = useState('');
@@ -48,8 +51,19 @@ export function VenderTab() {
   const [ventaExitosa, setVentaExitosa] = useState<string | null>(null);
 
   const [modoDescuento, setModoDescuento] = useState<ModoDescuento>('NINGUNO');
-  const [descuentoFacturaValor, setDescuentoFacturaValor] = useState('');
-  const [descuentoFacturaTipo, setDescuentoFacturaTipo] = useState<TipoDescuento>('PORCENTAJE');
+  const [tipoDescuentoFacturaId, setTipoDescuentoFacturaId] = useState<number | null>(null);
+
+  // Solo descuentos activos, no vencidos, y aplicables al modo elegido — el cajero
+  // nunca ve la opción de escribir un valor, solo puede elegir de esta lista.
+  const catalogo = tiposDescuento ?? [];
+  const opcionesLinea = useMemo(
+    () => catalogo.filter((t) => t.vigente && (t.aplicaA === 'LINEA' || t.aplicaA === 'AMBOS')),
+    [catalogo]
+  );
+  const opcionesFactura = useMemo(
+    () => catalogo.filter((t) => t.vigente && (t.aplicaA === 'FACTURA' || t.aplicaA === 'AMBOS')),
+    [catalogo]
+  );
 
   const productosVisibles = useMemo(() => {
     if (!productos) return [];
@@ -63,17 +77,17 @@ export function VenderTab() {
   const subtotal = carrito.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0);
 
   const descuentoLineasTotal = useMemo(
-    () => (modoDescuento === 'LINEA' ? carrito.reduce((acc, l) => acc + calcularDescuentoLinea(l), 0) : 0),
-    [carrito, modoDescuento]
+    () => (modoDescuento === 'LINEA' ? carrito.reduce((acc, l) => acc + calcularDescuentoLinea(l, catalogo), 0) : 0),
+    [carrito, modoDescuento, catalogo]
   );
 
   const descuentoFacturaMonto = useMemo(() => {
-    if (modoDescuento !== 'FACTURA') return 0;
-    const valor = Number(descuentoFacturaValor) || 0;
-    if (valor <= 0) return 0;
-    const monto = descuentoFacturaTipo === 'PORCENTAJE' ? (subtotal * valor) / 100 : valor;
+    if (modoDescuento !== 'FACTURA' || !tipoDescuentoFacturaId) return 0;
+    const td = catalogo.find((c) => c.id === tipoDescuentoFacturaId);
+    if (!td) return 0;
+    const monto = td.tipo === 'PORCENTAJE' ? (subtotal * td.valor) / 100 : td.valor;
     return Math.min(monto, subtotal);
-  }, [modoDescuento, descuentoFacturaValor, descuentoFacturaTipo, subtotal]);
+  }, [modoDescuento, tipoDescuentoFacturaId, catalogo, subtotal]);
 
   const descuentoTotal = modoDescuento === 'LINEA' ? descuentoLineasTotal : descuentoFacturaMonto;
   const total = subtotal - descuentoTotal;
@@ -91,10 +105,7 @@ export function VenderTab() {
       if (existente) {
         return prev.map((l) => (l.productoId === productoId ? { ...l, cantidad: l.cantidad + 1 } : l));
       }
-      return [
-        ...prev,
-        { productoId, nombre, cantidad: 1, precioUnitario: precioVenta, descuentoValor: '', descuentoTipo: 'PORCENTAJE' },
-      ];
+      return [...prev, { productoId, nombre, cantidad: 1, precioUnitario: precioVenta, tipoDescuentoId: null }];
     });
   }
 
@@ -102,8 +113,8 @@ export function VenderTab() {
     setCarrito((prev) => prev.map((l) => (l.productoId === productoId ? { ...l, cantidad } : l)));
   }
 
-  function actualizarDescuentoLinea(productoId: number, cambios: Partial<Pick<LineaCarrito, 'descuentoValor' | 'descuentoTipo'>>) {
-    setCarrito((prev) => prev.map((l) => (l.productoId === productoId ? { ...l, ...cambios } : l)));
+  function actualizarDescuentoLinea(productoId: number, tipoDescuentoId: number | null) {
+    setCarrito((prev) => prev.map((l) => (l.productoId === productoId ? { ...l, tipoDescuentoId } : l)));
   }
 
   function quitarLinea(productoId: number) {
@@ -130,10 +141,10 @@ export function VenderTab() {
   function cambiarModoDescuento(modo: ModoDescuento) {
     setModoDescuento(modo);
     if (modo !== 'LINEA') {
-      setCarrito((prev) => prev.map((l) => ({ ...l, descuentoValor: '' })));
+      setCarrito((prev) => prev.map((l) => ({ ...l, tipoDescuentoId: null })));
     }
     if (modo !== 'FACTURA') {
-      setDescuentoFacturaValor('');
+      setTipoDescuentoFacturaId(null);
     }
   }
 
@@ -166,13 +177,10 @@ export function VenderTab() {
           productoId: l.productoId,
           cantidad: l.cantidad,
           precioUnitario: l.precioUnitario,
-          descuentoLinea: modoDescuento === 'LINEA' ? calcularDescuentoLinea(l) : undefined,
+          tipoDescuentoId: modoDescuento === 'LINEA' ? l.tipoDescuentoId : undefined,
         })),
         pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
-        descuentoFactura:
-          modoDescuento === 'FACTURA' && descuentoFacturaMonto > 0
-            ? { tipo: descuentoFacturaTipo, valor: Number(descuentoFacturaValor) || 0 }
-            : undefined,
+        tipoDescuentoFacturaId: modoDescuento === 'FACTURA' ? tipoDescuentoFacturaId : undefined,
       });
       const mensajeCambio = venta.cambio > 0 ? ` — vuelto: $${venta.cambio.toLocaleString('es-CO')}` : '';
       setVentaExitosa(`Venta ${venta.numero} registrada por $${venta.total.toLocaleString('es-CO')}${mensajeCambio}`);
@@ -269,7 +277,7 @@ export function VenderTab() {
                   className="w-16 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
                 />
                 <span className="w-20 text-right font-medium text-ink-700">
-                  ${(l.cantidad * l.precioUnitario - calcularDescuentoLinea(l)).toLocaleString('es-CO')}
+                  ${(l.cantidad * l.precioUnitario - calcularDescuentoLinea(l, catalogo)).toLocaleString('es-CO')}
                 </span>
                 <button onClick={() => quitarLinea(l.productoId)} className="text-ink-300 hover:text-danger-500">
                   <Trash2 size={16} />
@@ -278,26 +286,21 @@ export function VenderTab() {
 
               {modoDescuento === 'LINEA' && (
                 <div className="flex items-center gap-2 pl-1">
-                  <Tag size={12} className="text-ink-300" />
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    value={l.descuentoValor}
-                    onChange={(e) => actualizarDescuentoLinea(l.productoId, { descuentoValor: e.target.value })}
-                    className="w-20 rounded-lg border border-ink-200 px-2 py-1 text-xs"
-                  />
+                  <Tag size={12} className="text-ink-300 shrink-0" />
                   <select
-                    className="rounded-lg border border-ink-200 px-1.5 py-1 text-xs"
-                    value={l.descuentoTipo}
+                    className="input flex-1 py-1 text-xs"
+                    value={l.tipoDescuentoId ?? ''}
                     onChange={(e) =>
-                      actualizarDescuentoLinea(l.productoId, { descuentoTipo: e.target.value as TipoDescuento })
+                      actualizarDescuentoLinea(l.productoId, e.target.value ? Number(e.target.value) : null)
                     }
                   >
-                    <option value="PORCENTAJE">%</option>
-                    <option value="MONTO">$</option>
+                    <option value="">Sin descuento</option>
+                    {opcionesLinea.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nombre} ({t.tipo === 'PORCENTAJE' ? `${t.valor}%` : `$${t.valor.toLocaleString('es-CO')}`})
+                      </option>
+                    ))}
                   </select>
-                  <span className="text-xs text-ink-400">de descuento</span>
                 </div>
               )}
             </div>
@@ -322,25 +325,29 @@ export function VenderTab() {
 
           {modoDescuento === 'FACTURA' && (
             <div className="mb-3 flex items-center gap-2">
-              <Tag size={14} className="text-ink-400" />
-              <input
-                type="number"
-                min={0}
-                placeholder="Descuento"
-                value={descuentoFacturaValor}
-                onChange={(e) => setDescuentoFacturaValor(e.target.value)}
-                className="input flex-1"
-              />
+              <Tag size={14} className="text-ink-400 shrink-0" />
               <select
-                className="input w-20"
-                value={descuentoFacturaTipo}
-                onChange={(e) => setDescuentoFacturaTipo(e.target.value as TipoDescuento)}
+                className="input flex-1"
+                value={tipoDescuentoFacturaId ?? ''}
+                onChange={(e) => setTipoDescuentoFacturaId(e.target.value ? Number(e.target.value) : null)}
               >
-                <option value="PORCENTAJE">%</option>
-                <option value="MONTO">$</option>
+                <option value="">Selecciona un descuento…</option>
+                {opcionesFactura.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nombre} ({t.tipo === 'PORCENTAJE' ? `${t.valor}%` : `$${t.valor.toLocaleString('es-CO')}`})
+                  </option>
+                ))}
               </select>
             </div>
           )}
+
+          {modoDescuento !== 'NINGUNO' &&
+            ((modoDescuento === 'LINEA' && opcionesLinea.length === 0) ||
+              (modoDescuento === 'FACTURA' && opcionesFactura.length === 0)) && (
+              <p className="mb-3 text-xs text-amber-600">
+                No hay descuentos configurados para este tipo. Pídele a un administrador que los cree en "Descuentos".
+              </p>
+            )}
 
           <div className="space-y-1 text-sm">
             <div className="flex items-center justify-between text-ink-500">

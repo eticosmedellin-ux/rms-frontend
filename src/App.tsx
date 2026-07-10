@@ -16,6 +16,7 @@ import AlertasPage from '@/pages/alertas/AlertasPage';
 import ConfiguracionPage from '@/pages/configuracion/ConfiguracionPage';
 import AdministracionPage from '@/pages/administracion/AdministracionPage';
 import PlataformaPage from '@/pages/plataforma/PlataformaPage';
+import DescuentosPage from '@/pages/descuentos/DescuentosPage';
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/inventario" element={<InventarioPage />} />
           <Route path="/compras" element={<ComprasPage />} />
           <Route path="/pos" element={<PosPage />} />
+          <Route path="/descuentos" element={<DescuentosPage />} />
           <Route path="/gastos" element={<GastosPage />} />
           <Route path="/reportes" element={<ReportesPage />} />
           <Route path="/alertas" element={<AlertasPage />} />

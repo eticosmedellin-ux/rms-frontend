@@ -4,6 +4,7 @@ export const RUTA_A_MODULO: Record<string, string> = {
   '/inventario': 'INVENTARIO',
   '/compras': 'COMPRAS',
   '/pos': 'VENTAS', // el POS usa endpoints de ventas, caja y clientes; VENTAS es el más representativo
+  '/descuentos': 'DESCUENTOS',
   '/gastos': 'GASTOS',
   '/reportes': 'REPORTES',
   '/alertas': 'ALERTAS',
