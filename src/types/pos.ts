@@ -96,6 +96,8 @@ export interface Venta {
   impuestos: number;
   total: number;
   cambio: number;
+  facturar: boolean;
+  numeroFactura: string | null;
   fecha: string;
   detalles: VentaDetalleResponse[];
 }
@@ -129,6 +131,7 @@ export interface VentaRequest {
   detalles: { productoId: number; cantidad: number; precioUnitario: number; tipoDescuentoId?: number | null }[];
   pagos: { metodoPago: MetodoPagoVenta; monto: number }[];
   tipoDescuentoFacturaId?: number | null;
+  facturar?: boolean;
 }
 
 export interface DevolucionVentaRequest {

@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag } from 'lucide-react';
+import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText } from 'lucide-react';
 import { useProductos } from '@/hooks/useInventario';
 import { useClientes } from '@/hooks/usePos';
 import { useCajaAbierta, useRegistrarVenta } from '@/hooks/usePos';
 import { useTiposDescuento } from '@/hooks/useDescuentos';
+import { useEmpresa } from '@/hooks/useGestion';
 import { usePosStore } from '@/stores/posStore';
 import { getApiErrorMessage } from '@/api/errors';
 import { EmptyState } from '@/components/ui/States';
-import type { MetodoPagoVenta, TipoDescuento } from '@/types/pos';
+import { abrirFactura } from '@/lib/factura';
+import type { MetodoPagoVenta, TipoDescuento, Venta } from '@/types/pos';
 
 interface LineaCarrito {
   productoId: number;
@@ -41,6 +43,7 @@ export function VenderTab() {
   const { data: productos } = useProductos();
   const { data: clientes } = useClientes();
   const { data: tiposDescuento } = useTiposDescuento();
+  const { data: empresa } = useEmpresa();
   const registrarVenta = useRegistrarVenta();
 
   const [busqueda, setBusqueda] = useState('');
@@ -49,9 +52,11 @@ export function VenderTab() {
   const [clienteId, setClienteId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [ventaExitosa, setVentaExitosa] = useState<string | null>(null);
+  const [ultimaVenta, setUltimaVenta] = useState<Venta | null>(null);
 
   const [modoDescuento, setModoDescuento] = useState<ModoDescuento>('NINGUNO');
   const [tipoDescuentoFacturaId, setTipoDescuentoFacturaId] = useState<number | null>(null);
+  const [facturarVenta, setFacturarVenta] = useState(true);
 
   // Solo descuentos activos, no vencidos, y aplicables al modo elegido — el cajero
   // nunca ve la opción de escribir un valor, solo puede elegir de esta lista.
@@ -181,9 +186,11 @@ export function VenderTab() {
         })),
         pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
         tipoDescuentoFacturaId: modoDescuento === 'FACTURA' ? tipoDescuentoFacturaId : undefined,
+        facturar: facturarVenta,
       });
       const mensajeCambio = venta.cambio > 0 ? ` — vuelto: $${venta.cambio.toLocaleString('es-CO')}` : '';
       setVentaExitosa(`Venta ${venta.numero} registrada por $${venta.total.toLocaleString('es-CO')}${mensajeCambio}`);
+      setUltimaVenta(venta);
       setCarrito([]);
       setClienteId('');
       setPagos([{ metodoPago: 'EFECTIVO', monto: '' }]);
@@ -438,11 +445,32 @@ export function VenderTab() {
               </select>
             </label>
           )}
+
+          <label className="flex items-center gap-2 pt-1">
+            <input
+              type="checkbox"
+              checked={facturarVenta}
+              onChange={(e) => setFacturarVenta(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span className="text-xs text-ink-600">Generar factura formal para esta venta</span>
+          </label>
         </div>
 
         {error && <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
         {ventaExitosa && (
-          <div className="mt-3 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">{ventaExitosa}</div>
+          <div className="mt-3 space-y-2 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">
+            <p>{ventaExitosa}</p>
+            {ultimaVenta && empresa && (
+              <button
+                onClick={() => abrirFactura(ultimaVenta, empresa)}
+                className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-success-700 shadow-sm hover:bg-success-100"
+              >
+                <FileText size={14} />
+                {ultimaVenta.numeroFactura ? 'Descargar factura' : 'Descargar comprobante'}
+              </button>
+            )}
+          </div>
         )}
 
         <button
