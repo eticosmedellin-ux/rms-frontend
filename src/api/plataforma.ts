@@ -1,4 +1,5 @@
 import { apiClient } from '@/api/client';
+import type { PlanEmpresa, PlanEmpresaRequest, RutaPlan } from '@/types/gestion';
 
 export interface EmpresaPlataforma {
   id: number;
@@ -36,3 +37,17 @@ export const listarCodigosInvitacion = async (): Promise<CodigoInvitacion[]> =>
 
 export const generarCodigoInvitacion = async (nota?: string): Promise<CodigoInvitacion> =>
   (await apiClient.post<CodigoInvitacion>('/plataforma/codigos-invitacion', { nota })).data;
+
+// --- Planes y licencias ---
+
+export const obtenerCatalogoRutas = async (): Promise<RutaPlan[]> =>
+  (await apiClient.get<RutaPlan[]>('/plataforma/catalogo-rutas')).data;
+
+export const obtenerPlanEmpresa = async (empresaId: number): Promise<PlanEmpresa> =>
+  (await apiClient.get<PlanEmpresa>(`/plataforma/empresas/${empresaId}/plan`)).data;
+
+export const actualizarPlanEmpresa = async (empresaId: number, data: PlanEmpresaRequest): Promise<PlanEmpresa> =>
+  (await apiClient.put<PlanEmpresa>(`/plataforma/empresas/${empresaId}/plan`, data)).data;
+
+export const obtenerMiPlan = async (): Promise<PlanEmpresa> =>
+  (await apiClient.get<PlanEmpresa>('/mi-plan')).data;

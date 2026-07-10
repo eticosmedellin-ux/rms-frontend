@@ -93,7 +93,32 @@ export interface Impuesto {
   estado: boolean;
 }
 
-// --- Empresa ---
+export interface RutaPlan {
+  ruta: string;
+  categoria: string;
+  etiqueta: string;
+}
+
+export type EstadoLicencia = 'ACTIVA' | 'SUSPENDIDA' | 'VENCIDA';
+
+export interface PlanEmpresa {
+  empresaId: number;
+  nombrePlan: string;
+  estadoLicencia: EstadoLicencia;
+  maxSucursales: number | null;
+  maxUsuarios: number | null;
+  sucursalesActuales: number;
+  usuariosActuales: number;
+  rutasHabilitadas: string[];
+}
+
+export interface PlanEmpresaRequest {
+  nombrePlan: string;
+  estadoLicencia: EstadoLicencia;
+  maxSucursales: number | null;
+  maxUsuarios: number | null;
+  rutasHabilitadas: string[];
+}
 export interface Empresa {
   id: number;
   nombre: string;

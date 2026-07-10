@@ -26,3 +26,23 @@ export function puedeVerRuta(permisos: string[], ruta: string): boolean {
   if (!modulo) return true;
   return puedeVerModulo(permisos, modulo);
 }
+
+/** Aproximación de qué ítem del catálogo de planes representa mejor cada página del menú —
+ *  el enforcement real y preciso vive en el backend (ModuloAuthorizationFilter); esto solo
+ *  evita mostrar en el menú una página cuyo plan claramente no la incluye. */
+export const RUTA_A_PLAN: Record<string, string> = {
+  '/pos': 'ventas',
+  '/descuentos': 'tipos-descuento',
+  '/inventario': 'productos',
+  '/compras': 'proveedores',
+  '/gastos': 'gastos',
+  '/reportes': 'reportes',
+  '/alertas': 'alertas',
+  '/administracion': 'usuarios',
+};
+
+export function incluidaEnPlan(rutasHabilitadas: string[] | undefined, ruta: string): boolean {
+  const rutaPlan = RUTA_A_PLAN[ruta];
+  if (!rutaPlan || !rutasHabilitadas) return true; // sin esa página en el catálogo, o plan aún sin cargar: no bloquear
+  return rutasHabilitadas.includes(rutaPlan);
+}

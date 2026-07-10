@@ -14,7 +14,8 @@ import {
   FileStack,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { puedeVerRuta } from '@/lib/permisos';
+import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
+import { useMiPlan } from '@/hooks/usePlataforma';
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean };
 
@@ -58,10 +59,15 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
 export function Sidebar() {
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const permisos = useAuthStore((state) => state.permisos);
+  const { data: miPlan } = useMiPlan();
 
   const gruposVisibles = NAV_GROUPS_DEF.map((grupo) => ({
     ...grupo,
-    items: grupo.items.filter((item) => esSuperadmin || puedeVerRuta(permisos, item.to)),
+    items: grupo.items.filter(
+      (item) =>
+        esSuperadmin ||
+        (puedeVerRuta(permisos, item.to) && incluidaEnPlan(miPlan?.rutasHabilitadas, item.to))
+    ),
   })).filter((grupo) => grupo.items.length > 0);
 
   return (

@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Settings2 } from 'lucide-react';
 import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa } from '@/hooks/usePlataforma';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { CodigosInvitacionTab } from '@/pages/plataforma/CodigosInvitacionTab';
+import { PlanEmpresaModal } from '@/pages/plataforma/PlanEmpresaModal';
 
 const TABS = [
   { id: 'empresas', label: 'Empresas' },
@@ -46,6 +48,7 @@ function EmpresasTab() {
   const { data: empresas, isLoading } = useEmpresasPlataforma();
   const suspender = useSuspenderEmpresa();
   const activar = useActivarEmpresa();
+  const [empresaPlan, setEmpresaPlan] = useState<{ id: number; nombre: string } | null>(null);
 
   return (
     <div>
@@ -89,21 +92,30 @@ function EmpresasTab() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {e.estado ? (
+                    <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => suspender.mutate(e.id)}
-                        className="rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:border-danger-500 hover:text-danger-500"
+                        onClick={() => setEmpresaPlan({ id: e.id, nombre: e.nombreComercial ?? e.nombre })}
+                        title="Gestionar plan y licencia"
+                        className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                       >
-                        Suspender
+                        <Settings2 size={16} />
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => activar.mutate(e.id)}
-                        className="rounded-lg bg-ink-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-ink-700"
-                      >
-                        Reactivar
-                      </button>
-                    )}
+                      {e.estado ? (
+                        <button
+                          onClick={() => suspender.mutate(e.id)}
+                          className="rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:border-danger-500 hover:text-danger-500"
+                        >
+                          Suspender
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => activar.mutate(e.id)}
+                          className="rounded-lg bg-ink-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-ink-700"
+                        >
+                          Reactivar
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -115,6 +127,13 @@ function EmpresasTab() {
           <EmptyState title="Sin empresas registradas todavía" />
         </div>
       )}
+
+      <PlanEmpresaModal
+        isOpen={empresaPlan !== null}
+        onClose={() => setEmpresaPlan(null)}
+        empresaId={empresaPlan?.id ?? null}
+        empresaNombre={empresaPlan?.nombre ?? ''}
+      />
     </div>
   );
 }

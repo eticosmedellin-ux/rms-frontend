@@ -32,3 +32,33 @@ export function useGenerarCodigoInvitacion() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['codigos-invitacion'] }),
   });
 }
+
+// --- Planes y licencias ---
+
+export function useCatalogoRutas() {
+  return useQuery({ queryKey: ['catalogo-rutas'], queryFn: plataformaApi.obtenerCatalogoRutas, staleTime: Infinity });
+}
+
+export function usePlanEmpresa(empresaId: number | null) {
+  return useQuery({
+    queryKey: ['plan-empresa', empresaId],
+    queryFn: () => plataformaApi.obtenerPlanEmpresa(empresaId as number),
+    enabled: empresaId !== null,
+  });
+}
+
+export function useActualizarPlanEmpresa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ empresaId, data }: { empresaId: number; data: import('@/types/gestion').PlanEmpresaRequest }) =>
+      plataformaApi.actualizarPlanEmpresa(empresaId, data),
+    onSuccess: (_data, { empresaId }) => {
+      queryClient.invalidateQueries({ queryKey: ['plan-empresa', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['plataforma-empresas'] });
+    },
+  });
+}
+
+export function useMiPlan() {
+  return useQuery({ queryKey: ['mi-plan'], queryFn: plataformaApi.obtenerMiPlan, staleTime: 5 * 60 * 1000 });
+}
