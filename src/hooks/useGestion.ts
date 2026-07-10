@@ -137,3 +137,20 @@ export function useAuditoria() {
 export function useHistorialAcceso() {
   return useQuery({ queryKey: ['historial-acceso'], queryFn: gestionApi.listarHistorialAcceso });
 }
+
+// --- Facturación electrónica ---
+export function useConfiguracionFacturacionElectronica() {
+  return useQuery({
+    queryKey: ['configuracion-facturacion-electronica'],
+    queryFn: gestionApi.obtenerConfiguracionFacturacionElectronica,
+  });
+}
+
+export function useGuardarConfiguracionFacturacionElectronica() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof gestionApi.guardarConfiguracionFacturacionElectronica>[0]) =>
+      gestionApi.guardarConfiguracionFacturacionElectronica(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['configuracion-facturacion-electronica'] }),
+  });
+}

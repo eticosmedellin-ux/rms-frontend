@@ -1,11 +1,31 @@
 import { useState } from 'react';
-import { Undo2, FileText } from 'lucide-react';
-import { useVentas } from '@/hooks/usePos';
+import { Undo2, FileText, Send, Loader2 } from 'lucide-react';
+import { useVentas, useFacturaElectronica, useEnviarFacturaElectronica } from '@/hooks/usePos';
 import { useEmpresa } from '@/hooks/useGestion';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { DevolucionModal } from '@/pages/pos/DevolucionModal';
 import { abrirFactura } from '@/lib/factura';
+import { getApiErrorMessage } from '@/api/errors';
 import type { Venta } from '@/types/pos';
+import type { EstadoFacturaElectronica } from '@/types/gestion';
+
+const ESTADO_DIAN_LABEL: Record<EstadoFacturaElectronica, string> = {
+  PENDIENTE: 'Pendiente de enviar',
+  ENVIADA: 'Enviada',
+  ACEPTADA: 'Aceptada DIAN',
+  RECHAZADA: 'Rechazada',
+  SIN_PROVEEDOR: 'Sin proveedor',
+  NO_APLICA: 'No aplica',
+};
+
+const ESTADO_DIAN_TONO: Record<EstadoFacturaElectronica, string> = {
+  PENDIENTE: 'bg-ink-100 text-ink-500',
+  ENVIADA: 'bg-amber-50 text-amber-700',
+  ACEPTADA: 'bg-success-50 text-success-600',
+  RECHAZADA: 'bg-danger-50 text-danger-600',
+  SIN_PROVEEDOR: 'bg-ink-100 text-ink-400',
+  NO_APLICA: 'bg-ink-50 text-ink-300',
+};
 
 export function VentasTab() {
   const { data: ventas, isLoading } = useVentas();
@@ -29,6 +49,7 @@ export function VentasTab() {
               <th className="px-4 py-3 text-left font-medium">Tipo</th>
               <th className="px-4 py-3 text-right font-medium">Total</th>
               <th className="px-4 py-3 text-left font-medium">Fecha</th>
+              <th className="px-4 py-3 text-left font-medium">DIAN</th>
               <th className="px-4 py-3 text-right font-medium">Acciones</th>
             </tr>
           </thead>
@@ -44,6 +65,9 @@ export function VentasTab() {
                 <td className="px-4 py-3 text-right font-medium text-ink-800">${v.total.toLocaleString('es-CO')}</td>
                 <td className="px-4 py-3 text-ink-500">
                   {new Date(v.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                </td>
+                <td className="px-4 py-3">
+                  <EstadoDian venta={v} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
@@ -76,6 +100,54 @@ export function VentasTab() {
         onClose={() => setVentaDevolviendo(null)}
         venta={ventaDevolviendo}
       />
+    </div>
+  );
+}
+
+/** Muestra el estado de la factura electrónica de una venta y permite enviarla (o
+ *  reintentarla) a la DIAN a través del proveedor configurado en Configuración. */
+function EstadoDian({ venta }: { venta: Venta }) {
+  const { data: estado } = useFacturaElectronica(venta.facturar ? venta.id : null);
+  const enviar = useEnviarFacturaElectronica();
+  const [error, setError] = useState<string | null>(null);
+
+  if (!venta.facturar) {
+    return <span className="text-xs text-ink-300">No facturada</span>;
+  }
+  if (!estado) {
+    return <span className="text-xs text-ink-300">—</span>;
+  }
+
+  const puedeEnviar = estado.estado === 'PENDIENTE' || estado.estado === 'RECHAZADA' || estado.estado === 'SIN_PROVEEDOR';
+
+  async function handleEnviar() {
+    setError(null);
+    try {
+      await enviar.mutateAsync(venta.id);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo enviar a la DIAN'));
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_DIAN_TONO[estado.estado]}`}>
+          {ESTADO_DIAN_LABEL[estado.estado]}
+        </span>
+        {puedeEnviar && (
+          <button
+            onClick={handleEnviar}
+            disabled={enviar.isPending}
+            title="Enviar a la DIAN"
+            className="rounded-lg p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+          >
+            {enviar.isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+          </button>
+        )}
+      </div>
+      {estado.mensaje && <p className="mt-0.5 max-w-[220px] text-[11px] text-ink-400">{estado.mensaje}</p>}
+      {error && <p className="mt-0.5 text-[11px] text-danger-500">{error}</p>}
     </div>
   );
 }

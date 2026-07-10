@@ -140,3 +140,41 @@ export interface RegistroAcceso {
   exitoso: boolean;
   fecha: string;
 }
+
+// --- Facturación electrónica (arquitectura lista para conectar un proveedor) ---
+export interface ConfiguracionFacturacionElectronica {
+  proveedor: string | null;
+  apiUrl: string | null;
+  apiKeyConfigurada: boolean;
+  resolucionNumero: string | null;
+  resolucionPrefijo: string | null;
+  resolucionRangoDesde: number | null;
+  resolucionRangoHasta: number | null;
+  resolucionFechaVencimiento: string | null;
+  activa: boolean;
+}
+
+export interface ConfiguracionFacturacionElectronicaRequest {
+  proveedor?: string;
+  apiUrl?: string;
+  apiKey?: string;
+  resolucionNumero?: string;
+  resolucionPrefijo?: string;
+  resolucionRangoDesde?: number;
+  resolucionRangoHasta?: number;
+  resolucionFechaVencimiento?: string;
+  activa: boolean;
+}
+
+export type EstadoFacturaElectronica = 'PENDIENTE' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'SIN_PROVEEDOR' | 'NO_APLICA';
+
+export interface FacturaElectronicaEstado {
+  ventaId: number;
+  estado: EstadoFacturaElectronica;
+  cufe: string | null;
+  xmlUrl: string | null;
+  pdfUrl: string | null;
+  mensaje: string | null;
+  intentos: number;
+  ultimoIntentoEn: string | null;
+}

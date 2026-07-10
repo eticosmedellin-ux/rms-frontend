@@ -106,6 +106,24 @@ export function useRegistrarDevolucion() {
   });
 }
 
+export function useFacturaElectronica(ventaId: number | null) {
+  return useQuery({
+    queryKey: ['factura-electronica', ventaId],
+    queryFn: () => posApi.obtenerFacturaElectronica(ventaId as number),
+    enabled: ventaId !== null,
+  });
+}
+
+export function useEnviarFacturaElectronica() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ventaId: number) => posApi.enviarFacturaElectronica(ventaId),
+    onSuccess: (_data, ventaId) => {
+      queryClient.invalidateQueries({ queryKey: ['factura-electronica', ventaId] });
+    },
+  });
+}
+
 // --- Cuentas por cobrar ---
 export function useCuentasPorCobrar(clienteId: number | null) {
   return useQuery({

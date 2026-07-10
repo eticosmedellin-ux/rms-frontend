@@ -14,6 +14,7 @@ import type {
   CotizacionRequest,
   ConvertirCotizacionRequest,
 } from '@/types/pos';
+import type { FacturaElectronicaEstado } from '@/types/gestion';
 
 // --- Clientes ---
 export const listarClientes = async (): Promise<Cliente[]> =>
@@ -56,6 +57,12 @@ export const registrarDevolucion = async (
   data: DevolucionVentaRequest
 ): Promise<DevolucionVentaResponse> =>
   (await apiClient.post<DevolucionVentaResponse>(`/ventas/${ventaId}/devoluciones`, data)).data;
+
+export const obtenerFacturaElectronica = async (ventaId: number): Promise<FacturaElectronicaEstado> =>
+  (await apiClient.get<FacturaElectronicaEstado>(`/ventas/${ventaId}/factura-electronica`)).data;
+
+export const enviarFacturaElectronica = async (ventaId: number): Promise<FacturaElectronicaEstado> =>
+  (await apiClient.post<FacturaElectronicaEstado>(`/ventas/${ventaId}/factura-electronica/enviar`)).data;
 
 // --- Cuentas por cobrar ---
 export const listarCuentasPorCobrar = async (clienteId: number): Promise<CuentaPorCobrar[]> =>

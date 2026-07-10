@@ -14,6 +14,8 @@ import type {
   EmpresaRequest,
   RegistroAuditoria,
   RegistroAcceso,
+  ConfiguracionFacturacionElectronica,
+  ConfiguracionFacturacionElectronicaRequest,
 } from '@/types/gestion';
 
 // --- Gastos ---
@@ -83,3 +85,12 @@ export const listarAuditoria = async (): Promise<RegistroAuditoria[]> =>
 // --- Historial de accesos ---
 export const listarHistorialAcceso = async (): Promise<RegistroAcceso[]> =>
   (await apiClient.get<RegistroAcceso[]>('/historial-acceso')).data;
+
+// --- Facturación electrónica ---
+export const obtenerConfiguracionFacturacionElectronica = async (): Promise<ConfiguracionFacturacionElectronica> =>
+  (await apiClient.get<ConfiguracionFacturacionElectronica>('/configuracion-facturacion-electronica')).data;
+
+export const guardarConfiguracionFacturacionElectronica = async (
+  data: ConfiguracionFacturacionElectronicaRequest
+): Promise<ConfiguracionFacturacionElectronica> =>
+  (await apiClient.put<ConfiguracionFacturacionElectronica>('/configuracion-facturacion-electronica', data)).data;
