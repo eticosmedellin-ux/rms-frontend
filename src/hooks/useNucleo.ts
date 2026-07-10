@@ -69,3 +69,11 @@ export function useCrearSucursal() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sucursales'] }),
   });
 }
+
+export function useActualizarSucursal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: SucursalRequest }) => nucleoApi.actualizarSucursal(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sucursales'] }),
+  });
+}

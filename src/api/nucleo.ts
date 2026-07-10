@@ -32,3 +32,6 @@ export const listarPermisos = async (): Promise<Permiso[]> =>
 
 export const crearSucursal = async (data: SucursalRequest): Promise<Sucursal> =>
   (await apiClient.post<Sucursal>('/sucursales', data)).data;
+
+export const actualizarSucursal = async (id: number, data: SucursalRequest): Promise<Sucursal> =>
+  (await apiClient.put<Sucursal>(`/sucursales/${id}`, data)).data;

@@ -7,6 +7,8 @@ export interface Sucursal {
   telefono: string | null;
   esPrincipal: boolean;
   estado: boolean;
+  montoMaximoEfectivo: number | null;
+  alertaEfectivoActiva: boolean;
 }
 
 export const listarSucursales = async (): Promise<Sucursal[]> =>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Lock, Unlock, List, Plus, Loader2 } from 'lucide-react';
+import { Lock, Unlock, List, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { useSucursales } from '@/hooks/useSucursales';
 import { usePosStore } from '@/stores/posStore';
 import { useCajaAbierta, useAbrirCaja, useCerrarCaja, useMovimientosCaja, useRegistrarMovimientoCaja } from '@/hooks/usePos';
@@ -21,9 +21,37 @@ export function CajaBar() {
   }, [sucursalId, sucursales, setSucursalId]);
 
   const { data: caja, isLoading } = useCajaAbierta(sucursalId);
+  const { data: movimientos } = useMovimientosCaja(caja?.id ?? null);
+  const sucursalActual = sucursales?.find((s) => s.id === sucursalId);
+
+  const efectivoActual =
+    caja && movimientos
+      ? caja.montoApertura +
+        movimientos.filter((m) => m.tipo === 'INGRESO').reduce((acc, m) => acc + m.monto, 0) -
+        movimientos.filter((m) => m.tipo === 'EGRESO').reduce((acc, m) => acc + m.monto, 0)
+      : 0;
+
+  const efectivoSuperado =
+    !!caja &&
+    !!sucursalActual?.alertaEfectivoActiva &&
+    !!sucursalActual?.montoMaximoEfectivo &&
+    efectivoActual >= sucursalActual.montoMaximoEfectivo;
 
   return (
-    <div className="mb-5 flex items-center justify-between rounded-xl border border-ink-100 bg-white px-4 py-3 shadow-card">
+    <div>
+      {efectivoSuperado && (
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertTriangle size={18} className="shrink-0" />
+          <p>
+            Esta caja tiene <span className="font-semibold">${efectivoActual.toLocaleString('es-CO')}</span> en
+            efectivo, superando el máximo recomendado de{' '}
+            <span className="font-semibold">${sucursalActual!.montoMaximoEfectivo!.toLocaleString('es-CO')}</span>.
+            Considera hacer una consignación o transferencia bancaria pronto.
+          </p>
+        </div>
+      )}
+
+      <div className="mb-5 flex items-center justify-between rounded-xl border border-ink-100 bg-white px-4 py-3 shadow-card">
       <div className="flex items-center gap-4">
         <label className="flex items-center gap-2 text-sm">
           <span className="font-medium text-ink-700">Sucursal:</span>
@@ -78,6 +106,7 @@ export function CajaBar() {
             Abrir caja
           </button>
         )}
+      </div>
       </div>
 
       <AbrirCajaModal isOpen={modalAbrir} onClose={() => setModalAbrir(false)} sucursalId={sucursalId} />

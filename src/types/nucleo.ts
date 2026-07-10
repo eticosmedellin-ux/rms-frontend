@@ -60,4 +60,6 @@ export interface SucursalRequest {
   nombre: string;
   direccion?: string;
   telefono?: string;
+  montoMaximoEfectivo?: number | null;
+  alertaEfectivoActiva?: boolean;
 }

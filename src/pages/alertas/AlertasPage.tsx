@@ -18,6 +18,7 @@ const TIPO_LABELS: Record<TipoAlerta, string> = {
   COMPRA_PENDIENTE: 'Compra pendiente',
   CAJA_SIN_CERRAR: 'Caja sin cerrar',
   CXP_POR_VENCER: 'Cuenta por pagar próxima a vencer',
+  EFECTIVO_MAXIMO_CAJA: 'Efectivo máximo en caja',
 };
 
 const TIPO_TONES: Record<TipoAlerta, string> = {
@@ -27,6 +28,7 @@ const TIPO_TONES: Record<TipoAlerta, string> = {
   COMPRA_PENDIENTE: 'bg-amber-100 text-amber-700',
   CAJA_SIN_CERRAR: 'bg-danger-50 text-danger-600',
   CXP_POR_VENCER: 'bg-amber-100 text-amber-700',
+  EFECTIVO_MAXIMO_CAJA: 'bg-amber-100 text-amber-700',
 };
 
 export default function AlertasPage() {
@@ -103,6 +105,7 @@ const TIPOS_CONFIGURABLES: TipoAlerta[] = [
   'PRODUCTO_AGOTADO',
   'CAJA_SIN_CERRAR',
   'CXP_POR_VENCER',
+  'EFECTIVO_MAXIMO_CAJA',
 ];
 
 function ConfiguracionAlertasModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
