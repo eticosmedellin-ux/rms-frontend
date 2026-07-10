@@ -61,11 +61,16 @@ export interface Venta {
   estado: string;
   subtotal: number;
   descuento: number;
+  descuentoTipo: 'LINEA' | 'FACTURA' | null;
+  descuentoPorcentaje: number | null;
   impuestos: number;
   total: number;
+  cambio: number;
   fecha: string;
   detalles: VentaDetalleResponse[];
 }
+
+export type TipoDescuento = 'MONTO' | 'PORCENTAJE';
 
 export interface VentaRequest {
   sucursalId: number;
@@ -73,6 +78,7 @@ export interface VentaRequest {
   clienteId?: number | null;
   detalles: { productoId: number; cantidad: number; precioUnitario: number; descuentoLinea?: number }[];
   pagos: { metodoPago: MetodoPagoVenta; monto: number }[];
+  descuentoFactura?: { tipo: TipoDescuento; valor: number } | null;
 }
 
 export interface DevolucionVentaRequest {

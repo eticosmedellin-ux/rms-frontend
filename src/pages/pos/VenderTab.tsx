@@ -1,23 +1,36 @@
 import { useMemo, useState } from 'react';
-import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff } from 'lucide-react';
+import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag } from 'lucide-react';
 import { useProductos } from '@/hooks/useInventario';
 import { useClientes } from '@/hooks/usePos';
 import { useCajaAbierta, useRegistrarVenta } from '@/hooks/usePos';
 import { usePosStore } from '@/stores/posStore';
 import { getApiErrorMessage } from '@/api/errors';
 import { EmptyState } from '@/components/ui/States';
-import type { MetodoPagoVenta } from '@/types/pos';
+import type { MetodoPagoVenta, TipoDescuento } from '@/types/pos';
 
 interface LineaCarrito {
   productoId: number;
   nombre: string;
   cantidad: number;
   precioUnitario: number;
+  descuentoValor: string;
+  descuentoTipo: TipoDescuento;
 }
 
 interface LineaPago {
   metodoPago: MetodoPagoVenta;
   monto: string;
+}
+
+type ModoDescuento = 'NINGUNO' | 'LINEA' | 'FACTURA';
+
+/** Convierte lo que el cajero escribió (monto o %) en el descuento en pesos de esa línea. */
+function calcularDescuentoLinea(linea: LineaCarrito): number {
+  const valor = Number(linea.descuentoValor) || 0;
+  if (valor <= 0) return 0;
+  const subtotalLinea = linea.cantidad * linea.precioUnitario;
+  const monto = linea.descuentoTipo === 'PORCENTAJE' ? (subtotalLinea * valor) / 100 : valor;
+  return Math.min(monto, subtotalLinea);
 }
 
 export function VenderTab() {
@@ -34,6 +47,10 @@ export function VenderTab() {
   const [error, setError] = useState<string | null>(null);
   const [ventaExitosa, setVentaExitosa] = useState<string | null>(null);
 
+  const [modoDescuento, setModoDescuento] = useState<ModoDescuento>('NINGUNO');
+  const [descuentoFacturaValor, setDescuentoFacturaValor] = useState('');
+  const [descuentoFacturaTipo, setDescuentoFacturaTipo] = useState<TipoDescuento>('PORCENTAJE');
+
   const productosVisibles = useMemo(() => {
     if (!productos) return [];
     if (!busqueda.trim()) return productos.filter((p) => p.estado);
@@ -43,8 +60,29 @@ export function VenderTab() {
     );
   }, [productos, busqueda]);
 
-  const total = carrito.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0);
+  const subtotal = carrito.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0);
+
+  const descuentoLineasTotal = useMemo(
+    () => (modoDescuento === 'LINEA' ? carrito.reduce((acc, l) => acc + calcularDescuentoLinea(l), 0) : 0),
+    [carrito, modoDescuento]
+  );
+
+  const descuentoFacturaMonto = useMemo(() => {
+    if (modoDescuento !== 'FACTURA') return 0;
+    const valor = Number(descuentoFacturaValor) || 0;
+    if (valor <= 0) return 0;
+    const monto = descuentoFacturaTipo === 'PORCENTAJE' ? (subtotal * valor) / 100 : valor;
+    return Math.min(monto, subtotal);
+  }, [modoDescuento, descuentoFacturaValor, descuentoFacturaTipo, subtotal]);
+
+  const descuentoTotal = modoDescuento === 'LINEA' ? descuentoLineasTotal : descuentoFacturaMonto;
+  const total = subtotal - descuentoTotal;
+
   const totalPagos = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
+  const totalNoEfectivo = pagos
+    .filter((p) => p.metodoPago !== 'EFECTIVO')
+    .reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
+  const cambio = Math.max(0, totalPagos - total);
   const requiereCredito = pagos.some((p) => p.metodoPago === 'CREDITO');
 
   function agregarProducto(productoId: number, nombre: string, precioVenta: number) {
@@ -53,12 +91,19 @@ export function VenderTab() {
       if (existente) {
         return prev.map((l) => (l.productoId === productoId ? { ...l, cantidad: l.cantidad + 1 } : l));
       }
-      return [...prev, { productoId, nombre, cantidad: 1, precioUnitario: precioVenta }];
+      return [
+        ...prev,
+        { productoId, nombre, cantidad: 1, precioUnitario: precioVenta, descuentoValor: '', descuentoTipo: 'PORCENTAJE' },
+      ];
     });
   }
 
   function actualizarCantidad(productoId: number, cantidad: number) {
     setCarrito((prev) => prev.map((l) => (l.productoId === productoId ? { ...l, cantidad } : l)));
+  }
+
+  function actualizarDescuentoLinea(productoId: number, cambios: Partial<Pick<LineaCarrito, 'descuentoValor' | 'descuentoTipo'>>) {
+    setCarrito((prev) => prev.map((l) => (l.productoId === productoId ? { ...l, ...cambios } : l)));
   }
 
   function quitarLinea(productoId: number) {
@@ -82,14 +127,28 @@ export function VenderTab() {
     actualizarPago(index, { monto: restante > 0 ? String(restante) : '0' });
   }
 
+  function cambiarModoDescuento(modo: ModoDescuento) {
+    setModoDescuento(modo);
+    if (modo !== 'LINEA') {
+      setCarrito((prev) => prev.map((l) => ({ ...l, descuentoValor: '' })));
+    }
+    if (modo !== 'FACTURA') {
+      setDescuentoFacturaValor('');
+    }
+  }
+
   async function confirmarVenta() {
     setError(null);
     setVentaExitosa(null);
     if (!caja || carrito.length === 0 || !sucursalId) return;
 
-    if (Math.round(totalPagos * 100) !== Math.round(total * 100)) {
+    if (totalNoEfectivo > total + 0.001) {
+      setError('El pago con tarjeta, transferencia o crédito no puede superar el total de la venta');
+      return;
+    }
+    if (totalPagos + 0.001 < total) {
       setError(
-        `La suma de los pagos ($${totalPagos.toLocaleString('es-CO')}) debe ser igual al total ($${total.toLocaleString('es-CO')})`
+        `Faltan $${(total - totalPagos).toLocaleString('es-CO')} por pagar del total ($${total.toLocaleString('es-CO')})`
       );
       return;
     }
@@ -107,13 +166,20 @@ export function VenderTab() {
           productoId: l.productoId,
           cantidad: l.cantidad,
           precioUnitario: l.precioUnitario,
+          descuentoLinea: modoDescuento === 'LINEA' ? calcularDescuentoLinea(l) : undefined,
         })),
         pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
+        descuentoFactura:
+          modoDescuento === 'FACTURA' && descuentoFacturaMonto > 0
+            ? { tipo: descuentoFacturaTipo, valor: Number(descuentoFacturaValor) || 0 }
+            : undefined,
       });
-      setVentaExitosa(`Venta ${venta.numero} registrada por $${venta.total.toLocaleString('es-CO')}`);
+      const mensajeCambio = venta.cambio > 0 ? ` — vuelto: $${venta.cambio.toLocaleString('es-CO')}` : '';
+      setVentaExitosa(`Venta ${venta.numero} registrada por $${venta.total.toLocaleString('es-CO')}${mensajeCambio}`);
       setCarrito([]);
       setClienteId('');
       setPagos([{ metodoPago: 'EFECTIVO', monto: '' }]);
+      cambiarModoDescuento('NINGUNO');
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo registrar la venta'));
     }
@@ -187,34 +253,110 @@ export function VenderTab() {
           Carrito
         </h3>
 
-        <div className="max-h-64 space-y-2 overflow-y-auto">
+        <div className="max-h-64 space-y-3 overflow-y-auto">
           {carrito.map((l) => (
-            <div key={l.productoId} className="flex items-center gap-2 text-sm">
-              <div className="flex-1">
-                <p className="font-medium text-ink-800">{l.nombre}</p>
-                <p className="text-xs text-ink-400">${l.precioUnitario.toLocaleString('es-CO')} c/u</p>
+            <div key={l.productoId} className="space-y-1.5">
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex-1">
+                  <p className="font-medium text-ink-800">{l.nombre}</p>
+                  <p className="text-xs text-ink-400">${l.precioUnitario.toLocaleString('es-CO')} c/u</p>
+                </div>
+                <input
+                  type="number"
+                  min={1}
+                  value={l.cantidad}
+                  onChange={(e) => actualizarCantidad(l.productoId, Number(e.target.value))}
+                  className="w-16 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
+                />
+                <span className="w-20 text-right font-medium text-ink-700">
+                  ${(l.cantidad * l.precioUnitario - calcularDescuentoLinea(l)).toLocaleString('es-CO')}
+                </span>
+                <button onClick={() => quitarLinea(l.productoId)} className="text-ink-300 hover:text-danger-500">
+                  <Trash2 size={16} />
+                </button>
               </div>
-              <input
-                type="number"
-                min={1}
-                value={l.cantidad}
-                onChange={(e) => actualizarCantidad(l.productoId, Number(e.target.value))}
-                className="w-16 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
-              />
-              <span className="w-20 text-right font-medium text-ink-700">
-                ${(l.cantidad * l.precioUnitario).toLocaleString('es-CO')}
-              </span>
-              <button onClick={() => quitarLinea(l.productoId)} className="text-ink-300 hover:text-danger-500">
-                <Trash2 size={16} />
-              </button>
+
+              {modoDescuento === 'LINEA' && (
+                <div className="flex items-center gap-2 pl-1">
+                  <Tag size={12} className="text-ink-300" />
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={l.descuentoValor}
+                    onChange={(e) => actualizarDescuentoLinea(l.productoId, { descuentoValor: e.target.value })}
+                    className="w-20 rounded-lg border border-ink-200 px-2 py-1 text-xs"
+                  />
+                  <select
+                    className="rounded-lg border border-ink-200 px-1.5 py-1 text-xs"
+                    value={l.descuentoTipo}
+                    onChange={(e) =>
+                      actualizarDescuentoLinea(l.productoId, { descuentoTipo: e.target.value as TipoDescuento })
+                    }
+                  >
+                    <option value="PORCENTAJE">%</option>
+                    <option value="MONTO">$</option>
+                  </select>
+                  <span className="text-xs text-ink-400">de descuento</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
 
+        {/* Selector de modo de descuento — por producto o por factura, nunca ambos */}
         <div className="mt-4 border-t border-ink-100 pt-3">
-          <div className="flex items-center justify-between text-base font-semibold text-ink-800">
-            <span>Total</span>
-            <span>${total.toLocaleString('es-CO')}</span>
+          <div className="mb-2 flex gap-1 rounded-lg bg-ink-50 p-1 text-xs font-medium">
+            {(['NINGUNO', 'LINEA', 'FACTURA'] as ModoDescuento[]).map((modo) => (
+              <button
+                key={modo}
+                onClick={() => cambiarModoDescuento(modo)}
+                className={`flex-1 rounded-md py-1.5 transition-colors ${
+                  modoDescuento === modo ? 'bg-white text-ink-800 shadow-sm' : 'text-ink-400 hover:text-ink-600'
+                }`}
+              >
+                {modo === 'NINGUNO' ? 'Sin descuento' : modo === 'LINEA' ? 'Por producto' : 'De factura'}
+              </button>
+            ))}
+          </div>
+
+          {modoDescuento === 'FACTURA' && (
+            <div className="mb-3 flex items-center gap-2">
+              <Tag size={14} className="text-ink-400" />
+              <input
+                type="number"
+                min={0}
+                placeholder="Descuento"
+                value={descuentoFacturaValor}
+                onChange={(e) => setDescuentoFacturaValor(e.target.value)}
+                className="input flex-1"
+              />
+              <select
+                className="input w-20"
+                value={descuentoFacturaTipo}
+                onChange={(e) => setDescuentoFacturaTipo(e.target.value as TipoDescuento)}
+              >
+                <option value="PORCENTAJE">%</option>
+                <option value="MONTO">$</option>
+              </select>
+            </div>
+          )}
+
+          <div className="space-y-1 text-sm">
+            <div className="flex items-center justify-between text-ink-500">
+              <span>Subtotal</span>
+              <span>${subtotal.toLocaleString('es-CO')}</span>
+            </div>
+            {descuentoTotal > 0 && (
+              <div className="flex items-center justify-between text-success-600">
+                <span>Descuento</span>
+                <span>-${descuentoTotal.toLocaleString('es-CO')}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-base font-semibold text-ink-800">
+              <span>Total</span>
+              <span>${total.toLocaleString('es-CO')}</span>
+            </div>
           </div>
         </div>
 
@@ -264,9 +406,16 @@ export function VenderTab() {
             </div>
           ))}
 
-          <p className={`text-xs ${totalPagos === total ? 'text-ink-400' : 'text-amber-600'}`}>
+          <p className="text-xs text-ink-400">
             Pagado: ${totalPagos.toLocaleString('es-CO')} de ${total.toLocaleString('es-CO')}
           </p>
+
+          {cambio > 0 && (
+            <div className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">
+              <span>Cambio a devolver</span>
+              <span>${cambio.toLocaleString('es-CO')}</span>
+            </div>
+          )}
 
           {requiereCredito && (
             <label className="block pt-1">

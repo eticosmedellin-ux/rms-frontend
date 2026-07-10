@@ -144,8 +144,8 @@ function UsuarioFormModal({
       setApellido(usuarioEditando.apellido ?? '');
       setUsername(usuarioEditando.username);
       setEmail(usuarioEditando.email);
-      setRolIds(usuarioEditando.rolIds);
-      setSucursalIds(usuarioEditando.sucursalIds);
+      setRolIds(usuarioEditando.rolIds ?? []);
+      setSucursalIds(usuarioEditando.sucursalIds ?? []);
     } else {
       setNombre('');
       setApellido('');
@@ -268,12 +268,12 @@ function UsuarioFormModal({
               <label
                 key={r.id}
                 className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  rolIds.includes(r.id)
+                  (rolIds ?? []).includes(r.id)
                     ? 'border-ink-800 bg-ink-800 text-white'
                     : 'border-ink-200 text-ink-600 hover:bg-ink-50'
                 }`}
               >
-                <input type="checkbox" className="hidden" checked={rolIds.includes(r.id)} onChange={() => toggleRol(r.id)} />
+                <input type="checkbox" className="hidden" checked={(rolIds ?? []).includes(r.id)} onChange={() => toggleRol(r.id)} />
                 {r.nombre}
               </label>
             ))}
@@ -287,12 +287,12 @@ function UsuarioFormModal({
               <label
                 key={s.id}
                 className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  sucursalIds.includes(s.id)
+                  (sucursalIds ?? []).includes(s.id)
                     ? 'border-ink-800 bg-ink-800 text-white'
                     : 'border-ink-200 text-ink-600 hover:bg-ink-50'
                 }`}
               >
-                <input type="checkbox" className="hidden" checked={sucursalIds.includes(s.id)} onChange={() => toggleSucursal(s.id)} />
+                <input type="checkbox" className="hidden" checked={(sucursalIds ?? []).includes(s.id)} onChange={() => toggleSucursal(s.id)} />
                 {s.nombre}
               </label>
             ))}
