@@ -5,6 +5,7 @@ import { VentasTab } from '@/pages/pos/VentasTab';
 import { ClientesTab } from '@/pages/pos/ClientesTab';
 import { CuentasPorCobrarTab } from '@/pages/pos/CuentasPorCobrarTab';
 import { CotizacionesTab } from '@/pages/pos/CotizacionesTab';
+import { DocumentosCajaTab } from '@/pages/pos/DocumentosCajaTab';
 
 const TABS = [
   { id: 'vender', label: 'Vender' },
@@ -12,6 +13,7 @@ const TABS = [
   { id: 'cotizaciones', label: 'Cotizaciones' },
   { id: 'clientes', label: 'Clientes' },
   { id: 'cuentas', label: 'Cuentas por cobrar' },
+  { id: 'documentos', label: 'Recibos y comprobantes' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -48,6 +50,7 @@ export default function PosPage() {
         {tab === 'cotizaciones' && <CotizacionesTab />}
         {tab === 'clientes' && <ClientesTab />}
         {tab === 'cuentas' && <CuentasPorCobrarTab />}
+        {tab === 'documentos' && <DocumentosCajaTab />}
       </div>
     </div>
   );

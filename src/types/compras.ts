@@ -101,4 +101,5 @@ export interface CuentaPorPagar {
 export interface AbonoProveedorRequest {
   monto: number;
   metodoPago: string;
+  cajaSesionId?: number | null;
 }

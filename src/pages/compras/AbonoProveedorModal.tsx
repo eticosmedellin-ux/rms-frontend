@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useAbonarCuentaPorPagar } from '@/hooks/useCompras';
+import { useCajaAbierta } from '@/hooks/usePos';
+import { usePosStore } from '@/stores/posStore';
 import { getApiErrorMessage } from '@/api/errors';
 import type { CuentaPorPagar } from '@/types/compras';
 import { Loader2 } from 'lucide-react';
@@ -15,6 +17,8 @@ export function AbonoProveedorModal({
   cuenta: CuentaPorPagar | null;
 }) {
   const abonar = useAbonarCuentaPorPagar();
+  const { sucursalId } = usePosStore();
+  const { data: caja } = useCajaAbierta(sucursalId);
   const [monto, setMonto] = useState('');
   const [metodoPago, setMetodoPago] = useState('EFECTIVO');
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +29,14 @@ export function AbonoProveedorModal({
     setError(null);
     if (!cuenta) return;
     try {
-      await abonar.mutateAsync({ cuentaId: cuenta.id, data: { monto: Number(monto), metodoPago } });
+      await abonar.mutateAsync({
+        cuentaId: cuenta.id,
+        data: {
+          monto: Number(monto),
+          metodoPago,
+          cajaSesionId: metodoPago === 'EFECTIVO' && caja ? caja.id : undefined,
+        },
+      });
       setMonto('');
       onClose();
     } catch (err) {

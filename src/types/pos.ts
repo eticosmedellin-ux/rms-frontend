@@ -45,6 +45,33 @@ export interface CajaMovimiento {
 
 export type MetodoPagoVenta = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'CREDITO';
 
+export interface DocumentoCaja {
+  id: number;
+  tipo: 'RECIBO' | 'COMPROBANTE';
+  numero: string;
+  concepto: string;
+  detalle: string | null;
+  personaRelacionada: string | null;
+  metodoPago: string;
+  monto: number;
+  referenciaTipo: string | null;
+  referenciaId: number | null;
+  sucursal: string | null;
+  usuario: string;
+  fecha: string;
+  vecesImpreso: number;
+}
+
+export interface DocumentoCajaRequest {
+  tipo: 'RECIBO' | 'COMPROBANTE';
+  cajaSesionId: number;
+  concepto: string;
+  detalle?: string;
+  personaRelacionada?: string;
+  metodoPago: string;
+  monto: number;
+}
+
 export interface VentaDetalleResponse {
   productoId: number;
   producto: string;
