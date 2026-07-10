@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search, FileText, Receipt, FileMinus, ReceiptText } from 'lucide-react';
+import { Search, FileText, Receipt, FileMinus, ReceiptText, CircleDollarSign } from 'lucide-react';
 import { useVentas } from '@/hooks/usePos';
 import { useDocumentosCaja, useRegistrarImpresion } from '@/hooks/useDocumentosCaja';
 import { useEmpresa } from '@/hooks/useGestion';
@@ -7,7 +7,7 @@ import { LoadingState, EmptyState } from '@/components/ui/States';
 import { abrirFactura } from '@/lib/factura';
 import { imprimirDocumentoCaja } from '@/lib/documentoCajaImpresion';
 
-type TipoDocumentoUnificado = 'FACTURA' | 'RECIBO' | 'COMPROBANTE' | 'NOTA_CREDITO';
+type TipoDocumentoUnificado = 'FACTURA' | 'RECIBO' | 'COMPROBANTE' | 'NOTA_CREDITO' | 'NOTA_DEBITO';
 
 interface DocumentoUnificado {
   id: string;
@@ -24,6 +24,7 @@ const TIPO_INFO: Record<TipoDocumentoUnificado, { label: string; icono: typeof F
   RECIBO: { label: 'Recibo', icono: Receipt, tono: 'bg-success-50 text-success-600' },
   COMPROBANTE: { label: 'Comprobante', icono: FileMinus, tono: 'bg-amber-50 text-amber-700' },
   NOTA_CREDITO: { label: 'Nota crédito', icono: ReceiptText, tono: 'bg-sky-50 text-sky-700' },
+  NOTA_DEBITO: { label: 'Nota débito', icono: CircleDollarSign, tono: 'bg-rose-50 text-rose-700' },
 };
 
 export default function DocumentosPage() {
@@ -110,6 +111,7 @@ export default function DocumentosPage() {
           <option value="RECIBO">Recibos</option>
           <option value="COMPROBANTE">Comprobantes</option>
           <option value="NOTA_CREDITO">Notas crédito</option>
+          <option value="NOTA_DEBITO">Notas débito</option>
         </select>
 
         <label className="flex items-center gap-1.5 text-xs text-ink-500">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Loader2, Printer, Receipt, FileMinus, FileText } from 'lucide-react';
+import { Plus, Loader2, Printer, Receipt, FileMinus, FileText, CircleDollarSign } from 'lucide-react';
 import { useDocumentosCaja, useCrearDocumentoCaja, useRegistrarImpresion } from '@/hooks/useDocumentosCaja';
 import { useCajaAbierta } from '@/hooks/usePos';
 import { usePosStore } from '@/stores/posStore';
@@ -8,6 +8,13 @@ import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
 import { imprimirDocumentoCaja } from '@/lib/documentoCajaImpresion';
 import type { DocumentoCaja } from '@/types/pos';
+
+const TIPO_DOC_INFO: Record<DocumentoCaja['tipo'], { label: string; icono: typeof Receipt; tono: string }> = {
+  RECIBO: { label: 'Recibo', icono: Receipt, tono: 'bg-success-50 text-success-600' },
+  COMPROBANTE: { label: 'Comprobante', icono: FileMinus, tono: 'bg-amber-50 text-amber-700' },
+  NOTA_CREDITO: { label: 'Nota crédito', icono: FileText, tono: 'bg-sky-50 text-sky-700' },
+  NOTA_DEBITO: { label: 'Nota débito', icono: CircleDollarSign, tono: 'bg-rose-50 text-rose-700' },
+};
 
 export function DocumentosCajaTab() {
   const { sucursalId } = usePosStore();
@@ -60,23 +67,12 @@ export function DocumentosCajaTab() {
                 <tr key={d.id} className="hover:bg-ink-50/60">
                   <td className="px-4 py-3 font-mono text-xs text-ink-600">{d.numero}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                        d.tipo === 'RECIBO'
-                          ? 'bg-success-50 text-success-600'
-                          : d.tipo === 'NOTA_CREDITO'
-                            ? 'bg-sky-50 text-sky-700'
-                            : 'bg-amber-50 text-amber-700'
-                      }`}
-                    >
-                      {d.tipo === 'RECIBO' ? (
-                        <Receipt size={12} />
-                      ) : d.tipo === 'NOTA_CREDITO' ? (
-                        <FileText size={12} />
-                      ) : (
-                        <FileMinus size={12} />
-                      )}
-                      {d.tipo === 'RECIBO' ? 'Recibo' : d.tipo === 'NOTA_CREDITO' ? 'Nota crédito' : 'Comprobante'}
+                    <span className={`flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${TIPO_DOC_INFO[d.tipo].tono}`}>
+                      {(() => {
+                        const Icono = TIPO_DOC_INFO[d.tipo].icono;
+                        return <Icono size={12} />;
+                      })()}
+                      {TIPO_DOC_INFO[d.tipo].label}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-ink-700">{d.concepto}</td>

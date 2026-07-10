@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Wallet } from 'lucide-react';
+import { Wallet, CircleDollarSign } from 'lucide-react';
 import { useClientes, useCuentasPorCobrar } from '@/hooks/usePos';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { AbonoClienteModal } from '@/pages/pos/AbonoClienteModal';
+import { NotaDebitoModal } from '@/pages/pos/NotaDebitoModal';
 import type { CuentaPorCobrar } from '@/types/pos';
 
 export function CuentasPorCobrarTab() {
@@ -10,24 +11,37 @@ export function CuentasPorCobrarTab() {
   const [clienteId, setClienteId] = useState<number | null>(null);
   const { data: cuentas, isLoading } = useCuentasPorCobrar(clienteId);
   const [cuentaAbonando, setCuentaAbonando] = useState<CuentaPorCobrar | null>(null);
+  const [notaDebitoAbierta, setNotaDebitoAbierta] = useState(false);
+
+  const clienteSeleccionado = clientes?.find((c) => c.id === clienteId);
 
   return (
     <div>
-      <label className="mb-4 flex items-center gap-2 text-sm">
-        <span className="font-medium text-ink-700">Cliente:</span>
-        <select
-          className="input max-w-xs"
-          value={clienteId ?? ''}
-          onChange={(e) => setClienteId(e.target.value ? Number(e.target.value) : null)}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <span className="font-medium text-ink-700">Cliente:</span>
+          <select
+            className="input max-w-xs"
+            value={clienteId ?? ''}
+            onChange={(e) => setClienteId(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Selecciona un cliente…</option>
+            {clientes?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button
+          onClick={() => setNotaDebitoAbierta(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
         >
-          <option value="">Selecciona un cliente…</option>
-          {clientes?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
-      </label>
+          <CircleDollarSign size={16} />
+          Nueva nota débito
+        </button>
+      </div>
 
       {!clienteId ? (
         <EmptyState title="Selecciona un cliente" description="Elige uno arriba para ver sus cuentas por cobrar." />
@@ -49,7 +63,7 @@ export function CuentasPorCobrarTab() {
             <tbody className="divide-y divide-ink-50">
               {cuentas.map((c) => (
                 <tr key={c.id}>
-                  <td className="px-4 py-3 text-ink-500">#{c.ventaId}</td>
+                  <td className="px-4 py-3 text-ink-500">{c.numeroVenta}</td>
                   <td className="px-4 py-3 text-ink-500">{c.fechaVencimiento ?? '—'}</td>
                   <td className="px-4 py-3 text-right text-ink-700">${c.montoOriginal.toLocaleString('es-CO')}</td>
                   <td className="px-4 py-3 text-right font-medium text-ink-800">
@@ -78,6 +92,12 @@ export function CuentasPorCobrarTab() {
         isOpen={cuentaAbonando !== null}
         onClose={() => setCuentaAbonando(null)}
         cuenta={cuentaAbonando}
+      />
+      <NotaDebitoModal
+        isOpen={notaDebitoAbierta}
+        onClose={() => setNotaDebitoAbierta(false)}
+        clienteId={clienteSeleccionado?.id}
+        clienteNombre={clienteSeleccionado?.nombre}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import type {
   ConvertirCotizacionRequest,
   CotizacionRequest,
   DevolucionVentaRequest,
+  NotaDebitoRequest,
   VentaRequest,
 } from '@/types/pos';
 
@@ -102,6 +103,17 @@ export function useRegistrarDevolucion() {
       queryClient.invalidateQueries({ queryKey: ['caja-movimientos'] });
       queryClient.invalidateQueries({ queryKey: ['documentos-caja'] });
       queryClient.invalidateQueries({ queryKey: ['cuentas-por-cobrar'] });
+    },
+  });
+}
+
+export function useCrearNotaDebito() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: NotaDebitoRequest) => posApi.crearNotaDebito(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cuentas-por-cobrar'] });
+      queryClient.invalidateQueries({ queryKey: ['documentos-caja'] });
     },
   });
 }

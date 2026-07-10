@@ -47,7 +47,7 @@ export type MetodoPagoVenta = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'CREDIT
 
 export interface DocumentoCaja {
   id: number;
-  tipo: 'RECIBO' | 'COMPROBANTE' | 'NOTA_CREDITO';
+  tipo: 'RECIBO' | 'COMPROBANTE' | 'NOTA_CREDITO' | 'NOTA_DEBITO';
   numero: string;
   concepto: string;
   detalle: string | null;
@@ -154,12 +154,21 @@ export interface DevolucionVentaResponse {
 
 export interface CuentaPorCobrar {
   id: number;
-  ventaId: number;
+  ventaId: number | null;
+  numeroVenta: string;
   cliente: string;
   montoOriginal: number;
   saldoPendiente: number;
   fechaVencimiento: string | null;
   estado: string;
+}
+
+export interface NotaDebitoRequest {
+  clienteId: number;
+  ventaId?: number | null;
+  concepto: string;
+  detalle?: string;
+  monto: number;
 }
 
 export interface AbonoClienteRequest {

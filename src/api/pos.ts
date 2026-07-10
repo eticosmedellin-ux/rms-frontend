@@ -13,6 +13,7 @@ import type {
   Cotizacion,
   CotizacionRequest,
   ConvertirCotizacionRequest,
+  NotaDebitoRequest,
 } from '@/types/pos';
 import type { FacturaElectronicaEstado } from '@/types/gestion';
 
@@ -57,6 +58,9 @@ export const registrarDevolucion = async (
   data: DevolucionVentaRequest
 ): Promise<DevolucionVentaResponse> =>
   (await apiClient.post<DevolucionVentaResponse>(`/ventas/${ventaId}/devoluciones`, data)).data;
+
+export const crearNotaDebito = async (data: NotaDebitoRequest) =>
+  (await apiClient.post('/notas-debito', data)).data;
 
 export const obtenerFacturaElectronica = async (ventaId: number): Promise<FacturaElectronicaEstado> =>
   (await apiClient.get<FacturaElectronicaEstado>(`/ventas/${ventaId}/factura-electronica`)).data;

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Undo2, FileText, Send, Loader2 } from 'lucide-react';
+import { Undo2, FileText, Send, Loader2, CircleDollarSign } from 'lucide-react';
 import { useVentas, useFacturaElectronica, useEnviarFacturaElectronica } from '@/hooks/usePos';
 import { useEmpresa } from '@/hooks/useGestion';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { DevolucionModal } from '@/pages/pos/DevolucionModal';
+import { NotaDebitoModal } from '@/pages/pos/NotaDebitoModal';
 import { abrirFactura } from '@/lib/factura';
 import { getApiErrorMessage } from '@/api/errors';
 import type { Venta } from '@/types/pos';
@@ -31,6 +32,7 @@ export function VentasTab() {
   const { data: ventas, isLoading } = useVentas();
   const { data: empresa } = useEmpresa();
   const [ventaDevolviendo, setVentaDevolviendo] = useState<Venta | null>(null);
+  const [ventaNotaDebito, setVentaNotaDebito] = useState<Venta | null>(null);
 
   if (isLoading) return <LoadingState />;
   if (!ventas || ventas.length === 0) {
@@ -87,6 +89,15 @@ export function VentasTab() {
                     >
                       <Undo2 size={16} />
                     </button>
+                    {v.cliente !== 'Mostrador' && (
+                      <button
+                        onClick={() => setVentaNotaDebito(v)}
+                        title="Cargo adicional (nota débito)"
+                        className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                      >
+                        <CircleDollarSign size={16} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -100,6 +111,16 @@ export function VentasTab() {
         onClose={() => setVentaDevolviendo(null)}
         venta={ventaDevolviendo}
       />
+      {ventaNotaDebito && (
+        <NotaDebitoModal
+          isOpen={ventaNotaDebito !== null}
+          onClose={() => setVentaNotaDebito(null)}
+          ventaId={ventaNotaDebito.id}
+          ventaNumero={ventaNotaDebito.numeroFactura ?? ventaNotaDebito.numero}
+          clienteId={undefined}
+          clienteNombre={ventaNotaDebito.cliente}
+        />
+      )}
     </div>
   );
 }

@@ -8,8 +8,15 @@ export function imprimirDocumentoCaja(doc: DocumentoCaja) {
 
   const fecha = new Date(doc.fecha).toLocaleString('es-CO');
   const titulo =
-    doc.tipo === 'RECIBO' ? 'RECIBO DE CAJA' : doc.tipo === 'NOTA_CREDITO' ? 'NOTA CRÉDITO' : 'COMPROBANTE DE CAJA';
-  const etiquetaPersona = doc.tipo === 'RECIBO' ? 'Recibido de' : doc.tipo === 'NOTA_CREDITO' ? 'Cliente' : 'Pagado a';
+    doc.tipo === 'RECIBO'
+      ? 'RECIBO DE CAJA'
+      : doc.tipo === 'NOTA_CREDITO'
+        ? 'NOTA CRÉDITO'
+        : doc.tipo === 'NOTA_DEBITO'
+          ? 'NOTA DÉBITO'
+          : 'COMPROBANTE DE CAJA';
+  const etiquetaPersona =
+    doc.tipo === 'RECIBO' ? 'Recibido de' : doc.tipo === 'COMPROBANTE' ? 'Pagado a' : 'Cliente';
 
   const html = `
     <html>
