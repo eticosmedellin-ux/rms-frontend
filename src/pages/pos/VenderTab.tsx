@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText } from 'lucide-react';
+import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText, Wrench, Package2 } from 'lucide-react';
 import { useProductos } from '@/hooks/useInventario';
+import { useCombos } from '@/hooks/useCombos';
 import { useClientes } from '@/hooks/usePos';
 import { useCajaAbierta, useRegistrarVenta } from '@/hooks/usePos';
 import { useTiposDescuento } from '@/hooks/useDescuentos';
@@ -11,8 +12,20 @@ import { EmptyState } from '@/components/ui/States';
 import { abrirFactura } from '@/lib/factura';
 import type { MetodoPagoVenta, TipoDescuento, Venta } from '@/types/pos';
 
+/** Un artículo que se puede vender: producto (con o sin inventario) o combo. */
+interface ItemVendible {
+  tipo: 'PRODUCTO' | 'COMBO';
+  id: number;
+  nombre: string;
+  precioVenta: number;
+  imagen: string | null;
+  manejaInventario: boolean;
+  codigoInterno: string;
+}
+
 interface LineaCarrito {
-  productoId: number;
+  tipo: 'PRODUCTO' | 'COMBO';
+  itemId: number;
   nombre: string;
   cantidad: number;
   precioUnitario: number;
@@ -41,6 +54,7 @@ export function VenderTab() {
   const { sucursalId } = usePosStore();
   const { data: caja } = useCajaAbierta(sucursalId);
   const { data: productos } = useProductos();
+  const { data: combos } = useCombos();
   const { data: clientes } = useClientes();
   const { data: tiposDescuento } = useTiposDescuento();
   const { data: empresa } = useEmpresa();
@@ -59,8 +73,6 @@ export function VenderTab() {
   const [tipoDescuentoFacturaId, setTipoDescuentoFacturaId] = useState<number | null>(null);
   const [facturarVenta, setFacturarVenta] = useState(true);
 
-  // Solo descuentos activos, no vencidos, y aplicables al modo elegido — el cajero
-  // nunca ve la opción de escribir un valor, solo puede elegir de esta lista.
   const catalogo = tiposDescuento ?? [];
   const opcionesLinea = useMemo(
     () => catalogo.filter((t) => t.vigente && (t.aplicaA === 'LINEA' || t.aplicaA === 'AMBOS')),
@@ -71,14 +83,40 @@ export function VenderTab() {
     [catalogo]
   );
 
-  const productosVisibles = useMemo(() => {
-    if (!productos) return [];
-    if (!busqueda.trim()) return productos.filter((p) => p.estado);
+  // Productos y combos activos, unidos en una sola lista vendible.
+  const itemsVendibles = useMemo<ItemVendible[]>(() => {
+    const productosItems: ItemVendible[] = (productos ?? [])
+      .filter((p) => p.estado)
+      .map((p) => ({
+        tipo: 'PRODUCTO',
+        id: p.id,
+        nombre: p.nombre,
+        precioVenta: p.precioVenta,
+        imagen: p.imagen,
+        manejaInventario: p.manejaInventario,
+        codigoInterno: p.codigoInterno,
+      }));
+    const combosItems: ItemVendible[] = (combos ?? [])
+      .filter((c) => c.estado)
+      .map((c) => ({
+        tipo: 'COMBO',
+        id: c.id,
+        nombre: c.nombre,
+        precioVenta: c.precioVenta,
+        imagen: null,
+        manejaInventario: false,
+        codigoInterno: c.codigo,
+      }));
+    return [...productosItems, ...combosItems];
+  }, [productos, combos]);
+
+  const itemsVisibles = useMemo(() => {
+    if (!busqueda.trim()) return itemsVendibles;
     const term = busqueda.toLowerCase();
-    return productos.filter(
-      (p) => p.estado && (p.nombre.toLowerCase().includes(term) || p.codigoInterno.toLowerCase().includes(term))
+    return itemsVendibles.filter(
+      (i) => i.nombre.toLowerCase().includes(term) || i.codigoInterno.toLowerCase().includes(term)
     );
-  }, [productos, busqueda]);
+  }, [itemsVendibles, busqueda]);
 
   const subtotal = carrito.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0);
 
@@ -105,36 +143,40 @@ export function VenderTab() {
   const cambio = Math.max(0, totalPagos - total);
   const requiereCredito = pagos.some((p) => p.metodoPago === 'CREDITO');
 
-  function agregarProducto(productoId: number, nombre: string, precioVenta: number) {
+  function agregarItem(item: ItemVendible) {
     setCarrito((prev) => {
-      const existente = prev.find((l) => l.productoId === productoId);
+      const existente = prev.find((l) => l.tipo === item.tipo && l.itemId === item.id);
       if (existente) {
-        return prev.map((l) => (l.productoId === productoId ? { ...l, cantidad: l.cantidad + 1 } : l));
+        return prev.map((l) =>
+          l.tipo === item.tipo && l.itemId === item.id ? { ...l, cantidad: l.cantidad + 1 } : l
+        );
       }
-      return [...prev, { productoId, nombre, cantidad: 1, precioUnitario: precioVenta, tipoDescuentoId: null }];
+      return [
+        ...prev,
+        { tipo: item.tipo, itemId: item.id, nombre: item.nombre, cantidad: 1, precioUnitario: item.precioVenta, tipoDescuentoId: null },
+      ];
     });
   }
 
   /** Con un lector de código de barras (o al escribir un código exacto y dar Enter), si
-   *  la búsqueda deja un solo producto visible, se agrega directo sin soltar el teclado. */
+   *  la búsqueda deja un solo artículo visible, se agrega directo sin soltar el teclado. */
   function manejarEnterBusqueda(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== 'Enter' || productosVisibles.length !== 1) return;
-    const p = productosVisibles[0];
-    agregarProducto(p.id, p.nombre, p.precioVenta);
+    if (e.key !== 'Enter' || itemsVisibles.length !== 1) return;
+    agregarItem(itemsVisibles[0]);
     setBusqueda('');
     busquedaInputRef.current?.focus();
   }
 
-  function actualizarCantidad(productoId: number, cantidad: number) {
-    setCarrito((prev) => prev.map((l) => (l.productoId === productoId ? { ...l, cantidad } : l)));
+  function actualizarCantidad(tipo: 'PRODUCTO' | 'COMBO', itemId: number, cantidad: number) {
+    setCarrito((prev) => prev.map((l) => (l.tipo === tipo && l.itemId === itemId ? { ...l, cantidad } : l)));
   }
 
-  function actualizarDescuentoLinea(productoId: number, tipoDescuentoId: number | null) {
-    setCarrito((prev) => prev.map((l) => (l.productoId === productoId ? { ...l, tipoDescuentoId } : l)));
+  function actualizarDescuentoLinea(tipo: 'PRODUCTO' | 'COMBO', itemId: number, tipoDescuentoId: number | null) {
+    setCarrito((prev) => prev.map((l) => (l.tipo === tipo && l.itemId === itemId ? { ...l, tipoDescuentoId } : l)));
   }
 
-  function quitarLinea(productoId: number) {
-    setCarrito((prev) => prev.filter((l) => l.productoId !== productoId));
+  function quitarLinea(tipo: 'PRODUCTO' | 'COMBO', itemId: number) {
+    setCarrito((prev) => prev.filter((l) => !(l.tipo === tipo && l.itemId === itemId)));
   }
 
   function actualizarPago(index: number, cambios: Partial<LineaPago>) {
@@ -190,7 +232,8 @@ export function VenderTab() {
         cajaSesionId: caja.id,
         clienteId: clienteId ? Number(clienteId) : undefined,
         detalles: carrito.map((l) => ({
-          productoId: l.productoId,
+          productoId: l.tipo === 'PRODUCTO' ? l.itemId : undefined,
+          comboId: l.tipo === 'COMBO' ? l.itemId : undefined,
           cantidad: l.cantidad,
           precioUnitario: l.precioUnitario,
           tipoDescuentoId: modoDescuento === 'LINEA' ? l.tipoDescuentoId : undefined,
@@ -227,7 +270,7 @@ export function VenderTab() {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-      {/* Catálogo de productos: cuadrícula visual con imagen */}
+      {/* Catálogo: productos, servicios y combos en una sola cuadrícula visual */}
       <div>
         <div className="relative mb-4">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-300" />
@@ -242,32 +285,50 @@ export function VenderTab() {
           />
         </div>
 
-        {productosVisibles.length > 0 ? (
+        {itemsVisibles.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-            {productosVisibles.map((p) => (
+            {itemsVisibles.map((item) => (
               <button
-                key={p.id}
+                key={`${item.tipo}-${item.id}`}
                 onClick={() => {
-                  agregarProducto(p.id, p.nombre, p.precioVenta);
+                  agregarItem(item);
                   busquedaInputRef.current?.focus();
                 }}
                 className="group rounded-xl border border-ink-100 bg-white p-2 text-left shadow-card transition-all hover:border-ink-300 hover:shadow-md"
               >
                 <div className="aspect-square w-full overflow-hidden rounded-lg bg-ink-50">
-                  {p.imagen ? (
+                  {item.imagen ? (
                     <img
-                      src={p.imagen}
-                      alt={p.nombre}
+                      src={item.imagen}
+                      alt={item.nombre}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-ink-300">
-                      <ImageOff size={28} />
+                      {item.tipo === 'COMBO' ? (
+                        <Package2 size={28} />
+                      ) : item.manejaInventario ? (
+                        <ImageOff size={28} />
+                      ) : (
+                        <Wrench size={28} />
+                      )}
                     </div>
                   )}
                 </div>
-                <p className="mt-2 truncate text-sm font-medium text-ink-800">{p.nombre}</p>
-                <p className="text-sm font-semibold text-ink-600">${p.precioVenta.toLocaleString('es-CO')}</p>
+                <p className="mt-2 truncate text-sm font-medium text-ink-800">
+                  {item.nombre}
+                  {item.tipo === 'COMBO' && (
+                    <span className="ml-1.5 rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700">
+                      Combo
+                    </span>
+                  )}
+                  {item.tipo === 'PRODUCTO' && !item.manejaInventario && (
+                    <span className="ml-1.5 rounded-full bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                      Servicio
+                    </span>
+                  )}
+                </p>
+                <p className="text-sm font-semibold text-ink-600">${item.precioVenta.toLocaleString('es-CO')}</p>
               </button>
             ))}
           </div>
@@ -288,23 +349,26 @@ export function VenderTab() {
 
         <div className="max-h-64 space-y-3 overflow-y-auto">
           {carrito.map((l) => (
-            <div key={l.productoId} className="space-y-1.5">
+            <div key={`${l.tipo}-${l.itemId}`} className="space-y-1.5">
               <div className="flex items-center gap-2 text-sm">
                 <div className="flex-1">
-                  <p className="font-medium text-ink-800">{l.nombre}</p>
+                  <p className="font-medium text-ink-800">
+                    {l.nombre}
+                    {l.tipo === 'COMBO' && <span className="ml-1 text-[10px] text-violet-600">(combo)</span>}
+                  </p>
                   <p className="text-xs text-ink-400">${l.precioUnitario.toLocaleString('es-CO')} c/u</p>
                 </div>
                 <input
                   type="number"
                   min={1}
                   value={l.cantidad}
-                  onChange={(e) => actualizarCantidad(l.productoId, Number(e.target.value))}
+                  onChange={(e) => actualizarCantidad(l.tipo, l.itemId, Number(e.target.value))}
                   className="w-16 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
                 />
                 <span className="w-20 text-right font-medium text-ink-700">
                   ${(l.cantidad * l.precioUnitario - calcularDescuentoLinea(l, catalogo)).toLocaleString('es-CO')}
                 </span>
-                <button onClick={() => quitarLinea(l.productoId)} className="text-ink-300 hover:text-danger-500">
+                <button onClick={() => quitarLinea(l.tipo, l.itemId)} className="text-ink-300 hover:text-danger-500">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -316,7 +380,7 @@ export function VenderTab() {
                     className="input flex-1 py-1 text-xs"
                     value={l.tipoDescuentoId ?? ''}
                     onChange={(e) =>
-                      actualizarDescuentoLinea(l.productoId, e.target.value ? Number(e.target.value) : null)
+                      actualizarDescuentoLinea(l.tipo, l.itemId, e.target.value ? Number(e.target.value) : null)
                     }
                   >
                     <option value="">Sin descuento</option>

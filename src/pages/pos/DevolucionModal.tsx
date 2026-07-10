@@ -99,7 +99,7 @@ export function DevolucionModal({ isOpen, onClose, venta }: { isOpen: boolean; o
         <div>
           <p className="mb-2 text-sm font-medium text-ink-700">¿Cuánto se devuelve de cada producto?</p>
           <div className="space-y-2">
-            {venta.detalles.map((d) => (
+            {venta.detalles.filter((d) => d.productoId !== null).map((d) => (
               <div key={d.productoId} className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-ink-700">
                   {d.producto} <span className="text-ink-400">(vendidos: {d.cantidad})</span>
@@ -109,12 +109,17 @@ export function DevolucionModal({ isOpen, onClose, venta }: { isOpen: boolean; o
                   min={0}
                   max={d.cantidad}
                   className="w-24 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
-                  value={cantidades[d.productoId] ?? ''}
-                  onChange={(e) => setCantidades((prev) => ({ ...prev, [d.productoId]: e.target.value }))}
+                  value={cantidades[d.productoId!] ?? ''}
+                  onChange={(e) => setCantidades((prev) => ({ ...prev, [d.productoId!]: e.target.value }))}
                 />
               </div>
             ))}
           </div>
+          {venta.detalles.some((d) => d.esCombo) && (
+            <p className="mt-2 text-xs text-amber-600">
+              Esta venta incluye combos — todavía no se pueden devolver individualmente, solo los productos sueltos.
+            </p>
+          )}
         </div>
 
         {venta.tipoVenta === 'CREDITO' ? (

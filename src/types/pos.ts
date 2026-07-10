@@ -73,8 +73,9 @@ export interface DocumentoCajaRequest {
 }
 
 export interface VentaDetalleResponse {
-  productoId: number;
+  productoId: number | null;
   producto: string;
+  esCombo: boolean;
   cantidad: number;
   precioUnitario: number;
   descuentoLinea: number;
@@ -128,7 +129,7 @@ export interface VentaRequest {
   sucursalId: number;
   cajaSesionId: number;
   clienteId?: number | null;
-  detalles: { productoId: number; cantidad: number; precioUnitario: number; tipoDescuentoId?: number | null }[];
+  detalles: { productoId?: number; comboId?: number; cantidad: number; precioUnitario: number; tipoDescuentoId?: number | null }[];
   pagos: { metodoPago: MetodoPagoVenta; monto: number }[];
   tipoDescuentoFacturaId?: number | null;
   facturar?: boolean;

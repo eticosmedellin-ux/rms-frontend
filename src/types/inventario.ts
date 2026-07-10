@@ -29,6 +29,22 @@ export interface Producto {
   imagen: string | null;
 }
 
+export interface Combo {
+  id: number;
+  codigo: string;
+  nombre: string;
+  precioVenta: number;
+  estado: boolean;
+  items: { productoId: number; productoNombre: string; cantidad: number }[];
+}
+
+export interface ComboRequest {
+  codigo: string;
+  nombre: string;
+  precioVenta: number;
+  items: { productoId: number; cantidad: number }[];
+}
+
 export interface ProductoRequest {
   categoriaId: number | null;
   marcaId: number | null;

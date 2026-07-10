@@ -4,9 +4,11 @@ import { CategoriasMarcasTab } from '@/pages/inventario/CategoriasMarcasTab';
 import { AjustesTab } from '@/pages/inventario/AjustesTab';
 import { TransferenciasTab } from '@/pages/inventario/TransferenciasTab';
 import { ConteosTab } from '@/pages/inventario/ConteosTab';
+import { CombosTab } from '@/pages/inventario/CombosTab';
 
 const TABS = [
   { id: 'productos', label: 'Productos' },
+  { id: 'combos', label: 'Combos' },
   { id: 'categorias', label: 'Categorías y marcas' },
   { id: 'ajustes', label: 'Ajustes' },
   { id: 'transferencias', label: 'Transferencias' },
@@ -43,6 +45,7 @@ export default function InventarioPage() {
 
       <div className="mt-5">
         {tab === 'productos' && <ProductosTab />}
+        {tab === 'combos' && <CombosTab />}
         {tab === 'categorias' && <CategoriasMarcasTab />}
         {tab === 'ajustes' && <AjustesTab />}
         {tab === 'transferencias' && <TransferenciasTab />}

@@ -29,6 +29,8 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProductoFormValues>({
     resolver: zodResolver(productoSchema),
@@ -43,9 +45,12 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
           marcaId: '',
           precioCompra: productoEditando.precioCompra,
           precioVenta: productoEditando.precioVenta,
+          esServicio: !productoEditando.manejaInventario,
         }
-      : undefined,
+      : { esServicio: false },
   });
+
+  const esServicio = watch('esServicio');
 
   async function onSubmit(values: ProductoFormValues) {
     setServerError(null);
@@ -54,12 +59,12 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
       codigoBarras: values.codigoBarras || null,
       nombre: values.nombre,
       descripcion: values.descripcion || null,
-      unidadMedida: values.unidadMedida,
+      unidadMedida: values.unidadMedida || 'UND',
       categoriaId: values.categoriaId ? Number(values.categoriaId) : null,
       marcaId: values.marcaId ? Number(values.marcaId) : null,
       precioCompra: values.precioCompra,
       precioVenta: values.precioVenta,
-      manejaInventario: true,
+      manejaInventario: !values.esServicio,
     };
 
     try {
@@ -83,6 +88,17 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
       size="lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <div className="flex gap-1 rounded-lg bg-ink-50 p-1 text-sm font-medium">
+          <label className={`flex-1 cursor-pointer rounded-md py-2 text-center transition-colors ${!esServicio ? 'bg-white text-ink-800 shadow-sm' : 'text-ink-400 hover:text-ink-600'}`}>
+            <input type="radio" className="hidden" checked={!esServicio} onChange={() => setValue('esServicio', false)} />
+            Producto (con inventario)
+          </label>
+          <label className={`flex-1 cursor-pointer rounded-md py-2 text-center transition-colors ${esServicio ? 'bg-white text-ink-800 shadow-sm' : 'text-ink-400 hover:text-ink-600'}`}>
+            <input type="radio" className="hidden" checked={!!esServicio} onChange={() => setValue('esServicio', true)} />
+            Servicio (sin inventario)
+          </label>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <Field label="Código interno" error={errors.codigoInterno?.message}>
             <input
@@ -105,15 +121,17 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
         </Field>
 
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Unidad de medida" error={errors.unidadMedida?.message}>
-            <select className="input" {...register('unidadMedida')} defaultValue="UND">
-              {UNIDADES.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
-          </Field>
+          {!esServicio && (
+            <Field label="Unidad de medida" error={errors.unidadMedida?.message}>
+              <select className="input" {...register('unidadMedida')} defaultValue="UND">
+                {UNIDADES.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
 
           <Field label="Categoría">
             <select className="input" {...register('categoriaId')}>
@@ -139,7 +157,7 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Precio de compra" error={errors.precioCompra?.message}>
+          <Field label={esServicio ? 'Costo (opcional)' : 'Precio de compra'} error={errors.precioCompra?.message}>
             <input type="number" step="0.01" className="input" {...register('precioCompra')} />
           </Field>
           <Field label="Precio de venta" error={errors.precioVenta?.message}>

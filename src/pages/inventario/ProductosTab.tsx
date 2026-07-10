@@ -81,7 +81,14 @@ export function ProductosTab() {
                     )}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-ink-500">{p.codigoInterno}</td>
-                  <td className="px-4 py-3 font-medium text-ink-800">{p.nombre}</td>
+                  <td className="px-4 py-3 font-medium text-ink-800">
+                    {p.nombre}
+                    {!p.manejaInventario && (
+                      <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                        Servicio
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-ink-500">{p.categoria ?? '—'}</td>
                   <td className="px-4 py-3 text-ink-500">{p.marca ?? '—'}</td>
                   <td className="px-4 py-3 text-right text-ink-700">
@@ -99,13 +106,15 @@ export function ProductosTab() {
                       >
                         <Camera size={16} />
                       </button>
-                      <button
-                        onClick={() => setProductoStock(p)}
-                        title="Ver stock y kardex"
-                        className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
-                      >
-                        <Boxes size={16} />
-                      </button>
+                      {p.manejaInventario && (
+                        <button
+                          onClick={() => setProductoStock(p)}
+                          title="Ver stock y kardex"
+                          className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                        >
+                          <Boxes size={16} />
+                        </button>
+                      )}
                       <button
                         onClick={() => abrirEditar(p)}
                         title="Editar producto"
