@@ -7,6 +7,7 @@ import type {
   Venta,
   VentaRequest,
   DevolucionVentaRequest,
+  DevolucionVentaResponse,
   CuentaPorCobrar,
   AbonoClienteRequest,
   Cotizacion,
@@ -50,9 +51,11 @@ export const listarVentas = async (): Promise<Venta[]> => (await apiClient.get<V
 export const registrarVenta = async (data: VentaRequest): Promise<Venta> =>
   (await apiClient.post<Venta>('/ventas', data)).data;
 
-export const registrarDevolucion = async (ventaId: number, data: DevolucionVentaRequest): Promise<void> => {
-  await apiClient.post(`/ventas/${ventaId}/devoluciones`, data);
-};
+export const registrarDevolucion = async (
+  ventaId: number,
+  data: DevolucionVentaRequest
+): Promise<DevolucionVentaResponse> =>
+  (await apiClient.post<DevolucionVentaResponse>(`/ventas/${ventaId}/devoluciones`, data)).data;
 
 // --- Cuentas por cobrar ---
 export const listarCuentasPorCobrar = async (clienteId: number): Promise<CuentaPorCobrar[]> =>

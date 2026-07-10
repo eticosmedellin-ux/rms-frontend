@@ -98,6 +98,10 @@ export function useRegistrarDevolucion() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['productos'] });
       queryClient.invalidateQueries({ queryKey: ['stock'] });
+      queryClient.invalidateQueries({ queryKey: ['caja-abierta'] });
+      queryClient.invalidateQueries({ queryKey: ['caja-movimientos'] });
+      queryClient.invalidateQueries({ queryKey: ['documentos-caja'] });
+      queryClient.invalidateQueries({ queryKey: ['cuentas-por-cobrar'] });
     },
   });
 }

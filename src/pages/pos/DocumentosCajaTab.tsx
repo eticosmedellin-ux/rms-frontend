@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Loader2, Printer, Receipt, FileMinus } from 'lucide-react';
+import { Plus, Loader2, Printer, Receipt, FileMinus, FileText } from 'lucide-react';
 import { useDocumentosCaja, useCrearDocumentoCaja, useRegistrarImpresion } from '@/hooks/useDocumentosCaja';
 import { useCajaAbierta } from '@/hooks/usePos';
 import { usePosStore } from '@/stores/posStore';
@@ -61,11 +61,21 @@ export function DocumentosCajaTab() {
                   <td className="px-4 py-3">
                     <span
                       className={`flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                        d.tipo === 'RECIBO' ? 'bg-success-50 text-success-600' : 'bg-amber-50 text-amber-700'
+                        d.tipo === 'RECIBO'
+                          ? 'bg-success-50 text-success-600'
+                          : d.tipo === 'NOTA_CREDITO'
+                            ? 'bg-sky-50 text-sky-700'
+                            : 'bg-amber-50 text-amber-700'
                       }`}
                     >
-                      {d.tipo === 'RECIBO' ? <Receipt size={12} /> : <FileMinus size={12} />}
-                      {d.tipo === 'RECIBO' ? 'Recibo' : 'Comprobante'}
+                      {d.tipo === 'RECIBO' ? (
+                        <Receipt size={12} />
+                      ) : d.tipo === 'NOTA_CREDITO' ? (
+                        <FileText size={12} />
+                      ) : (
+                        <FileMinus size={12} />
+                      )}
+                      {d.tipo === 'RECIBO' ? 'Recibo' : d.tipo === 'NOTA_CREDITO' ? 'Nota crédito' : 'Comprobante'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-ink-700">{d.concepto}</td>
@@ -272,12 +282,12 @@ function abrirVentanaImpresion(doc: DocumentoCaja) {
         </style>
       </head>
       <body>
-        <h1>${doc.tipo === 'RECIBO' ? 'RECIBO DE CAJA' : 'COMPROBANTE DE CAJA'}</h1>
+        <h1>${doc.tipo === 'RECIBO' ? 'RECIBO DE CAJA' : doc.tipo === 'NOTA_CREDITO' ? 'NOTA CRÉDITO' : 'COMPROBANTE DE CAJA'}</h1>
         <div class="muted">${doc.numero}</div>
         <hr />
         <div class="linea"><span>Fecha</span><span>${fecha}</span></div>
         <div class="linea"><span>Concepto</span><span>${doc.concepto}</span></div>
-        ${doc.personaRelacionada ? `<div class="linea"><span>${doc.tipo === 'RECIBO' ? 'Recibido de' : 'Pagado a'}</span><span>${doc.personaRelacionada}</span></div>` : ''}
+        ${doc.personaRelacionada ? `<div class="linea"><span>${doc.tipo === 'RECIBO' ? 'Recibido de' : doc.tipo === 'NOTA_CREDITO' ? 'Cliente' : 'Pagado a'}</span><span>${doc.personaRelacionada}</span></div>` : ''}
         <div class="linea"><span>Método de pago</span><span>${doc.metodoPago}</span></div>
         ${doc.detalle ? `<div class="linea"><span>Detalle</span><span>${doc.detalle}</span></div>` : ''}
         <div class="linea"><span>Emitido por</span><span>${doc.usuario}</span></div>
