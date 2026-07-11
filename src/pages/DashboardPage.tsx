@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
-  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import { useAuthStore } from '@/stores/authStore';
 import { useSucursales } from '@/hooks/useSucursales';
@@ -191,7 +191,7 @@ export default function DashboardPage() {
   );
 }
 
-function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <section>
       <h2 className="mb-3 font-display text-base font-semibold text-ink-800">{titulo}</h2>
@@ -242,7 +242,7 @@ function GraficoBarras({
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
             <XAxis type="number" hide />
             <YAxis type="category" dataKey="nombre" width={100} tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(v: number) => (formatoMoneda ? money(v) : v)} />
+            <Tooltip formatter={(valor) => (formatoMoneda ? money(Number(valor)) : valor)} />
             <Bar dataKey="valor" fill="#0f172a" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -260,12 +260,13 @@ function GraficoTorta({ titulo, datos }: { titulo: string; datos: { nombre: stri
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>
-            <Pie data={datos} dataKey="valor" nameKey="nombre" outerRadius={80} label={(d) => d.nombre}>
+            <Pie data={datos} dataKey="valor" nameKey="nombre" outerRadius={80}>
               {datos.map((_, i) => (
                 <Cell key={i} fill={COLORES[i % COLORES.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(v: number) => money(v)} />
+            <Tooltip formatter={(valor) => money(Number(valor))} />
+            <Legend />
           </PieChart>
         </ResponsiveContainer>
       )}

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText, Wrench, Package2 } from 'lucide-react';
 import { useProductos } from '@/hooks/useInventario';
 import { useCombos } from '@/hooks/useCombos';
@@ -160,7 +160,7 @@ export function VenderTab() {
 
   /** Con un lector de código de barras (o al escribir un código exacto y dar Enter), si
    *  la búsqueda deja un solo artículo visible, se agrega directo sin soltar el teclado. */
-  function manejarEnterBusqueda(e: React.KeyboardEvent<HTMLInputElement>) {
+  function manejarEnterBusqueda(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key !== 'Enter' || itemsVisibles.length !== 1) return;
     agregarItem(itemsVisibles[0]);
     setBusqueda('');
