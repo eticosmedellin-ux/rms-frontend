@@ -26,6 +26,9 @@ export const listarClientes = async (): Promise<Cliente[]> =>
 export const crearCliente = async (data: ClienteRequest): Promise<Cliente> =>
   (await apiClient.post<Cliente>('/clientes', data)).data;
 
+export const actualizarCliente = async (id: number, data: ClienteRequest): Promise<Cliente> =>
+  (await apiClient.put<Cliente>(`/clientes/${id}`, data)).data;
+
 export const obtenerEstadoCuentaCliente = async (clienteId: number): Promise<EstadoCuentaCliente> =>
   (await apiClient.get<EstadoCuentaCliente>(`/clientes/${clienteId}/estado-cuenta`)).data;
 

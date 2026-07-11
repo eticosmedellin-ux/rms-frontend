@@ -31,6 +31,14 @@ export function useCrearCliente() {
   });
 }
 
+export function useActualizarCliente() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ClienteRequest }) => posApi.actualizarCliente(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clientes'] }),
+  });
+}
+
 // --- Caja ---
 export function useCajaAbierta(sucursalId: number | null) {
   return useQuery({

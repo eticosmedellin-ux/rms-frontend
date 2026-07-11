@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Plus, FileSpreadsheet } from 'lucide-react';
-import { useClientes, useCrearCliente } from '@/hooks/usePos';
+import { useEffect, useState } from 'react';
+import { Plus, Pencil, FileSpreadsheet } from 'lucide-react';
+import { useClientes, useCrearCliente, useActualizarCliente } from '@/hooks/usePos';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
@@ -8,12 +8,24 @@ import { useEmpresa } from '@/hooks/useGestion';
 import { obtenerEstadoCuentaCliente } from '@/api/pos';
 import { abrirEstadoCuenta } from '@/lib/estadoCuenta';
 import type { Empresa } from '@/types/gestion';
+import type { Cliente } from '@/types/pos';
 
 export function ClientesTab() {
   const { data: clientes, isLoading } = useClientes();
   const { data: empresa } = useEmpresa();
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [editando, setEditando] = useState<Cliente | null>(null);
   const [cargandoEstadoId, setCargandoEstadoId] = useState<number | null>(null);
+
+  function abrirCrear() {
+    setEditando(null);
+    setModalAbierto(true);
+  }
+
+  function abrirEditar(c: Cliente) {
+    setEditando(c);
+    setModalAbierto(true);
+  }
 
   async function verEstadoCuenta(clienteId: number, empresaActual: Empresa) {
     setCargandoEstadoId(clienteId);
@@ -33,7 +45,7 @@ export function ClientesTab() {
           {clientes?.length === 1 ? '' : 's'}
         </p>
         <button
-          onClick={() => setModalAbierto(true)}
+          onClick={abrirCrear}
           className="flex items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
         >
           <Plus size={16} />
@@ -51,6 +63,7 @@ export function ClientesTab() {
                 <th className="px-4 py-3 text-left font-medium">Nombre</th>
                 <th className="px-4 py-3 text-left font-medium">Documento</th>
                 <th className="px-4 py-3 text-left font-medium">Teléfono</th>
+                <th className="px-4 py-3 text-left font-medium">Correo</th>
                 <th className="px-4 py-3 text-right font-medium">Límite crédito</th>
                 <th className="px-4 py-3 text-right font-medium">Saldo pendiente</th>
                 <th className="px-4 py-3 text-right font-medium">Acciones</th>
@@ -62,21 +75,31 @@ export function ClientesTab() {
                   <td className="px-4 py-3 font-medium text-ink-800">{c.nombre}</td>
                   <td className="px-4 py-3 text-ink-500">{c.documento ?? '—'}</td>
                   <td className="px-4 py-3 text-ink-500">{c.telefono ?? '—'}</td>
+                  <td className="px-4 py-3 text-ink-500">{c.email ?? <span className="text-ink-300">Sin correo</span>}</td>
                   <td className="px-4 py-3 text-right text-ink-700">${c.limiteCredito.toLocaleString('es-CO')}</td>
                   <td className={`px-4 py-3 text-right font-medium ${c.saldoPendiente > 0 ? 'text-amber-600' : 'text-ink-700'}`}>
                     ${c.saldoPendiente.toLocaleString('es-CO')}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {empresa && (
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
                       <button
-                        onClick={() => verEstadoCuenta(c.id, empresa)}
-                        disabled={cargandoEstadoId === c.id}
-                        title="Ver / imprimir estado de cuenta"
-                        className="inline-flex items-center gap-1 rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700 disabled:opacity-50"
+                        onClick={() => abrirEditar(c)}
+                        title="Editar cliente"
+                        className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                       >
-                        <FileSpreadsheet size={16} />
+                        <Pencil size={16} />
                       </button>
-                    )}
+                      {empresa && (
+                        <button
+                          onClick={() => verEstadoCuenta(c.id, empresa)}
+                          disabled={cargandoEstadoId === c.id}
+                          title="Ver / imprimir estado de cuenta"
+                          className="inline-flex items-center gap-1 rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700 disabled:opacity-50"
+                        >
+                          <FileSpreadsheet size={16} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -87,41 +110,76 @@ export function ClientesTab() {
         <EmptyState title="Todavía no tienes clientes" description="Crea el primero para poder venderle a crédito." />
       )}
 
-      <ClienteFormModal isOpen={modalAbierto} onClose={() => setModalAbierto(false)} />
+      <ClienteFormModal isOpen={modalAbierto} onClose={() => setModalAbierto(false)} editando={editando} />
     </div>
   );
 }
 
-function ClienteFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function ClienteFormModal({
+  isOpen,
+  onClose,
+  editando,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  editando: Cliente | null;
+}) {
   const crear = useCrearCliente();
+  const actualizar = useActualizarCliente();
   const [nombre, setNombre] = useState('');
   const [documento, setDocumento] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [email, setEmail] = useState('');
+  const [direccion, setDireccion] = useState('');
   const [limiteCredito, setLimiteCredito] = useState('0');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editando) {
+      setNombre(editando.nombre);
+      setDocumento(editando.documento ?? '');
+      setTelefono(editando.telefono ?? '');
+      setEmail(editando.email ?? '');
+      setDireccion(editando.direccion ?? '');
+      setLimiteCredito(String(editando.limiteCredito));
+    } else {
+      setNombre('');
+      setDocumento('');
+      setTelefono('');
+      setEmail('');
+      setDireccion('');
+      setLimiteCredito('0');
+    }
+    setError(null);
+  }, [editando, isOpen]);
 
   async function handleSubmit() {
     setError(null);
     if (!nombre.trim()) return;
+    const data = {
+      nombre,
+      documento: documento || undefined,
+      telefono: telefono || undefined,
+      email: email || undefined,
+      direccion: direccion || undefined,
+      limiteCredito: Number(limiteCredito) || 0,
+    };
     try {
-      await crear.mutateAsync({
-        nombre,
-        documento: documento || undefined,
-        telefono: telefono || undefined,
-        limiteCredito: Number(limiteCredito) || 0,
-      });
-      setNombre('');
-      setDocumento('');
-      setTelefono('');
-      setLimiteCredito('0');
+      if (editando) {
+        await actualizar.mutateAsync({ id: editando.id, data });
+      } else {
+        await crear.mutateAsync(data);
+      }
       onClose();
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar el cliente'));
     }
   }
 
+  const pendiente = crear.isPending || actualizar.isPending;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Nuevo cliente">
+    <Modal isOpen={isOpen} onClose={onClose} title={editando ? 'Editar cliente' : 'Nuevo cliente'}>
       <div className="space-y-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-ink-700">Nombre</span>
@@ -138,6 +196,20 @@ function ClienteFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </label>
         </div>
         <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Correo electrónico</span>
+          <input
+            type="email"
+            className="input"
+            placeholder="Para poder enviarle la factura"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Dirección</span>
+          <input className="input" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
+        </label>
+        <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-ink-700">Límite de crédito</span>
           <input type="number" className="input" value={limiteCredito} onChange={(e) => setLimiteCredito(e.target.value)} />
         </label>
@@ -150,7 +222,7 @@ function ClienteFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </button>
           <button
             onClick={handleSubmit}
-            disabled={crear.isPending || !nombre.trim()}
+            disabled={pendiente || !nombre.trim()}
             className="rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
           >
             Guardar
