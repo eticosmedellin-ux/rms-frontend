@@ -72,6 +72,17 @@ export function useStockPorProducto(productoId: number | null) {
   });
 }
 
+/** Stock de TODOS los productos en una sucursal de una sola vez — usado en el POS para
+ *  mostrar disponibilidad en tiempo real sin tener que consultar producto por producto. */
+export function useStockSucursal(sucursalId: number | null) {
+  return useQuery({
+    queryKey: ['stock', 'sucursal', sucursalId],
+    queryFn: () => inventarioApi.stockPorSucursal(sucursalId as number),
+    enabled: sucursalId !== null,
+    refetchInterval: 15_000, // se refresca solo cada 15s mientras el POS esté abierto
+  });
+}
+
 export function useKardex(productoId: number | null, sucursalId: number | null) {
   return useQuery({
     queryKey: ['kardex', productoId, sucursalId],

@@ -46,6 +46,8 @@ export const actualizarImagenProducto = async (id: number, imagen: string): Prom
   (await apiClient.put<Producto>(`/productos/${id}/imagen`, { imagen })).data;
 
 // --- Stock y Kardex ---
+export const stockPorSucursal = async (sucursalId: number): Promise<StockPorSucursal[]> =>
+  (await apiClient.get<StockPorSucursal[]>(`/inventario/stock/sucursal/${sucursalId}`)).data;
 export const obtenerStockPorProducto = async (productoId: number): Promise<StockPorSucursal[]> =>
   (await apiClient.get<StockPorSucursal[]>(`/inventario/stock/producto/${productoId}`)).data;
 

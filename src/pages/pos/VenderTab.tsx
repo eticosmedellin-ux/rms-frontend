@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText, Wrench, Package2 } from 'lucide-react';
-import { useProductos } from '@/hooks/useInventario';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText, Wrench, Package2, XCircle } from 'lucide-react';
+import { useProductos, useStockSucursal } from '@/hooks/useInventario';
 import { useCombos } from '@/hooks/useCombos';
 import { useClientes } from '@/hooks/usePos';
 import { useCajaAbierta, useRegistrarVenta } from '@/hooks/usePos';
@@ -21,6 +21,8 @@ interface ItemVendible {
   imagen: string | null;
   manejaInventario: boolean;
   codigoInterno: string;
+  stock: number | null; // null = no aplica (servicio o combo)
+  stockBajo: boolean;
 }
 
 interface LineaCarrito {
@@ -39,6 +41,19 @@ interface LineaPago {
 
 type ModoDescuento = 'NINGUNO' | 'LINEA' | 'FACTURA';
 
+interface VentaEnProceso {
+  carrito: LineaCarrito[];
+  pagos: LineaPago[];
+  clienteId: string;
+  modoDescuento: ModoDescuento;
+  tipoDescuentoFacturaId: number | null;
+  facturarVenta: boolean;
+}
+
+function claveVentaEnProceso(sucursalId: number) {
+  return `pos-venta-en-proceso-${sucursalId}`;
+}
+
 /** Solo para PREVISUALIZAR en pantalla — el backend siempre recalcula esto desde el
  *  catálogo real antes de guardar la venta, nunca confía en lo que se muestra aquí. */
 function calcularDescuentoLinea(linea: LineaCarrito, catalogo: TipoDescuento[]): number {
@@ -55,6 +70,7 @@ export function VenderTab() {
   const { data: caja } = useCajaAbierta(sucursalId);
   const { data: productos } = useProductos();
   const { data: combos } = useCombos();
+  const { data: stockSucursal } = useStockSucursal(sucursalId);
   const { data: clientes } = useClientes();
   const { data: tiposDescuento } = useTiposDescuento();
   const { data: empresa } = useEmpresa();
@@ -72,6 +88,57 @@ export function VenderTab() {
   const [modoDescuento, setModoDescuento] = useState<ModoDescuento>('NINGUNO');
   const [tipoDescuentoFacturaId, setTipoDescuentoFacturaId] = useState<number | null>(null);
   const [facturarVenta, setFacturarVenta] = useState(true);
+  const [recuperada, setRecuperada] = useState(false);
+  const restauradoRef = useRef(false);
+
+  // Recuperación automática: si había una venta en proceso en esta sucursal (se cambió de
+  // pantalla, se recargó la página, etc.), se restaura sola al volver al POS.
+  useEffect(() => {
+    if (!sucursalId || restauradoRef.current) return;
+    restauradoRef.current = true;
+    try {
+      const guardado = window.localStorage.getItem(claveVentaEnProceso(sucursalId));
+      if (guardado) {
+        const datos: VentaEnProceso = JSON.parse(guardado);
+        if (datos.carrito?.length > 0) {
+          setCarrito(datos.carrito);
+          setPagos(datos.pagos ?? [{ metodoPago: 'EFECTIVO', monto: '' }]);
+          setClienteId(datos.clienteId ?? '');
+          setModoDescuento(datos.modoDescuento ?? 'NINGUNO');
+          setTipoDescuentoFacturaId(datos.tipoDescuentoFacturaId ?? null);
+          setFacturarVenta(datos.facturarVenta ?? true);
+          setRecuperada(true);
+        }
+      }
+    } catch {
+      // localStorage no disponible o dato corrupto — se ignora, simplemente no se restaura nada
+    }
+  }, [sucursalId]);
+
+  // Persistencia automática: cada cambio en la venta en proceso se guarda de inmediato.
+  useEffect(() => {
+    if (!sucursalId || !restauradoRef.current) return;
+    try {
+      if (carrito.length === 0) {
+        window.localStorage.removeItem(claveVentaEnProceso(sucursalId));
+      } else {
+        const datos: VentaEnProceso = { carrito, pagos, clienteId, modoDescuento, tipoDescuentoFacturaId, facturarVenta };
+        window.localStorage.setItem(claveVentaEnProceso(sucursalId), JSON.stringify(datos));
+      }
+    } catch {
+      // si el navegador bloquea localStorage, simplemente no persiste — no rompe la venta actual
+    }
+  }, [sucursalId, carrito, pagos, clienteId, modoDescuento, tipoDescuentoFacturaId, facturarVenta]);
+
+  function cancelarVenta() {
+    setCarrito([]);
+    setPagos([{ metodoPago: 'EFECTIVO', monto: '' }]);
+    setClienteId('');
+    cambiarModoDescuento('NINGUNO');
+    setError(null);
+    setRecuperada(false);
+    if (sucursalId) window.localStorage.removeItem(claveVentaEnProceso(sucursalId));
+  }
 
   const catalogo = tiposDescuento ?? [];
   const opcionesLinea = useMemo(
@@ -84,18 +151,31 @@ export function VenderTab() {
   );
 
   // Productos y combos activos, unidos en una sola lista vendible.
+  const stockPorProducto = useMemo(() => {
+    const mapa = new Map<number, { stock: number; bajo: boolean }>();
+    for (const s of stockSucursal ?? []) {
+      mapa.set(s.productoId, { stock: s.stockActual, bajo: s.stockBajo });
+    }
+    return mapa;
+  }, [stockSucursal]);
+
   const itemsVendibles = useMemo<ItemVendible[]>(() => {
     const productosItems: ItemVendible[] = (productos ?? [])
       .filter((p) => p.estado)
-      .map((p) => ({
-        tipo: 'PRODUCTO',
-        id: p.id,
-        nombre: p.nombre,
-        precioVenta: p.precioVenta,
-        imagen: p.imagen,
-        manejaInventario: p.manejaInventario,
-        codigoInterno: p.codigoInterno,
-      }));
+      .map((p) => {
+        const stockInfo = p.manejaInventario ? stockPorProducto.get(p.id) : undefined;
+        return {
+          tipo: 'PRODUCTO',
+          id: p.id,
+          nombre: p.nombre,
+          precioVenta: p.precioVenta,
+          imagen: p.imagen,
+          manejaInventario: p.manejaInventario,
+          codigoInterno: p.codigoInterno,
+          stock: stockInfo ? stockInfo.stock : null,
+          stockBajo: stockInfo?.bajo ?? false,
+        };
+      });
     const combosItems: ItemVendible[] = (combos ?? [])
       .filter((c) => c.estado)
       .map((c) => ({
@@ -106,9 +186,11 @@ export function VenderTab() {
         imagen: null,
         manejaInventario: false,
         codigoInterno: c.codigo,
+        stock: null,
+        stockBajo: false,
       }));
     return [...productosItems, ...combosItems];
-  }, [productos, combos]);
+  }, [productos, combos, stockPorProducto]);
 
   const itemsVisibles = useMemo(() => {
     if (!busqueda.trim()) return itemsVendibles;
@@ -249,6 +331,8 @@ export function VenderTab() {
       setClienteId('');
       setPagos([{ metodoPago: 'EFECTIVO', monto: '' }]);
       cambiarModoDescuento('NINGUNO');
+      setRecuperada(false);
+      if (sucursalId) window.localStorage.removeItem(claveVentaEnProceso(sucursalId));
       busquedaInputRef.current?.focus();
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo registrar la venta'));
@@ -329,6 +413,15 @@ export function VenderTab() {
                   )}
                 </p>
                 <p className="text-sm font-semibold text-ink-600">${item.precioVenta.toLocaleString('es-CO')}</p>
+                {item.stock !== null && (
+                  <p
+                    className={`mt-0.5 text-[11px] font-medium ${
+                      item.stock <= 0 ? 'text-danger-500' : item.stockBajo ? 'text-amber-600' : 'text-ink-400'
+                    }`}
+                  >
+                    {item.stock <= 0 ? 'Agotado' : `Stock: ${item.stock}`}
+                  </p>
+                )}
               </button>
             ))}
           </div>
@@ -342,10 +435,28 @@ export function VenderTab() {
 
       {/* Carrito */}
       <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
-        <h3 className="mb-3 flex items-center gap-2 font-display text-base font-semibold text-ink-800">
-          <ShoppingCart size={18} />
-          Carrito
-        </h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 font-display text-base font-semibold text-ink-800">
+            <ShoppingCart size={18} />
+            Carrito
+          </h3>
+          {carrito.length > 0 && (
+            <button
+              onClick={cancelarVenta}
+              title="Cancelar venta y vaciar el carrito"
+              className="flex items-center gap-1 text-xs font-medium text-ink-400 hover:text-danger-500"
+            >
+              <XCircle size={14} />
+              Cancelar venta
+            </button>
+          )}
+        </div>
+
+        {recuperada && (
+          <div className="mb-3 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-700">
+            Recuperamos la venta que tenías en proceso en esta sucursal.
+          </div>
+        )}
 
         <div className="max-h-64 space-y-3 overflow-y-auto">
           {carrito.map((l) => (
@@ -356,7 +467,19 @@ export function VenderTab() {
                     {l.nombre}
                     {l.tipo === 'COMBO' && <span className="ml-1 text-[10px] text-violet-600">(combo)</span>}
                   </p>
-                  <p className="text-xs text-ink-400">${l.precioUnitario.toLocaleString('es-CO')} c/u</p>
+                  <p className="text-xs text-ink-400">
+                    ${l.precioUnitario.toLocaleString('es-CO')} c/u
+                    {l.tipo === 'PRODUCTO' &&
+                      stockPorProducto.has(l.itemId) &&
+                      (() => {
+                        const s = stockPorProducto.get(l.itemId)!;
+                        return (
+                          <span className={`ml-2 ${s.stock < l.cantidad ? 'font-medium text-danger-500' : ''}`}>
+                            (stock: {s.stock})
+                          </span>
+                        );
+                      })()}
+                  </p>
                 </div>
                 <input
                   type="number"
