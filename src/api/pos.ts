@@ -55,6 +55,10 @@ export const registrarMovimientoCaja = async (
 // --- Ventas ---
 export const listarVentas = async (): Promise<Venta[]> => (await apiClient.get<Venta[]>('/ventas')).data;
 
+export const enviarFacturaPorCorreo = async (ventaId: number): Promise<void> => {
+  await apiClient.post(`/ventas/${ventaId}/enviar-factura`);
+};
+
 export const listarVentasPaginado = async (pagina: number, tamano: number): Promise<PaginaResponse<Venta>> =>
   (await apiClient.get<PaginaResponse<Venta>>('/ventas/paginado', { params: { pagina, tamano } })).data;
 

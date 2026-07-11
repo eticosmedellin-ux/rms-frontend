@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download } from 'lucide-react';
-import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica } from '@/hooks/usePos';
+import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail } from 'lucide-react';
+import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica, useEnviarFacturaPorCorreo } from '@/hooks/usePos';
 import { useEmpresa } from '@/hooks/useGestion';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { DevolucionModal } from '@/pages/pos/DevolucionModal';
@@ -122,6 +122,7 @@ export function VentasTab() {
                         <CircleDollarSign size={16} />
                       </button>
                     )}
+                    <BotonEnviarCorreo venta={v} />
                   </div>
                 </td>
               </tr>
@@ -218,5 +219,40 @@ function EstadoDian({ venta }: { venta: Venta }) {
       {estado.mensaje && <p className="mt-0.5 max-w-[220px] text-[11px] text-ink-400">{estado.mensaje}</p>}
       {error && <p className="mt-0.5 text-[11px] text-danger-500">{error}</p>}
     </div>
+  );
+}
+
+/** Manda por correo la factura (o el comprobante, si no se facturó) al cliente de la venta. */
+function BotonEnviarCorreo({ venta }: { venta: Venta }) {
+  const enviar = useEnviarFacturaPorCorreo();
+  const [estado, setEstado] = useState<'idle' | 'ok' | 'error'>('idle');
+  const [mensajeError, setMensajeError] = useState<string | null>(null);
+
+  if (venta.cliente === 'Mostrador') return null;
+
+  async function handleClick() {
+    setEstado('idle');
+    setMensajeError(null);
+    try {
+      await enviar.mutateAsync(venta.id);
+      setEstado('ok');
+      setTimeout(() => setEstado('idle'), 3000);
+    } catch (err) {
+      setEstado('error');
+      setMensajeError(getApiErrorMessage(err, 'No se pudo enviar el correo'));
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={enviar.isPending}
+      title={mensajeError ?? 'Enviar factura por correo al cliente'}
+      className={`rounded-lg p-1.5 hover:bg-ink-100 ${
+        estado === 'ok' ? 'text-success-600' : estado === 'error' ? 'text-danger-500' : 'text-ink-400 hover:text-ink-700'
+      }`}
+    >
+      {enviar.isPending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+    </button>
   );
 }

@@ -62,4 +62,5 @@ export interface SucursalRequest {
   telefono?: string;
   montoMaximoEfectivo?: number | null;
   alertaEfectivoActiva?: boolean;
+  emailNotificaciones?: string | null;
 }

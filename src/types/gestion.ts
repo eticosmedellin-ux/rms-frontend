@@ -33,6 +33,7 @@ export type TipoAlerta =
   | 'COMPRA_PENDIENTE'
   | 'CAJA_SIN_CERRAR'
   | 'CXP_POR_VENCER'
+  | 'CXC_POR_VENCER'
   | 'EFECTIVO_MAXIMO_CAJA';
 
 export interface Alerta {

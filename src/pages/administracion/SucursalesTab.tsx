@@ -102,6 +102,7 @@ function SucursalFormModal({
   const [telefono, setTelefono] = useState('');
   const [montoMaximoEfectivo, setMontoMaximoEfectivo] = useState('');
   const [alertaEfectivoActiva, setAlertaEfectivoActiva] = useState(true);
+  const [emailNotificaciones, setEmailNotificaciones] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -111,12 +112,14 @@ function SucursalFormModal({
       setTelefono(editando.telefono ?? '');
       setMontoMaximoEfectivo(editando.montoMaximoEfectivo ? String(editando.montoMaximoEfectivo) : '');
       setAlertaEfectivoActiva(editando.alertaEfectivoActiva);
+      setEmailNotificaciones(editando.emailNotificaciones ?? '');
     } else {
       setNombre('');
       setDireccion('');
       setTelefono('');
       setMontoMaximoEfectivo('');
       setAlertaEfectivoActiva(true);
+      setEmailNotificaciones('');
     }
     setError(null);
   }, [editando, isOpen]);
@@ -131,6 +134,7 @@ function SucursalFormModal({
       telefono: telefono || undefined,
       montoMaximoEfectivo: montoMaximoEfectivo ? Number(montoMaximoEfectivo) : null,
       alertaEfectivoActiva,
+      emailNotificaciones: emailNotificaciones || null,
     };
 
     try {
@@ -193,6 +197,23 @@ function SucursalFormModal({
             No limita las ventas — solo genera una alerta recomendando consignar o transferir el excedente.
           </p>
         </div>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">
+            Correo para avisos de esta sucursal (opcional)
+          </span>
+          <input
+            type="email"
+            className="input"
+            placeholder="Ej: gerente@tunegocio.com"
+            value={emailNotificaciones}
+            onChange={(e) => setEmailNotificaciones(e.target.value)}
+          />
+          <span className="mt-1 block text-xs text-ink-400">
+            Ahí llegarán los avisos de stock bajo, cuentas por vencer, caja sin cerrar, etc. Si lo dejas vacío, esta
+            sucursal no recibe esos correos.
+          </span>
+        </label>
 
         {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
 

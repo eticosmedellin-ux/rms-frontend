@@ -85,6 +85,10 @@ export function useVentas() {
   return useQuery({ queryKey: ['ventas'], queryFn: posApi.listarVentas });
 }
 
+export function useEnviarFacturaPorCorreo() {
+  return useMutation({ mutationFn: (ventaId: number) => posApi.enviarFacturaPorCorreo(ventaId) });
+}
+
 export function useVentasPaginado(pagina: number, tamano: number) {
   return useQuery({
     queryKey: ['ventas-paginado', pagina, tamano],
