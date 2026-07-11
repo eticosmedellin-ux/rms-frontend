@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Undo2, FileText, Send, Loader2, CircleDollarSign } from 'lucide-react';
-import { useVentas, useFacturaElectronica, useEnviarFacturaElectronica } from '@/hooks/usePos';
+import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica } from '@/hooks/usePos';
 import { useEmpresa } from '@/hooks/useGestion';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { DevolucionModal } from '@/pages/pos/DevolucionModal';
 import { NotaDebitoModal } from '@/pages/pos/NotaDebitoModal';
 import { abrirFactura } from '@/lib/factura';
 import { getApiErrorMessage } from '@/api/errors';
+import { descargarArchivo } from '@/lib/descargarArchivo';
 import type { Venta } from '@/types/pos';
 import type { EstadoFacturaElectronica } from '@/types/gestion';
 
@@ -28,19 +29,42 @@ const ESTADO_DIAN_TONO: Record<EstadoFacturaElectronica, string> = {
   NO_APLICA: 'bg-ink-50 text-ink-300',
 };
 
+const TAMANO_PAGINA = 25;
+
 export function VentasTab() {
-  const { data: ventas, isLoading } = useVentas();
+  const [pagina, setPagina] = useState(0);
+  const { data: paginaVentas, isLoading } = useVentasPaginado(pagina, TAMANO_PAGINA);
   const { data: empresa } = useEmpresa();
   const [ventaDevolviendo, setVentaDevolviendo] = useState<Venta | null>(null);
   const [ventaNotaDebito, setVentaNotaDebito] = useState<Venta | null>(null);
 
   if (isLoading) return <LoadingState />;
-  if (!ventas || ventas.length === 0) {
+  const ventas = paginaVentas?.contenido ?? [];
+  if (ventas.length === 0 && pagina === 0) {
     return <EmptyState title="Sin ventas registradas todavía" description="Ve a la pestaña 'Vender' para registrar la primera." />;
   }
 
   return (
     <div>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm text-ink-400">
+          {paginaVentas?.totalElementos ?? 0} venta{paginaVentas?.totalElementos === 1 ? '' : 's'} en total
+        </p>
+        <button
+          onClick={() =>
+            descargarArchivo(
+              '/reportes/ventas/exportar',
+              'ventas.xlsx',
+              { desde: '2000-01-01', hasta: new Date().toISOString().slice(0, 10) }
+            )
+          }
+          className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50"
+        >
+          <Download size={14} />
+          Exportar a Excel
+        </button>
+      </div>
+
       <div className="overflow-x-auto rounded-xl border border-ink-100 bg-white shadow-card">
         <table className="w-full text-sm">
           <thead className="border-b border-ink-100 bg-ink-50 text-xs text-ink-500">
@@ -105,6 +129,30 @@ export function VentasTab() {
           </tbody>
         </table>
       </div>
+
+      {paginaVentas && paginaVentas.totalPaginas > 1 && (
+        <div className="mt-3 flex items-center justify-between text-sm text-ink-500">
+          <button
+            onClick={() => setPagina((p) => Math.max(0, p - 1))}
+            disabled={pagina === 0}
+            className="flex items-center gap-1 rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium hover:bg-ink-50 disabled:opacity-40"
+          >
+            <ChevronLeft size={14} />
+            Anterior
+          </button>
+          <span>
+            Página {pagina + 1} de {paginaVentas.totalPaginas}
+          </span>
+          <button
+            onClick={() => setPagina((p) => Math.min(paginaVentas.totalPaginas - 1, p + 1))}
+            disabled={pagina >= paginaVentas.totalPaginas - 1}
+            className="flex items-center gap-1 rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium hover:bg-ink-50 disabled:opacity-40"
+          >
+            Siguiente
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
 
       <DevolucionModal
         isOpen={ventaDevolviendo !== null}

@@ -7,12 +7,17 @@ import { getApiErrorMessage } from '@/api/errors';
 import type { Venta, DevolucionVentaResponse } from '@/types/pos';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 
+/** Clave compuesta para no mezclar cantidades de productos y de combos (los ids se pisarían). */
+function clave(tipo: 'p' | 'c', id: number) {
+  return `${tipo}-${id}`;
+}
+
 export function DevolucionModal({ isOpen, onClose, venta }: { isOpen: boolean; onClose: () => void; venta: Venta | null }) {
   const registrar = useRegistrarDevolucion();
   const { sucursalId } = usePosStore();
   const { data: caja } = useCajaAbierta(sucursalId);
   const [motivo, setMotivo] = useState('');
-  const [cantidades, setCantidades] = useState<Record<number, string>>({});
+  const [cantidades, setCantidades] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<DevolucionVentaResponse | null>(null);
 
@@ -23,10 +28,15 @@ export function DevolucionModal({ isOpen, onClose, venta }: { isOpen: boolean; o
     if (!venta) return;
     const detalles = Object.entries(cantidades)
       .filter(([, cantidad]) => Number(cantidad) > 0)
-      .map(([productoId, cantidad]) => ({ productoId: Number(productoId), cantidad: Number(cantidad) }));
+      .map(([k, cantidad]) => {
+        const [tipo, id] = k.split('-');
+        return tipo === 'p'
+          ? { productoId: Number(id), cantidad: Number(cantidad) }
+          : { comboId: Number(id), cantidad: Number(cantidad) };
+      });
 
     if (!motivo.trim() || detalles.length === 0) {
-      setError('Indica el motivo y la cantidad a devolver de al menos un producto');
+      setError('Indica el motivo y la cantidad a devolver de al menos un producto o combo');
       return;
     }
 
@@ -97,29 +107,35 @@ export function DevolucionModal({ isOpen, onClose, venta }: { isOpen: boolean; o
         </label>
 
         <div>
-          <p className="mb-2 text-sm font-medium text-ink-700">¿Cuánto se devuelve de cada producto?</p>
+          <p className="mb-2 text-sm font-medium text-ink-700">¿Cuánto se devuelve de cada artículo?</p>
           <div className="space-y-2">
-            {venta.detalles.filter((d) => d.productoId !== null).map((d) => (
-              <div key={d.productoId} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-ink-700">
-                  {d.producto} <span className="text-ink-400">(vendidos: {d.cantidad})</span>
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={d.cantidad}
-                  className="w-24 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
-                  value={cantidades[d.productoId!] ?? ''}
-                  onChange={(e) => setCantidades((prev) => ({ ...prev, [d.productoId!]: e.target.value }))}
-                />
-              </div>
-            ))}
+            {venta.detalles.map((d) => {
+              const esCombo = d.esCombo && d.comboId !== null;
+              const id = esCombo ? d.comboId! : d.productoId;
+              if (id === null) return null;
+              const k = clave(esCombo ? 'c' : 'p', id);
+              return (
+                <div key={k} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-ink-700">
+                    {d.producto}
+                    {esCombo && <span className="ml-1.5 text-[10px] text-violet-600">(combo)</span>}{' '}
+                    <span className="text-ink-400">(vendidos: {d.cantidad})</span>
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={d.cantidad}
+                    className="w-24 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
+                    value={cantidades[k] ?? ''}
+                    onChange={(e) => setCantidades((prev) => ({ ...prev, [k]: e.target.value }))}
+                  />
+                </div>
+              );
+            })}
           </div>
-          {venta.detalles.some((d) => d.esCombo) && (
-            <p className="mt-2 text-xs text-amber-600">
-              Esta venta incluye combos — todavía no se pueden devolver individualmente, solo los productos sueltos.
-            </p>
-          )}
+          <p className="mt-2 text-xs text-ink-400">
+            Al devolver un combo, cada producto que lo compone vuelve a existencias automáticamente.
+          </p>
         </div>
 
         {venta.tipoVenta === 'CREDITO' ? (

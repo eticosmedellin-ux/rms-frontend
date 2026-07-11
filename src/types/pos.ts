@@ -74,6 +74,7 @@ export interface DocumentoCajaRequest {
 
 export interface VentaDetalleResponse {
   productoId: number | null;
+  comboId: number | null;
   producto: string;
   esCombo: boolean;
   cantidad: number;
@@ -81,6 +82,14 @@ export interface VentaDetalleResponse {
   descuentoLinea: number;
   tipoDescuentoNombre: string | null;
   subtotalLinea: number;
+}
+
+export interface PaginaResponse<T> {
+  contenido: T[];
+  pagina: number;
+  tamanoPagina: number;
+  totalElementos: number;
+  totalPaginas: number;
 }
 
 export interface Venta {
@@ -137,7 +146,7 @@ export interface VentaRequest {
 
 export interface DevolucionVentaRequest {
   motivo: string;
-  detalles: { productoId: number; cantidad: number }[];
+  detalles: { productoId?: number; comboId?: number; cantidad: number }[];
   cajaSesionId?: number | null;
 }
 
@@ -162,6 +171,24 @@ export interface CuentaPorCobrar {
   saldoPendiente: number;
   fechaVencimiento: string | null;
   estado: string;
+}
+
+export interface MovimientoCuenta {
+  fecha: string;
+  tipo: 'CARGO' | 'ABONO';
+  documento: string;
+  concepto: string;
+  cargo: number | null;
+  abono: number | null;
+  saldoAcumulado: number;
+}
+
+export interface EstadoCuentaCliente {
+  clienteId: number;
+  clienteNombre: string;
+  limiteCredito: number;
+  saldoActual: number;
+  movimientos: MovimientoCuenta[];
 }
 
 export interface NotaDebitoRequest {

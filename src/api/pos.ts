@@ -14,6 +14,8 @@ import type {
   CotizacionRequest,
   ConvertirCotizacionRequest,
   NotaDebitoRequest,
+  PaginaResponse,
+  EstadoCuentaCliente,
 } from '@/types/pos';
 import type { FacturaElectronicaEstado } from '@/types/gestion';
 
@@ -23,6 +25,9 @@ export const listarClientes = async (): Promise<Cliente[]> =>
 
 export const crearCliente = async (data: ClienteRequest): Promise<Cliente> =>
   (await apiClient.post<Cliente>('/clientes', data)).data;
+
+export const obtenerEstadoCuentaCliente = async (clienteId: number): Promise<EstadoCuentaCliente> =>
+  (await apiClient.get<EstadoCuentaCliente>(`/clientes/${clienteId}/estado-cuenta`)).data;
 
 // --- Caja ---
 export const obtenerCajaAbierta = async (sucursalId: number): Promise<CajaSesion | null> => {
@@ -49,6 +54,9 @@ export const registrarMovimientoCaja = async (
 
 // --- Ventas ---
 export const listarVentas = async (): Promise<Venta[]> => (await apiClient.get<Venta[]>('/ventas')).data;
+
+export const listarVentasPaginado = async (pagina: number, tamano: number): Promise<PaginaResponse<Venta>> =>
+  (await apiClient.get<PaginaResponse<Venta>>('/ventas/paginado', { params: { pagina, tamano } })).data;
 
 export const registrarVenta = async (data: VentaRequest): Promise<Venta> =>
   (await apiClient.post<Venta>('/ventas', data)).data;

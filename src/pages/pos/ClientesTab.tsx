@@ -1,13 +1,29 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, FileSpreadsheet } from 'lucide-react';
 import { useClientes, useCrearCliente } from '@/hooks/usePos';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
+import { useEmpresa } from '@/hooks/useGestion';
+import { obtenerEstadoCuentaCliente } from '@/api/pos';
+import { abrirEstadoCuenta } from '@/lib/estadoCuenta';
+import type { Empresa } from '@/types/gestion';
 
 export function ClientesTab() {
   const { data: clientes, isLoading } = useClientes();
+  const { data: empresa } = useEmpresa();
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [cargandoEstadoId, setCargandoEstadoId] = useState<number | null>(null);
+
+  async function verEstadoCuenta(clienteId: number, empresaActual: Empresa) {
+    setCargandoEstadoId(clienteId);
+    try {
+      const estado = await obtenerEstadoCuentaCliente(clienteId);
+      abrirEstadoCuenta(estado, empresaActual);
+    } finally {
+      setCargandoEstadoId(null);
+    }
+  }
 
   return (
     <div>
@@ -37,6 +53,7 @@ export function ClientesTab() {
                 <th className="px-4 py-3 text-left font-medium">Teléfono</th>
                 <th className="px-4 py-3 text-right font-medium">Límite crédito</th>
                 <th className="px-4 py-3 text-right font-medium">Saldo pendiente</th>
+                <th className="px-4 py-3 text-right font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-50">
@@ -48,6 +65,18 @@ export function ClientesTab() {
                   <td className="px-4 py-3 text-right text-ink-700">${c.limiteCredito.toLocaleString('es-CO')}</td>
                   <td className={`px-4 py-3 text-right font-medium ${c.saldoPendiente > 0 ? 'text-amber-600' : 'text-ink-700'}`}>
                     ${c.saldoPendiente.toLocaleString('es-CO')}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {empresa && (
+                      <button
+                        onClick={() => verEstadoCuenta(c.id, empresa)}
+                        disabled={cargandoEstadoId === c.id}
+                        title="Ver / imprimir estado de cuenta"
+                        className="inline-flex items-center gap-1 rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700 disabled:opacity-50"
+                      >
+                        <FileSpreadsheet size={16} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

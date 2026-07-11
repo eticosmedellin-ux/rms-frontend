@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Download } from 'lucide-react';
 import { useReporteVentas, useReporteUtilidad, useReporteValorInventario } from '@/hooks/useGestion';
 import { LoadingState } from '@/components/ui/States';
+import { descargarArchivo } from '@/lib/descargarArchivo';
 
 function primerDiaDelMes(): string {
   const d = new Date();
@@ -61,7 +63,18 @@ export default function ReportesPage() {
 
       {/* Reporte de utilidad */}
       <section className="mt-6">
-        <h2 className="mb-2 text-sm font-semibold text-ink-700">Utilidad</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink-700">Utilidad</h2>
+          {consultar && utilidad && (
+            <button
+              onClick={() => descargarArchivo('/reportes/utilidad/exportar', 'utilidad.xlsx', { desde, hasta })}
+              className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-50"
+            >
+              <Download size={13} />
+              Exportar a Excel
+            </button>
+          )}
+        </div>
         {!consultar ? (
           <p className="text-sm text-ink-400">—</p>
         ) : cargandoUtilidad ? (
@@ -83,7 +96,18 @@ export default function ReportesPage() {
 
       {/* Valor de inventario */}
       <section className="mt-6">
-        <h2 className="mb-2 text-sm font-semibold text-ink-700">Valor de inventario por sucursal</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink-700">Valor de inventario por sucursal</h2>
+          {valorInventario && valorInventario.length > 0 && (
+            <button
+              onClick={() => descargarArchivo('/reportes/inventario-valor/exportar', 'valor_inventario.xlsx')}
+              className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-50"
+            >
+              <Download size={13} />
+              Exportar a Excel
+            </button>
+          )}
+        </div>
         {cargandoInventario ? (
           <LoadingState />
         ) : valorInventario && valorInventario.length > 0 ? (

@@ -15,6 +15,14 @@ export function useClientes() {
   return useQuery({ queryKey: ['clientes'], queryFn: posApi.listarClientes });
 }
 
+export function useEstadoCuentaCliente(clienteId: number | null) {
+  return useQuery({
+    queryKey: ['estado-cuenta-cliente', clienteId],
+    queryFn: () => posApi.obtenerEstadoCuentaCliente(clienteId as number),
+    enabled: clienteId !== null,
+  });
+}
+
 export function useCrearCliente() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -75,6 +83,13 @@ export function useRegistrarMovimientoCaja() {
 // --- Ventas ---
 export function useVentas() {
   return useQuery({ queryKey: ['ventas'], queryFn: posApi.listarVentas });
+}
+
+export function useVentasPaginado(pagina: number, tamano: number) {
+  return useQuery({
+    queryKey: ['ventas-paginado', pagina, tamano],
+    queryFn: () => posApi.listarVentasPaginado(pagina, tamano),
+  });
 }
 
 export function useRegistrarVenta() {
