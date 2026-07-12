@@ -23,7 +23,10 @@ export default function OlvidePasswordPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink-50 px-6">
       <div className="w-full max-w-sm rounded-xl border border-ink-100 bg-white p-8 shadow-card">
-        <span className="font-display text-xl font-semibold tracking-tight text-ink-800">RMS</span>
+        <span className="font-display text-xl font-bold tracking-tight">
+          <span className="text-ink-900">SIC</span>
+          <span className="text-sicom-green">OM</span>
+        </span>
 
         {enviado ? (
           <div className="mt-6 text-center">

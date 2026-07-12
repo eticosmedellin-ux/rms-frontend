@@ -8,16 +8,16 @@ import { getApiErrorMessage } from '@/api/errors';
 import { useAuthStore } from '@/stores/authStore';
 import { loginSchema, type LoginFormValues } from '@/pages/login-schema';
 
-/** Los 5 chips que orbitan el hexágono — son exactamente los 5 íconos del logo de SICOM
- *  (Punto de venta, Inventario, Facturación electrónica, Reportes, Multiusuario y
- *  sucursales), no un adorno genérico. Posiciones calculadas en pentágono alrededor del
- *  centro (240,240) a radio 185, para que las líneas de circuito calcen exactas. */
-const CHIPS = [
-  { label: 'Punto de venta', icon: Store, x: 240, y: 55, delay: '0s' },
-  { label: 'Inventario', icon: Package, x: 416, y: 183, delay: '0.6s' },
-  { label: 'Facturación electrónica', icon: FileText, x: 349, y: 390, delay: '1.2s' },
-  { label: 'Reportes', icon: TrendingUp, x: 131, y: 390, delay: '1.8s' },
-  { label: 'Multiusuario y sucursales', icon: Users, x: 64, y: 183, delay: '2.4s' },
+/** Íconos grandes y difuminados flotando en el fondo — son los mismos 5 del logo de SICOM
+ *  (Punto de venta, Inventario, Facturación electrónica, Reportes, Multiusuario), no formas
+ *  abstractas genéricas. Cada uno con su propia posición, tamaño y color (navy o verde,
+ *  alternando como en la marca) para dar profundidad. */
+const ICONOS_FONDO = [
+  { Icono: Store, top: '8%', left: '10%', size: 120, color: 'text-sicom-greenLight', delay: '0s' },
+  { Icono: TrendingUp, top: '62%', left: '6%', size: 100, color: 'text-[#3B6FE0]', delay: '1.5s' },
+  { Icono: Package, top: '12%', left: '82%', size: 110, color: 'text-[#3B6FE0]', delay: '0.8s' },
+  { Icono: FileText, top: '68%', left: '84%', size: 130, color: 'text-sicom-greenLight', delay: '2.2s' },
+  { Icono: Users, top: '40%', left: '92%', size: 90, color: 'text-sicom-greenLight', delay: '3s' },
 ];
 
 export default function LoginPage() {
@@ -45,180 +45,122 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Panel de identidad — oculto en móvil, el foco ahí es el formulario */}
-      <div className="relative hidden w-1/2 overflow-hidden bg-[#0F1826] lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12">
-        {/* Resplandor ambiental de fondo, del mismo verde del logo */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-60"
-          style={{
-            background:
-              'radial-gradient(circle at 50% 42%, rgba(47,168,74,0.20), transparent 55%)',
-          }}
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12"
+      style={{
+        background:
+          'radial-gradient(circle at 20% 20%, #123a5e 0%, #0c2740 35%, #081a2c 65%, #061422 100%)',
+      }}
+    >
+      {/* Resplandores ambientales grandes, dan la sensación de profundidad del fondo tipo vidrio */}
+      <div
+        className="pointer-events-none absolute -left-24 -top-24 h-[26rem] w-[26rem] rounded-full bg-sicom-green/20 blur-[100px]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -bottom-32 -right-16 h-[30rem] w-[30rem] rounded-full bg-[#2E6FE0]/25 blur-[110px]"
+        aria-hidden="true"
+      />
+
+      {/* Hexágono real del logo, gigante y muy difuminado, como marca de agua ambiental */}
+      <img
+        src="/branding/sicom-hexagono.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-20 top-1/4 w-[26rem] rotate-12 opacity-[0.10] blur-sm motion-reduce:animate-none"
+        style={{ animation: 'sicom-breathe 7s ease-in-out infinite' }}
+      />
+
+      {/* Íconos del sistema flotando suave en el fondo */}
+      {ICONOS_FONDO.map(({ Icono, top, left, size, color, delay }, i) => (
+        <Icono
+          key={i}
           aria-hidden="true"
+          size={size}
+          className={`pointer-events-none absolute opacity-[0.16] ${color} motion-reduce:animate-none`}
+          style={{ top, left, animation: `sicom-float 8s ease-in-out ${delay} infinite` }}
         />
+      ))}
 
-        {/* Escena animada: hexágono + líneas de circuito + chips de funciones orbitando */}
-        <div className="relative h-[480px] w-[480px] motion-reduce:h-auto motion-reduce:w-auto">
-          <svg
-            viewBox="0 0 480 480"
-            className="pointer-events-none absolute inset-0 h-full w-full motion-reduce:hidden"
-            aria-hidden="true"
-          >
-            {CHIPS.map((chip, i) => (
-              <line
-                key={i}
-                x1={240}
-                y1={240}
-                x2={chip.x}
-                y2={chip.y}
-                stroke="rgba(107,216,124,0.35)"
-                strokeWidth={1.5}
-                strokeDasharray="6 6"
-                style={{
-                  animation: 'sicom-flow 1.6s linear infinite',
-                  animationDelay: chip.delay,
-                }}
-              />
-            ))}
-          </svg>
-
-          {/* Hexágono central — el logo real, respirando con un pulso suave */}
-          <img
-            src="/branding/sicom-hexagono.png"
-            alt=""
-            aria-hidden="true"
-            className="absolute left-1/2 top-1/2 w-40 -translate-x-1/2 -translate-y-1/2 motion-reduce:animate-none"
-            style={{ animation: 'sicom-breathe 4s ease-in-out infinite' }}
-          />
-
-          {/* Chips de funciones, flotando alrededor */}
-          {CHIPS.map((chip) => (
-            <div
-              key={chip.label}
-              className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 motion-reduce:animate-none"
-              style={{
-                left: chip.x,
-                top: chip.y,
-                animation: `sicom-appear 0.6s ease-out ${chip.delay} both, sicom-float 6s ease-in-out ${chip.delay} infinite`,
-              }}
-            >
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#2FA84A]/30 bg-[#16233A] shadow-lg">
-                <chip.icon size={18} className="text-sicom-greenLight" />
-              </div>
-              <span className="w-24 text-center text-[10px] font-medium leading-tight text-ink-300">
-                {chip.label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Marca y mensaje */}
-        <div className="relative mt-4 text-center">
-          <span className="font-display text-3xl font-bold tracking-tight">
+      {/* Tarjeta de login, tipo vidrio esmerilado */}
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.07] p-8 shadow-2xl backdrop-blur-2xl">
+        <div className="text-center">
+          <span className="font-display text-2xl font-bold tracking-tight">
             <span className="text-white">SIC</span>
-            <span className="text-sicom-green">OM</span>
+            <span className="text-sicom-greenLight">OM</span>
           </span>
-          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-ink-400">
+          <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-white/50">
             Sistema Integrado Comercial
           </p>
-          <p className="mx-auto mt-4 max-w-sm text-sm text-ink-300">
-            Control <span className="text-sicom-greenLight">inteligente</span> para impulsar el{' '}
-            <span className="text-sicom-greenLight">crecimiento</span> de tu empresa.
-          </p>
         </div>
-      </div>
 
-      {/* Formulario */}
-      <div className="flex w-full flex-col items-center justify-center bg-white px-6 py-12 lg:w-1/2">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 lg:hidden">
-            <span className="font-display text-xl font-bold tracking-tight">
-              <span className="text-ink-900">SIC</span>
-              <span className="text-sicom-green">OM</span>
-            </span>
+        <h2 className="mt-6 font-display text-xl font-semibold text-white">Inicia sesión</h2>
+        <p className="mt-1 text-sm text-white/60">Ingresa tus credenciales para entrar al sistema.</p>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4" noValidate>
+          <div>
+            <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-white/80">
+              Usuario
+            </label>
+            <div className="relative">
+              <User size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+              <input
+                id="username"
+                type="text"
+                autoComplete="username"
+                className="w-full rounded-lg border border-white/15 bg-white/10 py-2.5 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-white/30 focus:border-sicom-greenLight/60"
+                placeholder="admin"
+                {...register('username')}
+              />
+            </div>
+            {errors.username && <p className="mt-1 text-xs text-red-300">{errors.username.message}</p>}
           </div>
 
-          <h2 className="font-display text-2xl font-semibold text-ink-800">Inicia sesión</h2>
-          <p className="mt-1 text-sm text-ink-400">
-            Ingresa tus credenciales para entrar al sistema.
-          </p>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4" noValidate>
-            <div>
-              <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-ink-700">
-                Usuario
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-white/80">
+                Contraseña
               </label>
-              <div className="relative">
-                <User
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-300"
-                />
-                <input
-                  id="username"
-                  type="text"
-                  autoComplete="username"
-                  className="w-full rounded-lg border border-ink-200 py-2.5 pl-10 pr-3 text-sm text-ink-800 outline-none transition-colors focus:border-ink-500"
-                  placeholder="admin"
-                  {...register('username')}
-                />
-              </div>
-              {errors.username && (
-                <p className="mt-1 text-xs text-danger-500">{errors.username.message}</p>
-              )}
+              <Link to="/olvide-password" className="text-xs font-medium text-white/50 underline hover:text-white/80">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
-
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-ink-700">
-                  Contraseña
-                </label>
-                <Link to="/olvide-password" className="text-xs font-medium text-ink-500 underline hover:text-ink-700">
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-300"
-                />
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  className="w-full rounded-lg border border-ink-200 py-2.5 pl-10 pr-3 text-sm text-ink-800 outline-none transition-colors focus:border-ink-500"
-                  placeholder="••••••••"
-                  {...register('password')}
-                />
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-xs text-danger-500">{errors.password.message}</p>
-              )}
+            <div className="relative">
+              <Lock size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                className="w-full rounded-lg border border-white/15 bg-white/10 py-2.5 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-white/30 focus:border-sicom-greenLight/60"
+                placeholder="••••••••"
+                {...register('password')}
+              />
             </div>
+            {errors.password && <p className="mt-1 text-xs text-red-300">{errors.password.message}</p>}
+          </div>
 
-            {serverError && (
-              <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">
-                {serverError}
-              </div>
-            )}
+          {serverError && (
+            <div className="rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2.5 text-sm text-red-200">
+              {serverError}
+            </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-ink-800 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink-700 disabled:opacity-60"
-            >
-              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-              {isSubmitting ? 'Ingresando…' : 'Ingresar'}
-            </button>
-          </form>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-sicom-green py-2.5 text-sm font-semibold text-white shadow-lg shadow-sicom-green/20 transition-colors hover:bg-sicom-greenLight disabled:opacity-60"
+          >
+            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+            {isSubmitting ? 'Ingresando…' : 'Ingresar'}
+          </button>
+        </form>
 
-          <p className="mt-6 text-center text-sm text-ink-400">
-            ¿Todavía no tienes cuenta?{' '}
-            <Link to="/registro" className="font-medium text-ink-700 underline">
-              Registra tu negocio
-            </Link>
-          </p>
-        </div>
+        <p className="mt-6 text-center text-sm text-white/50">
+          ¿Todavía no tienes cuenta?{' '}
+          <Link to="/registro" className="font-medium text-white underline">
+            Registra tu negocio
+          </Link>
+        </p>
       </div>
     </div>
   );

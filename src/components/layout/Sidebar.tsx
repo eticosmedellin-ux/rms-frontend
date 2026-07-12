@@ -75,8 +75,9 @@ export function Sidebar() {
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-ink-800 text-ink-100 md:flex">
       <div className="flex h-16 items-center gap-2 px-6">
-        <span className="font-display text-lg font-semibold tracking-tight text-white">
-          RMS
+        <span className="font-display text-lg font-bold tracking-tight">
+          <span className="text-white">SIC</span>
+          <span className="text-sicom-greenLight">OM</span>
         </span>
         <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-300">
           Beta
