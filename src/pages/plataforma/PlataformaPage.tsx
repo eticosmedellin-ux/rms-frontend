@@ -6,12 +6,14 @@ import { CodigosInvitacionTab } from '@/pages/plataforma/CodigosInvitacionTab';
 import { PlanEmpresaModal } from '@/pages/plataforma/PlanEmpresaModal';
 import { BackupsTab } from '@/pages/plataforma/BackupsTab';
 import { CobroAutomaticoTab } from '@/pages/plataforma/CobroAutomaticoTab';
+import { AyudaAdminTab } from '@/pages/plataforma/AyudaAdminTab';
 
 const TABS = [
   { id: 'empresas', label: 'Empresas' },
   { id: 'codigos', label: 'Códigos de invitación' },
   { id: 'backups', label: 'Copias de seguridad' },
   { id: 'cobro', label: 'Cobro automático' },
+  { id: 'ayuda', label: 'Asistente de ayuda' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -45,6 +47,7 @@ export default function PlataformaPage() {
         {tab === 'codigos' && <CodigosInvitacionTab />}
         {tab === 'backups' && <BackupsTab />}
         {tab === 'cobro' && <CobroAutomaticoTab />}
+        {tab === 'ayuda' && <AyudaAdminTab />}
       </div>
     </div>
   );

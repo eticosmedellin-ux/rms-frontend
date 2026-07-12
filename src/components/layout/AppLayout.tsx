@@ -4,6 +4,7 @@ import { Topbar } from '@/components/layout/Topbar';
 import { useMiPlan } from '@/hooks/usePlataforma';
 import { useAuthStore } from '@/stores/authStore';
 import { useAplicarTema } from '@/hooks/useAplicarTema';
+import { AsistenteAyuda } from '@/components/ayuda/AsistenteAyuda';
 import { ShieldAlert } from 'lucide-react';
 
 const MENSAJE_LICENCIA: Record<string, string> = {
@@ -40,6 +41,7 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <AsistenteAyuda />
     </div>
   );
 }
