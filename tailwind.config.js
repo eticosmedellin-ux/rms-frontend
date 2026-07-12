@@ -39,6 +39,12 @@ export default {
           500: '#C1382E',
           600: '#9E2D25',
         },
+        // Verde vivo del logo SICOM — deliberadamente distinto del "success" (más apagado,
+        // de estado) porque este es un color de marca para el login, no un semáforo de UI.
+        sicom: {
+          green: '#2FA84A',
+          greenLight: '#6BD87C',
+        },
       },
       fontFamily: {
         sans: ['"Inter"', 'system-ui', 'sans-serif'],

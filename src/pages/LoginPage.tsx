@@ -2,23 +2,22 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Lock, User } from 'lucide-react';
+import { Loader2, Lock, User, Store, Package, FileText, TrendingUp, Users } from 'lucide-react';
 import { login } from '@/api/auth';
 import { getApiErrorMessage } from '@/api/errors';
 import { useAuthStore } from '@/stores/authStore';
 import { loginSchema, type LoginFormValues } from '@/pages/login-schema';
 
-// Filas de ejemplo para el "kardex" animado del panel de identidad — puramente decorativo,
-// evoca el libro de movimientos que es el corazón conceptual de todo el sistema (doc. 02).
-const KARDEX_ROWS = [
-  { producto: 'Arroz 1kg', tipo: 'ENTRADA', cantidad: '+120', saldo: '340' },
-  { producto: 'Aceite 1L', tipo: 'SALIDA', cantidad: '-8', saldo: '52' },
-  { producto: 'Panela 500g', tipo: 'ENTRADA', cantidad: '+60', saldo: '180' },
-  { producto: 'Leche 1L', tipo: 'SALIDA', cantidad: '-14', saldo: '96' },
-  { producto: 'Café 250g', tipo: 'AJUSTE', cantidad: '-2', saldo: '44' },
-  { producto: 'Huevos x30', tipo: 'ENTRADA', cantidad: '+40', saldo: '112' },
-  { producto: 'Azúcar 1kg', tipo: 'SALIDA', cantidad: '-11', saldo: '73' },
-  { producto: 'Detergente', tipo: 'ENTRADA', cantidad: '+25', saldo: '58' },
+/** Los 5 chips que orbitan el hexágono — son exactamente los 5 íconos del logo de SICOM
+ *  (Punto de venta, Inventario, Facturación electrónica, Reportes, Multiusuario y
+ *  sucursales), no un adorno genérico. Posiciones calculadas en pentágono alrededor del
+ *  centro (240,240) a radio 185, para que las líneas de circuito calcen exactas. */
+const CHIPS = [
+  { label: 'Punto de venta', icon: Store, x: 240, y: 55, delay: '0s' },
+  { label: 'Inventario', icon: Package, x: 416, y: 183, delay: '0.6s' },
+  { label: 'Facturación electrónica', icon: FileText, x: 349, y: 390, delay: '1.2s' },
+  { label: 'Reportes', icon: TrendingUp, x: 131, y: 390, delay: '1.8s' },
+  { label: 'Multiusuario y sucursales', icon: Users, x: 64, y: 183, delay: '2.4s' },
 ];
 
 export default function LoginPage() {
@@ -48,52 +47,85 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Panel de identidad — oculto en móvil, el foco ahí es el formulario */}
-      <div className="relative hidden w-1/2 overflow-hidden bg-ink-900 lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div>
-          <span className="font-display text-2xl font-semibold tracking-tight text-white">
-            RMS
-          </span>
-          <p className="mt-1 text-sm text-ink-400">Retail Management System</p>
-        </div>
-
-        <div>
-          <h1 className="font-display text-3xl font-medium leading-tight text-white">
-            Cada movimiento,
-            <br />
-            registrado.
-          </h1>
-          <p className="mt-3 max-w-sm text-sm text-ink-400">
-            Inventario, compras, ventas y caja en un solo lugar — para que siempre sepas
-            cuánto tienes, cuánto vendes y cuánto ganas.
-          </p>
-        </div>
-
-        {/* El "kardex" animado: cinta vertical de movimientos que se desplaza sola */}
+      <div className="relative hidden w-1/2 overflow-hidden bg-[#0F1826] lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12">
+        {/* Resplandor ambiental de fondo, del mismo verde del logo */}
         <div
-          className="pointer-events-none absolute -right-8 top-1/2 h-[420px] w-72 -translate-y-1/2 overflow-hidden rounded-xl border border-ink-700/60 bg-ink-800/40 font-mono text-xs shadow-2xl motion-reduce:h-auto motion-reduce:overflow-visible"
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            background:
+              'radial-gradient(circle at 50% 42%, rgba(47,168,74,0.20), transparent 55%)',
+          }}
           aria-hidden="true"
-        >
-          <div className="animate-[kardex-scroll_18s_linear_infinite] motion-reduce:animate-none">
-            {[...KARDEX_ROWS, ...KARDEX_ROWS].map((row, i) => (
-              <div
+        />
+
+        {/* Escena animada: hexágono + líneas de circuito + chips de funciones orbitando */}
+        <div className="relative h-[480px] w-[480px] motion-reduce:h-auto motion-reduce:w-auto">
+          <svg
+            viewBox="0 0 480 480"
+            className="pointer-events-none absolute inset-0 h-full w-full motion-reduce:hidden"
+            aria-hidden="true"
+          >
+            {CHIPS.map((chip, i) => (
+              <line
                 key={i}
-                className="flex items-center justify-between border-b border-ink-700/50 px-4 py-3 text-ink-300"
-              >
-                <span className="truncate">{row.producto}</span>
-                <span
-                  className={
-                    row.tipo === 'ENTRADA'
-                      ? 'text-success-500'
-                      : row.tipo === 'SALIDA'
-                        ? 'text-amber-300'
-                        : 'text-ink-400'
-                  }
-                >
-                  {row.cantidad}
-                </span>
-              </div>
+                x1={240}
+                y1={240}
+                x2={chip.x}
+                y2={chip.y}
+                stroke="rgba(107,216,124,0.35)"
+                strokeWidth={1.5}
+                strokeDasharray="6 6"
+                style={{
+                  animation: 'sicom-flow 1.6s linear infinite',
+                  animationDelay: chip.delay,
+                }}
+              />
             ))}
-          </div>
+          </svg>
+
+          {/* Hexágono central — el logo real, respirando con un pulso suave */}
+          <img
+            src="/branding/sicom-hexagono.png"
+            alt=""
+            aria-hidden="true"
+            className="absolute left-1/2 top-1/2 w-40 -translate-x-1/2 -translate-y-1/2 motion-reduce:animate-none"
+            style={{ animation: 'sicom-breathe 4s ease-in-out infinite' }}
+          />
+
+          {/* Chips de funciones, flotando alrededor */}
+          {CHIPS.map((chip) => (
+            <div
+              key={chip.label}
+              className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 motion-reduce:animate-none"
+              style={{
+                left: chip.x,
+                top: chip.y,
+                animation: `sicom-appear 0.6s ease-out ${chip.delay} both, sicom-float 6s ease-in-out ${chip.delay} infinite`,
+              }}
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#2FA84A]/30 bg-[#16233A] shadow-lg">
+                <chip.icon size={18} className="text-sicom-greenLight" />
+              </div>
+              <span className="w-24 text-center text-[10px] font-medium leading-tight text-ink-300">
+                {chip.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Marca y mensaje */}
+        <div className="relative mt-4 text-center">
+          <span className="font-display text-3xl font-bold tracking-tight">
+            <span className="text-white">SIC</span>
+            <span className="text-sicom-green">OM</span>
+          </span>
+          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-ink-400">
+            Sistema Integrado Comercial
+          </p>
+          <p className="mx-auto mt-4 max-w-sm text-sm text-ink-300">
+            Control <span className="text-sicom-greenLight">inteligente</span> para impulsar el{' '}
+            <span className="text-sicom-greenLight">crecimiento</span> de tu empresa.
+          </p>
         </div>
       </div>
 
@@ -101,8 +133,9 @@ export default function LoginPage() {
       <div className="flex w-full flex-col items-center justify-center bg-white px-6 py-12 lg:w-1/2">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
-            <span className="font-display text-xl font-semibold tracking-tight text-ink-800">
-              RMS
+            <span className="font-display text-xl font-bold tracking-tight">
+              <span className="text-ink-900">SIC</span>
+              <span className="text-sicom-green">OM</span>
             </span>
           </div>
 

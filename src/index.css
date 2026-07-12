@@ -31,3 +31,44 @@
     transform: translateY(-50%);
   }
 }
+
+/* Animación del login de SICOM: el hexágono "respira" con un leve pulso de escala + brillo */
+@keyframes sicom-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 18px rgba(47, 168, 74, 0.35));
+  }
+  50% {
+    transform: scale(1.035);
+    filter: drop-shadow(0 0 32px rgba(47, 168, 74, 0.55));
+  }
+}
+
+/* Los chips de funciones (POS, Inventario, etc.) flotan despacio alrededor del hexágono */
+@keyframes sicom-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Las líneas de circuito que conectan el hexágono con cada chip "fluyen" con el guion animado */
+@keyframes sicom-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+/* Entrada escalonada de los chips al cargar la página */
+@keyframes sicom-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
