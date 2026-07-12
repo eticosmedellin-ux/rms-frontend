@@ -1,5 +1,6 @@
 import type { Venta } from '@/types/pos';
 import type { Empresa } from '@/types/gestion';
+import { estiloPagina } from '@/lib/tamanoImpresion';
 
 /** Genera y abre una factura con diseño profesional en una ventana nueva, lista para
  *  imprimir o "Guardar como PDF" desde el diálogo de impresión del navegador. */
@@ -21,6 +22,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
   });
   const numero = venta.numeroFactura || venta.numero;
   const esFacturaFormal = !!venta.numeroFactura;
+  const pagina = estiloPagina(empresa);
 
   const filas = venta.detalles
     .map(
@@ -43,17 +45,18 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
 <title>${numero}</title>
 <style>
   @media print {
-    @page { margin: 18mm 14mm; }
+    @page { ${pagina.reglaPagina} }
   }
   * { box-sizing: border-box; }
   body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
     color: #1f2933;
-    margin: 0;
-    padding: 40px;
+    margin: 0 auto;
+    padding: ${pagina.anchoMaximo === '100%' ? '40px' : '10px'};
     background: #fff;
-    font-size: 13px;
+    font-size: ${pagina.fontSize};
     line-height: 1.5;
+    max-width: ${pagina.anchoMaximo};
   }
   .encabezado {
     display: flex;
@@ -225,8 +228,8 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
 
   <div class="pie">
     <div>
-      <div class="gracias">¡Gracias por tu compra!</div>
-      <div class="gracias-sub">Vuelve pronto — siempre es un gusto atenderte.</div>
+      <div class="gracias">${escapeHtml(empresa.mensajeAgradecimiento) || '¡Gracias por tu compra!'}</div>
+      ${empresa.infoAdicionalDocumentos ? `<div class="gracias-sub">${escapeHtml(empresa.infoAdicionalDocumentos)}</div>` : ''}
     </div>
     <div class="atendido">Documento generado por ${escapeHtml(nombreEmpresa)}</div>
   </div>

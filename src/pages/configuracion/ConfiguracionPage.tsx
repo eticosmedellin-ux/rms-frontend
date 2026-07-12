@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Loader2, FileSignature } from 'lucide-react';
+import { Plus, Loader2, FileSignature, Printer } from 'lucide-react';
 import {
   useMetodosPago,
   useCrearMetodoPago,
@@ -22,6 +22,7 @@ export default function ConfiguracionPage() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MiEmpresaCard />
         <MetodosPagoCard />
+        <ImpresionCard />
         <ImpuestosCard />
         <FacturacionElectronicaCard />
       </div>
@@ -326,6 +327,124 @@ function FacturacionElectronicaCard() {
       >
         {guardar.isPending && <Loader2 size={16} className="animate-spin" />}
         Guardar configuración
+      </button>
+    </div>
+  );
+}
+
+function ImpresionCard() {
+  const { data: empresa, isLoading } = useEmpresa();
+  const actualizar = useActualizarEmpresa();
+
+  const [tamanoImpresion, setTamanoImpresion] = useState('A4');
+  const [anchoPersonalizadoMm, setAnchoPersonalizadoMm] = useState('');
+  const [altoPersonalizadoMm, setAltoPersonalizadoMm] = useState('');
+  const [mensajeAgradecimiento, setMensajeAgradecimiento] = useState('');
+  const [infoAdicionalDocumentos, setInfoAdicionalDocumentos] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [guardado, setGuardado] = useState(false);
+
+  useEffect(() => {
+    if (empresa) {
+      setTamanoImpresion(empresa.tamanoImpresion);
+      setAnchoPersonalizadoMm(empresa.anchoPersonalizadoMm ? String(empresa.anchoPersonalizadoMm) : '');
+      setAltoPersonalizadoMm(empresa.altoPersonalizadoMm ? String(empresa.altoPersonalizadoMm) : '');
+      setMensajeAgradecimiento(empresa.mensajeAgradecimiento ?? '');
+      setInfoAdicionalDocumentos(empresa.infoAdicionalDocumentos ?? '');
+    }
+  }, [empresa]);
+
+  async function handleGuardar() {
+    setError(null);
+    setGuardado(false);
+    if (!empresa) return;
+    try {
+      await actualizar.mutateAsync({
+        nombre: empresa.nombre,
+        tamanoImpresion,
+        anchoPersonalizadoMm: tamanoImpresion === 'PERSONALIZADO' && anchoPersonalizadoMm ? Number(anchoPersonalizadoMm) : null,
+        altoPersonalizadoMm: tamanoImpresion === 'PERSONALIZADO' && altoPersonalizadoMm ? Number(altoPersonalizadoMm) : null,
+        mensajeAgradecimiento: mensajeAgradecimiento || undefined,
+        infoAdicionalDocumentos: infoAdicionalDocumentos || undefined,
+      });
+      setGuardado(true);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo guardar la configuración de impresión'));
+    }
+  }
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white p-5 shadow-card lg:col-span-2">
+      <div className="flex items-center gap-2">
+        <Printer size={18} className="text-ink-400" />
+        <h3 className="font-display text-base font-semibold text-ink-800">Impresión</h3>
+      </div>
+      <p className="mt-1 text-sm text-ink-400">
+        Se aplica a facturas, cotizaciones, recibos, comprobantes, notas y reportes de todo el sistema.
+      </p>
+
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Tamaño del documento</span>
+          <select className="input" value={tamanoImpresion} onChange={(e) => setTamanoImpresion(e.target.value)}>
+            <option value="TERMICA_58">Tirilla térmica 58mm</option>
+            <option value="TERMICA_80">Tirilla térmica 80mm</option>
+            <option value="MEDIA_CARTA">Media carta</option>
+            <option value="CARTA">Carta</option>
+            <option value="A4">A4</option>
+            <option value="PERSONALIZADO">Personalizado</option>
+          </select>
+        </label>
+
+        {tamanoImpresion === 'PERSONALIZADO' && (
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-ink-700">Ancho (mm)</span>
+              <input type="number" min={1} className="input" value={anchoPersonalizadoMm} onChange={(e) => setAnchoPersonalizadoMm(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-ink-700">Alto (mm)</span>
+              <input type="number" min={1} className="input" value={altoPersonalizadoMm} onChange={(e) => setAltoPersonalizadoMm(e.target.value)} />
+            </label>
+          </div>
+        )}
+      </div>
+
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-sm font-medium text-ink-700">Mensaje de agradecimiento (opcional)</span>
+        <input
+          className="input"
+          placeholder="Ej: ¡Gracias por tu compra!"
+          value={mensajeAgradecimiento}
+          onChange={(e) => setMensajeAgradecimiento(e.target.value)}
+        />
+      </label>
+
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-sm font-medium text-ink-700">Información adicional al final del documento (opcional)</span>
+        <textarea
+          className="input"
+          rows={2}
+          placeholder="Ej: Horario de atención, política de garantía, redes sociales…"
+          value={infoAdicionalDocumentos}
+          onChange={(e) => setInfoAdicionalDocumentos(e.target.value)}
+        />
+      </label>
+
+      {error && <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
+      {guardado && !error && (
+        <div className="mt-3 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">Guardado correctamente.</div>
+      )}
+
+      <button
+        onClick={handleGuardar}
+        disabled={actualizar.isPending}
+        className="mt-4 flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+      >
+        {actualizar.isPending && <Loader2 size={16} className="animate-spin" />}
+        Guardar configuración de impresión
       </button>
     </div>
   );

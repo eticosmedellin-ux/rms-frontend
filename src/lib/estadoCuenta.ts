@@ -1,5 +1,6 @@
 import type { EstadoCuentaCliente } from '@/types/pos';
 import type { Empresa } from '@/types/gestion';
+import { estiloPagina } from '@/lib/tamanoImpresion';
 
 export function abrirEstadoCuenta(estado: EstadoCuentaCliente, empresa: Empresa) {
   const ventana = window.open('', '_blank', 'width=820,height=1000');
@@ -14,6 +15,7 @@ export function abrirEstadoCuenta(estado: EstadoCuentaCliente, empresa: Empresa)
 function construirHtml(estado: EstadoCuentaCliente, empresa: Empresa): string {
   const nombreEmpresa = empresa.nombreComercial || empresa.nombre;
   const hoy = new Date().toLocaleDateString('es-CO', { dateStyle: 'long' });
+  const pagina = estiloPagina(empresa);
 
   const filas = estado.movimientos
     .map(
@@ -36,11 +38,12 @@ function construirHtml(estado: EstadoCuentaCliente, empresa: Empresa): string {
 <meta charset="UTF-8" />
 <title>Estado de cuenta - ${escapeHtml(estado.clienteNombre)}</title>
 <style>
-  @media print { @page { margin: 18mm 14mm; } }
+  @media print { @page { ${pagina.reglaPagina} } }
   * { box-sizing: border-box; }
   body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    color: #1f2933; margin: 0; padding: 40px; background: #fff; font-size: 13px; line-height: 1.5;
+    color: #1f2933; margin: 0 auto; padding: ${pagina.anchoMaximo === '100%' ? '40px' : '10px'};
+    background: #fff; font-size: ${pagina.fontSize}; line-height: 1.5; max-width: ${pagina.anchoMaximo};
   }
   .encabezado {
     display: flex; justify-content: space-between; align-items: flex-start;

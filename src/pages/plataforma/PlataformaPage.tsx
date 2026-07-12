@@ -4,10 +4,14 @@ import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa } from '@
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { CodigosInvitacionTab } from '@/pages/plataforma/CodigosInvitacionTab';
 import { PlanEmpresaModal } from '@/pages/plataforma/PlanEmpresaModal';
+import { BackupsTab } from '@/pages/plataforma/BackupsTab';
+import { CobroAutomaticoTab } from '@/pages/plataforma/CobroAutomaticoTab';
 
 const TABS = [
   { id: 'empresas', label: 'Empresas' },
   { id: 'codigos', label: 'Códigos de invitación' },
+  { id: 'backups', label: 'Copias de seguridad' },
+  { id: 'cobro', label: 'Cobro automático' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -39,6 +43,8 @@ export default function PlataformaPage() {
       <div className="mt-5">
         {tab === 'empresas' && <EmpresasTab />}
         {tab === 'codigos' && <CodigosInvitacionTab />}
+        {tab === 'backups' && <BackupsTab />}
+        {tab === 'cobro' && <CobroAutomaticoTab />}
       </div>
     </div>
   );

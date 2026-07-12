@@ -1,11 +1,14 @@
 import type { DocumentoCaja } from '@/types/pos';
+import type { Empresa } from '@/types/gestion';
+import { estiloPagina } from '@/lib/tamanoImpresion';
 
 /** Abre una ventana de impresión con el formato de recibo/comprobante/nota crédito.
  *  Reutilizado tanto en la pestaña de Caja como en el módulo unificado de Documentos. */
-export function imprimirDocumentoCaja(doc: DocumentoCaja) {
+export function imprimirDocumentoCaja(doc: DocumentoCaja, empresa: Empresa) {
   const ventana = window.open('', '_blank', 'width=380,height=600');
   if (!ventana) return;
 
+  const pagina = estiloPagina(empresa);
   const fecha = new Date(doc.fecha).toLocaleString('es-CO');
   const titulo =
     doc.tipo === 'RECIBO'
@@ -23,7 +26,8 @@ export function imprimirDocumentoCaja(doc: DocumentoCaja) {
       <head>
         <title>${doc.numero}</title>
         <style>
-          body { font-family: monospace; font-size: 13px; padding: 16px; color: #1f2933; }
+          @media print { @page { ${pagina.reglaPagina} } }
+          body { font-family: monospace; font-size: ${pagina.fontSize}; padding: 16px; color: #1f2933; max-width: ${pagina.anchoMaximo}; margin: 0 auto; }
           h1 { font-size: 16px; margin: 0 0 4px; }
           .linea { display: flex; justify-content: space-between; margin: 4px 0; }
           .total { font-size: 15px; font-weight: bold; border-top: 1px dashed #999; margin-top: 10px; padding-top: 8px; }
@@ -42,6 +46,7 @@ export function imprimirDocumentoCaja(doc: DocumentoCaja) {
         ${doc.detalle ? `<div class="linea"><span>Detalle</span><span>${doc.detalle}</span></div>` : ''}
         <div class="linea"><span>Emitido por</span><span>${doc.usuario}</span></div>
         <div class="total linea"><span>Monto</span><span>$${doc.monto.toLocaleString('es-CO')}</span></div>
+        ${empresa.infoAdicionalDocumentos ? `<div class="muted" style="margin-top:10px;">${empresa.infoAdicionalDocumentos}</div>` : ''}
         <div class="muted" style="margin-top:12px;">Impresión ${doc.vecesImpreso > 1 ? `#${doc.vecesImpreso} (reimpresión)` : '#1'}</div>
       </body>
     </html>

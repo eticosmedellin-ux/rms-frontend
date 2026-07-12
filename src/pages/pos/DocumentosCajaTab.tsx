@@ -7,6 +7,7 @@ import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
 import { imprimirDocumentoCaja } from '@/lib/documentoCajaImpresion';
+import { useEmpresa } from '@/hooks/useGestion';
 import type { DocumentoCaja } from '@/types/pos';
 
 const TIPO_DOC_INFO: Record<DocumentoCaja['tipo'], { label: string; icono: typeof Receipt; tono: string }> = {
@@ -20,12 +21,13 @@ export function DocumentosCajaTab() {
   const { sucursalId } = usePosStore();
   const { data: caja } = useCajaAbierta(sucursalId);
   const { data: documentos, isLoading } = useDocumentosCaja();
+  const { data: empresa } = useEmpresa();
   const registrarImpresion = useRegistrarImpresion();
   const [modalAbierto, setModalAbierto] = useState(false);
 
   async function imprimir(doc: DocumentoCaja) {
     await registrarImpresion.mutateAsync(doc.id);
-    imprimirDocumentoCaja(doc);
+    if (empresa) imprimirDocumentoCaja(doc, empresa);
   }
 
   return (
@@ -123,6 +125,7 @@ function DocumentoFormModal({
 }) {
   const crear = useCrearDocumentoCaja();
   const registrarImpresion = useRegistrarImpresion();
+  const { data: empresa } = useEmpresa();
 
   const [tipo, setTipo] = useState<'RECIBO' | 'COMPROBANTE'>('RECIBO');
   const [concepto, setConcepto] = useState('');
@@ -164,7 +167,7 @@ function DocumentoFormModal({
         monto: montoNumerico,
       });
       await registrarImpresion.mutateAsync(documento.id);
-      imprimirDocumentoCaja({ ...documento, vecesImpreso: documento.vecesImpreso + 1 });
+      if (empresa) imprimirDocumentoCaja({ ...documento, vecesImpreso: documento.vecesImpreso + 1 }, empresa);
       limpiarYCerrar();
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo emitir el documento'));

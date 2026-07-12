@@ -131,6 +131,11 @@ export interface Empresa {
   direccion: string | null;
   telefono: string | null;
   email: string | null;
+  tamanoImpresion: string;
+  anchoPersonalizadoMm: number | null;
+  altoPersonalizadoMm: number | null;
+  mensajeAgradecimiento: string | null;
+  infoAdicionalDocumentos: string | null;
 }
 
 export interface EmpresaRequest {
@@ -143,6 +148,11 @@ export interface EmpresaRequest {
   direccion?: string;
   telefono?: string;
   email?: string;
+  tamanoImpresion?: string;
+  anchoPersonalizadoMm?: number | null;
+  altoPersonalizadoMm?: number | null;
+  mensajeAgradecimiento?: string;
+  infoAdicionalDocumentos?: string;
 }
 
 // --- Auditoría ---

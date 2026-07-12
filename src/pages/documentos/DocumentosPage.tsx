@@ -58,7 +58,7 @@ export default function DocumentosPage() {
       fecha: d.fecha,
       accion: async () => {
         await registrarImpresion.mutateAsync(d.id);
-        imprimirDocumentoCaja(d);
+        if (empresa) imprimirDocumentoCaja(d, empresa);
       },
     }));
 
