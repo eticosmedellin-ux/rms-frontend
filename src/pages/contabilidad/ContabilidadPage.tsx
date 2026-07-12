@@ -37,9 +37,19 @@ const TABS = [
 export default function ContabilidadPage() {
   const { data: activa, isLoading: cargandoActiva } = useContabilidadActiva();
   const activar = useActivarContabilidad();
+  const [errorActivar, setErrorActivar] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]['id']>('diario');
   const [desde, setDesde] = useState(primerDiaDelMes());
   const [hasta, setHasta] = useState(hoy());
+
+  async function handleActivar() {
+    setErrorActivar(null);
+    try {
+      await activar.mutateAsync();
+    } catch (err) {
+      setErrorActivar(getApiErrorMessage(err, 'No se pudo activar la contabilidad'));
+    }
+  }
 
   if (cargandoActiva) return <LoadingState />;
 
@@ -56,8 +66,11 @@ export default function ContabilidadPage() {
           ⚠️ Antes de usarlo para declarar impuestos oficialmente, un contador público debe revisar que el plan y el
           mapeo sean correctos para tu negocio.
         </p>
+        {errorActivar && (
+          <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-left text-sm text-danger-600">{errorActivar}</div>
+        )}
         <button
-          onClick={() => activar.mutate()}
+          onClick={handleActivar}
           disabled={activar.isPending}
           className="mt-5 rounded-lg bg-ink-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
         >
