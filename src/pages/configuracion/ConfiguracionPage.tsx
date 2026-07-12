@@ -206,6 +206,7 @@ function FacturacionElectronicaCard() {
   const [resolucionRangoDesde, setResolucionRangoDesde] = useState('');
   const [resolucionRangoHasta, setResolucionRangoHasta] = useState('');
   const [resolucionFechaVencimiento, setResolucionFechaVencimiento] = useState('');
+  const [clienteIdProveedor, setClienteIdProveedor] = useState('');
   const [activa, setActiva] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
@@ -219,6 +220,7 @@ function FacturacionElectronicaCard() {
       setResolucionRangoDesde(config.resolucionRangoDesde ? String(config.resolucionRangoDesde) : '');
       setResolucionRangoHasta(config.resolucionRangoHasta ? String(config.resolucionRangoHasta) : '');
       setResolucionFechaVencimiento(config.resolucionFechaVencimiento ?? '');
+      setClienteIdProveedor(config.clienteIdProveedor ?? '');
       setActiva(config.activa);
     }
   }, [config]);
@@ -236,6 +238,7 @@ function FacturacionElectronicaCard() {
         resolucionRangoDesde: resolucionRangoDesde ? Number(resolucionRangoDesde) : undefined,
         resolucionRangoHasta: resolucionRangoHasta ? Number(resolucionRangoHasta) : undefined,
         resolucionFechaVencimiento: resolucionFechaVencimiento || undefined,
+        clienteIdProveedor: clienteIdProveedor || undefined,
         activa,
       });
       setApiKey('');
@@ -254,23 +257,27 @@ function FacturacionElectronicaCard() {
         <h3 className="font-display text-base font-semibold text-ink-800">Facturación electrónica</h3>
       </div>
       <p className="mt-1 text-sm text-ink-400">
-        Arquitectura lista para conectar un proveedor tecnológico (Factus, Alegra, Siigo, etc.) autorizado por la
-        DIAN. Mientras no actives esto, el sistema sigue funcionando exactamente igual.
+        Conectado con MATIAS API (matias-api.com), pensado para "Casa de Software" — cada empresa se habilita como
+        su propio NIT ante la DIAN. Mientras no actives esto, el sistema sigue funcionando exactamente igual.
       </p>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-ink-700">Proveedor</span>
-          <input
-            className="input"
-            placeholder="Ej: FACTUS, ALEGRA, SIIGO…"
-            value={proveedor}
-            onChange={(e) => setProveedor(e.target.value)}
-          />
+          <select className="input" value={proveedor} onChange={(e) => setProveedor(e.target.value)}>
+            <option value="">Sin proveedor</option>
+            <option value="MATIAS">MATIAS API</option>
+            <option value="OTRO">Otro</option>
+          </select>
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-ink-700">URL de la API del proveedor</span>
-          <input className="input" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} />
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">URL de la API</span>
+          <input
+            className="input"
+            placeholder="https://sandbox-api.matias-api.com/api/ubl2.1 (pruebas) o https://api.matias-api.com/api/ubl2.1 (producción)"
+            value={apiUrl}
+            onChange={(e) => setApiUrl(e.target.value)}
+          />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-ink-700">
@@ -317,6 +324,15 @@ function FacturacionElectronicaCard() {
             className="input"
             value={resolucionRangoHasta}
             onChange={(e) => setResolucionRangoHasta(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">ID de cliente en MATIAS (opcional)</span>
+          <input
+            className="input"
+            placeholder="Solo si Héctor administra varias empresas desde una sola cuenta MATIAS"
+            value={clienteIdProveedor}
+            onChange={(e) => setClienteIdProveedor(e.target.value)}
           />
         </label>
       </div>

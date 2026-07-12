@@ -201,6 +201,7 @@ export interface ConfiguracionFacturacionElectronica {
   resolucionRangoDesde: number | null;
   resolucionRangoHasta: number | null;
   resolucionFechaVencimiento: string | null;
+  clienteIdProveedor: string | null;
   activa: boolean;
 }
 
@@ -213,6 +214,7 @@ export interface ConfiguracionFacturacionElectronicaRequest {
   resolucionRangoDesde?: number;
   resolucionRangoHasta?: number;
   resolucionFechaVencimiento?: string;
+  clienteIdProveedor?: string;
   activa: boolean;
 }
 
