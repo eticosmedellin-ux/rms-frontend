@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   Tag,
   FileStack,
+  Calculator,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
@@ -45,6 +46,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
     items: [
       { to: '/reportes', label: 'Reportes', icon: BarChart3 },
       { to: '/alertas', label: 'Alertas', icon: Bell },
+      { to: '/contabilidad', label: 'Contabilidad', icon: Calculator },
     ],
   },
   {
