@@ -15,10 +15,10 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-ink-100 bg-white px-6">
+    <header className="flex h-16 items-center justify-between border-b border-ink-100 bg-white px-6 dark:border-ink-700 dark:bg-ink-800">
       <div>
-        <p className="text-sm font-semibold text-ink-800">{nombreEmpresa}</p>
-        <p className="text-xs text-ink-400">{roles.join(' · ')}</p>
+        <p className="text-sm font-semibold text-ink-800 dark:text-ink-100">{nombreEmpresa}</p>
+        <p className="text-xs text-ink-400 dark:text-ink-400">{roles.join(' · ')}</p>
       </div>
 
       <div className="flex items-center gap-4">

@@ -293,6 +293,11 @@ export function VenderTab() {
     setVentaExitosa(null);
     if (!caja || carrito.length === 0 || !sucursalId) return;
 
+    if (empresa?.confirmarAntesDeVenta) {
+      const confirmado = window.confirm(`¿Confirmar esta venta por $${total.toLocaleString('es-CO')}?`);
+      if (!confirmado) return;
+    }
+
     if (totalNoEfectivo > total + 0.001) {
       setError('El pago con tarjeta, transferencia o crédito no puede superar el total de la venta');
       return;

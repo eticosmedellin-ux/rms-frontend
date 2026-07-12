@@ -136,6 +136,13 @@ export interface Empresa {
   altoPersonalizadoMm: number | null;
   mensajeAgradecimiento: string | null;
   infoAdicionalDocumentos: string | null;
+  ciudad: string | null;
+  sitioWeb: string | null;
+  idioma: string;
+  tema: 'CLARO' | 'OSCURO';
+  permitirStockNegativo: boolean;
+  confirmarAntesDeVenta: boolean;
+  stockMinimoDefault: number;
 }
 
 export interface EmpresaRequest {
@@ -153,6 +160,13 @@ export interface EmpresaRequest {
   altoPersonalizadoMm?: number | null;
   mensajeAgradecimiento?: string;
   infoAdicionalDocumentos?: string;
+  ciudad?: string;
+  sitioWeb?: string;
+  idioma?: string;
+  tema?: string;
+  permitirStockNegativo?: boolean;
+  confirmarAntesDeVenta?: boolean;
+  stockMinimoDefault?: number;
 }
 
 // --- Auditoría ---

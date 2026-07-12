@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Plus, ArrowRightCircle, Loader2 } from 'lucide-react';
+import { Plus, ArrowRightCircle, Loader2, FileText } from 'lucide-react';
 import { useCotizaciones, useCrearCotizacion, useConvertirCotizacion } from '@/hooks/usePos';
 import { useClientes } from '@/hooks/usePos';
 import { useCajaAbierta } from '@/hooks/usePos';
+import { useEmpresa } from '@/hooks/useGestion';
 import { usePosStore } from '@/stores/posStore';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { DetalleLineasEditor, type LineaDetalle } from '@/components/ui/DetalleLineasEditor';
 import { getApiErrorMessage } from '@/api/errors';
+import { abrirCotizacion } from '@/lib/cotizacion';
 import type { Cotizacion, EstadoCotizacion, MetodoPagoVenta } from '@/types/pos';
 
 const ESTADO_STYLES: Record<EstadoCotizacion, string> = {
@@ -19,6 +21,7 @@ const ESTADO_STYLES: Record<EstadoCotizacion, string> = {
 
 export function CotizacionesTab() {
   const { data: cotizaciones, isLoading } = useCotizaciones();
+  const { data: empresa } = useEmpresa();
   const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
   const [cotizacionConvirtiendo, setCotizacionConvirtiendo] = useState<Cotizacion | null>(null);
 
@@ -55,6 +58,15 @@ export function CotizacionesTab() {
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ESTADO_STYLES[c.estado]}`}>
                     {c.estado}
                   </span>
+                  {empresa && (
+                    <button
+                      onClick={() => abrirCotizacion(c, empresa)}
+                      title="Descargar / imprimir cotización"
+                      className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                    >
+                      <FileText size={18} />
+                    </button>
+                  )}
                   {c.estado === 'VIGENTE' && (
                     <button
                       onClick={() => setCotizacionConvirtiendo(c)}

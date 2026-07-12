@@ -22,6 +22,9 @@ export default function ConfiguracionPage() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MiEmpresaCard />
         <MetodosPagoCard />
+        <SistemaCard />
+        <VentasGeneralCard />
+        <InventarioGeneralCard />
         <ImpresionCard />
         <ImpuestosCard />
         <FacturacionElectronicaCard />
@@ -38,8 +41,10 @@ function MiEmpresaCard() {
   const [nombreComercial, setNombreComercial] = useState('');
   const [nit, setNit] = useState('');
   const [direccion, setDireccion] = useState('');
+  const [ciudad, setCiudad] = useState('');
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
+  const [sitioWeb, setSitioWeb] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
 
@@ -49,8 +54,10 @@ function MiEmpresaCard() {
       setNombreComercial(empresa.nombreComercial ?? '');
       setNit(empresa.nit ?? '');
       setDireccion(empresa.direccion ?? '');
+      setCiudad(empresa.ciudad ?? '');
       setTelefono(empresa.telefono ?? '');
       setEmail(empresa.email ?? '');
+      setSitioWeb(empresa.sitioWeb ?? '');
     }
   }, [empresa]);
 
@@ -67,8 +74,10 @@ function MiEmpresaCard() {
         nombreComercial: nombreComercial || undefined,
         nit: nit || undefined,
         direccion: direccion || undefined,
+        ciudad: ciudad || undefined,
         telefono: telefono || undefined,
         email: email || undefined,
+        sitioWeb: sitioWeb || undefined,
       });
       setGuardado(true);
     } catch (err) {
@@ -104,8 +113,16 @@ function MiEmpresaCard() {
           <input className="input" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
         </label>
         <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Ciudad</span>
+          <input className="input" value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
+        </label>
+        <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-ink-700">Email</span>
           <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Sitio web (opcional)</span>
+          <input className="input" placeholder="https://..." value={sitioWeb} onChange={(e) => setSitioWeb(e.target.value)} />
         </label>
       </div>
 
@@ -445,6 +462,267 @@ function ImpresionCard() {
       >
         {actualizar.isPending && <Loader2 size={16} className="animate-spin" />}
         Guardar configuración de impresión
+      </button>
+    </div>
+  );
+}
+
+function SistemaCard() {
+  const { data: empresa, isLoading } = useEmpresa();
+  const actualizar = useActualizarEmpresa();
+
+  const [moneda, setMoneda] = useState('COP');
+  const [zonaHoraria, setZonaHoraria] = useState('America/Bogota');
+  const [idioma, setIdioma] = useState('es');
+  const [tema, setTema] = useState<'CLARO' | 'OSCURO'>('CLARO');
+  const [error, setError] = useState<string | null>(null);
+  const [guardado, setGuardado] = useState(false);
+
+  useEffect(() => {
+    if (empresa) {
+      setMoneda(empresa.moneda);
+      setZonaHoraria(empresa.zonaHoraria);
+      setIdioma(empresa.idioma);
+      setTema(empresa.tema);
+    }
+  }, [empresa]);
+
+  async function handleGuardar() {
+    setError(null);
+    setGuardado(false);
+    if (!empresa) return;
+    try {
+      await actualizar.mutateAsync({ nombre: empresa.nombre, moneda, zonaHoraria, idioma, tema });
+      setGuardado(true);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo guardar la configuración del sistema'));
+    }
+  }
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white p-5 shadow-card">
+      <h3 className="font-display text-base font-semibold text-ink-800">Sistema</h3>
+
+      <div className="mt-4 space-y-4">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Moneda</span>
+          <select className="input" value={moneda} onChange={(e) => setMoneda(e.target.value)}>
+            <option value="COP">Peso colombiano (COP)</option>
+            <option value="USD">Dólar (USD)</option>
+            <option value="MXN">Peso mexicano (MXN)</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Zona horaria</span>
+          <select className="input" value={zonaHoraria} onChange={(e) => setZonaHoraria(e.target.value)}>
+            <option value="America/Bogota">Bogotá (GMT-5)</option>
+            <option value="America/Mexico_City">Ciudad de México (GMT-6)</option>
+            <option value="America/Lima">Lima (GMT-5)</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Idioma</span>
+          <select className="input" value={idioma} onChange={(e) => setIdioma(e.target.value)}>
+            <option value="es">Español</option>
+          </select>
+          <span className="mt-1 block text-xs text-ink-400">
+            El sistema hoy solo tiene textos en español — queda preparado para más idiomas en el futuro.
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Tema</span>
+          <div className="flex gap-1 rounded-lg bg-ink-50 p-1 text-sm font-medium">
+            <button
+              onClick={() => setTema('CLARO')}
+              className={`flex-1 rounded-md py-1.5 transition-colors ${tema === 'CLARO' ? 'bg-white text-ink-800 shadow-sm' : 'text-ink-400'}`}
+            >
+              Claro
+            </button>
+            <button
+              onClick={() => setTema('OSCURO')}
+              className={`flex-1 rounded-md py-1.5 transition-colors ${tema === 'OSCURO' ? 'bg-white text-ink-800 shadow-sm' : 'text-ink-400'}`}
+            >
+              Oscuro
+            </button>
+          </div>
+          <span className="mt-1 block text-xs text-ink-400">
+            Cambia el fondo general del sistema. Algunas pantallas puntuales todavía no se adaptan al modo oscuro.
+          </span>
+        </label>
+      </div>
+
+      {error && <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
+      {guardado && !error && (
+        <div className="mt-3 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">Guardado correctamente.</div>
+      )}
+
+      <button
+        onClick={handleGuardar}
+        disabled={actualizar.isPending}
+        className="mt-4 flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+      >
+        {actualizar.isPending && <Loader2 size={16} className="animate-spin" />}
+        Guardar
+      </button>
+    </div>
+  );
+}
+
+function VentasGeneralCard() {
+  const { data: empresa, isLoading } = useEmpresa();
+  const actualizar = useActualizarEmpresa();
+
+  const [permitirStockNegativo, setPermitirStockNegativo] = useState(false);
+  const [confirmarAntesDeVenta, setConfirmarAntesDeVenta] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [guardado, setGuardado] = useState(false);
+
+  useEffect(() => {
+    if (empresa) {
+      setPermitirStockNegativo(empresa.permitirStockNegativo);
+      setConfirmarAntesDeVenta(empresa.confirmarAntesDeVenta);
+    }
+  }, [empresa]);
+
+  async function handleGuardar() {
+    setError(null);
+    setGuardado(false);
+    if (!empresa) return;
+    try {
+      await actualizar.mutateAsync({ nombre: empresa.nombre, permitirStockNegativo, confirmarAntesDeVenta });
+      setGuardado(true);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo guardar la configuración de ventas'));
+    }
+  }
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white p-5 shadow-card">
+      <h3 className="font-display text-base font-semibold text-ink-800">Ventas</h3>
+      <p className="mt-1 text-xs text-ink-400">
+        Los descuentos y los métodos de pago múltiples ya están siempre disponibles según el plan de la empresa —
+        se administran en Descuentos y en Plataforma, no aquí.
+      </p>
+
+      <div className="mt-4 space-y-3">
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={permitirStockNegativo}
+            onChange={(e) => setPermitirStockNegativo(e.target.checked)}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span>
+            <span className="block text-sm font-medium text-ink-700">Permitir stock negativo</span>
+            <span className="block text-xs text-ink-400">
+              Si lo activas, el sistema deja vender un producto aunque el inventario quede en negativo (útil si el
+              conteo puede estar desactualizado). Por defecto, el sistema bloquea la venta.
+            </span>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={confirmarAntesDeVenta}
+            onChange={(e) => setConfirmarAntesDeVenta(e.target.checked)}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span>
+            <span className="block text-sm font-medium text-ink-700">Confirmar antes de finalizar una venta</span>
+            <span className="block text-xs text-ink-400">
+              Muestra un cuadro de confirmación en el POS antes de cerrar cada venta.
+            </span>
+          </span>
+        </label>
+      </div>
+
+      {error && <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
+      {guardado && !error && (
+        <div className="mt-3 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">Guardado correctamente.</div>
+      )}
+
+      <button
+        onClick={handleGuardar}
+        disabled={actualizar.isPending}
+        className="mt-4 flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+      >
+        {actualizar.isPending && <Loader2 size={16} className="animate-spin" />}
+        Guardar
+      </button>
+    </div>
+  );
+}
+
+function InventarioGeneralCard() {
+  const { data: empresa, isLoading } = useEmpresa();
+  const actualizar = useActualizarEmpresa();
+
+  const [stockMinimoDefault, setStockMinimoDefault] = useState('5');
+  const [error, setError] = useState<string | null>(null);
+  const [guardado, setGuardado] = useState(false);
+
+  useEffect(() => {
+    if (empresa) setStockMinimoDefault(String(empresa.stockMinimoDefault));
+  }, [empresa]);
+
+  async function handleGuardar() {
+    setError(null);
+    setGuardado(false);
+    if (!empresa) return;
+    try {
+      await actualizar.mutateAsync({ nombre: empresa.nombre, stockMinimoDefault: Number(stockMinimoDefault) || 0 });
+      setGuardado(true);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo guardar la configuración de inventario'));
+    }
+  }
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white p-5 shadow-card">
+      <h3 className="font-display text-base font-semibold text-ink-800">Inventario</h3>
+
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-sm font-medium text-ink-700">Inventario mínimo por defecto</span>
+        <input
+          type="number"
+          min={0}
+          className="input"
+          value={stockMinimoDefault}
+          onChange={(e) => setStockMinimoDefault(e.target.value)}
+        />
+        <span className="mt-1 block text-xs text-ink-400">
+          Se usa como referencia para la alerta de stock bajo cuando creas un producto nuevo — luego puedes ajustarlo
+          producto por producto desde el kardex.
+        </span>
+      </label>
+
+      <p className="mt-4 text-xs text-ink-400">
+        Las notificaciones de inventario bajo/agotado y el comportamiento de combos y servicios se activan y
+        configuran en Alertas y en Inventario → Combos respectivamente.
+      </p>
+
+      {error && <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
+      {guardado && !error && (
+        <div className="mt-3 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">Guardado correctamente.</div>
+      )}
+
+      <button
+        onClick={handleGuardar}
+        disabled={actualizar.isPending}
+        className="mt-4 flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+      >
+        {actualizar.isPending && <Loader2 size={16} className="animate-spin" />}
+        Guardar
       </button>
     </div>
   );
