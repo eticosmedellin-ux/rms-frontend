@@ -14,6 +14,7 @@ export interface LoginResponse {
   roles: string[];
   permisos: string[];
   esSuperadmin: boolean;
+  esAdministradorTotal: boolean;
 }
 
 export interface ApiErrorBody {

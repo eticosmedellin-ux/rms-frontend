@@ -14,6 +14,7 @@ interface AuthState {
   roles: string[];
   permisos: string[];
   esSuperadmin: boolean;
+  esAdministradorTotal: boolean;
   isAuthenticated: boolean;
   setSession: (data: LoginResponse) => void;
   updateAccessToken: (accessToken: string) => void;
@@ -33,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
       roles: [],
       permisos: [],
       esSuperadmin: false,
+      esAdministradorTotal: false,
       isAuthenticated: false,
 
       setSession: (data) =>
@@ -47,6 +49,7 @@ export const useAuthStore = create<AuthState>()(
           roles: data.roles,
           permisos: data.permisos,
           esSuperadmin: data.esSuperadmin,
+          esAdministradorTotal: data.esAdministradorTotal,
           isAuthenticated: true,
         }),
 
@@ -65,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
           roles: [],
           permisos: [],
           esSuperadmin: false,
+          esAdministradorTotal: false,
           isAuthenticated: false,
         });
       },

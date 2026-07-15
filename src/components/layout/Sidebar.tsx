@@ -60,16 +60,19 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
 
 export function Sidebar() {
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
+  const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
   const permisos = useAuthStore((state) => state.permisos);
   const { data: miPlan } = useMiPlan();
 
   const gruposVisibles = NAV_GROUPS_DEF.map((grupo) => ({
     ...grupo,
-    items: grupo.items.filter(
-      (item) =>
-        esSuperadmin ||
-        (puedeVerRuta(permisos, item.to) && incluidaEnPlan(miPlan?.rutasHabilitadas, item.to))
-    ),
+    items: grupo.items.filter((item) => {
+      if (esSuperadmin) return true;
+      // El administrador general de la empresa siempre ve todo lo que el PLAN permite,
+      // sin depender de si el permiso puntual quedó bien sincronizado en su rol.
+      const tienePermiso = esAdministradorTotal || puedeVerRuta(permisos, item.to);
+      return tienePermiso && incluidaEnPlan(miPlan?.rutasHabilitadas, item.to);
+    }),
   })).filter((grupo) => grupo.items.length > 0);
 
   return (
