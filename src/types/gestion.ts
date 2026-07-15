@@ -143,6 +143,13 @@ export interface Empresa {
   permitirStockNegativo: boolean;
   confirmarAntesDeVenta: boolean;
   stockMinimoDefault: number;
+  facebook: string | null;
+  instagram: string | null;
+  whatsapp: string | null;
+  bancoNombre: string | null;
+  bancoTipoCuenta: string | null;
+  bancoNumeroCuenta: string | null;
+  bancoTitular: string | null;
 }
 
 export interface EmpresaRequest {
@@ -167,6 +174,13 @@ export interface EmpresaRequest {
   permitirStockNegativo?: boolean;
   confirmarAntesDeVenta?: boolean;
   stockMinimoDefault?: number;
+  facebook?: string;
+  instagram?: string;
+  whatsapp?: string;
+  bancoNombre?: string;
+  bancoTipoCuenta?: string;
+  bancoNumeroCuenta?: string;
+  bancoTitular?: string;
 }
 
 // --- Auditoría ---

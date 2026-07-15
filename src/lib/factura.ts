@@ -161,6 +161,13 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
   .pie .gracias { font-size: 15px; font-weight: 700; color: #0f172a; }
   .pie .gracias-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
   .pie .atendido { font-size: 11.5px; color: #94a3b8; text-align: right; }
+  .info-extra {
+    margin-top: 16px; padding-top: 12px; border-top: 1px dashed #dbe1e8;
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  }
+  .info-extra-bloque { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #64748b; }
+  .info-extra-titulo { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; }
+  .info-extra-redes { text-align: right; align-items: flex-end; }
 </style>
 </head>
 <body>
@@ -233,6 +240,22 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
     </div>
     <div class="atendido">Documento generado por ${escapeHtml(nombreEmpresa)}</div>
   </div>
+
+  ${(empresa.bancoNombre || empresa.facebook || empresa.instagram || empresa.whatsapp || empresa.sitioWeb) ? `
+  <div class="info-extra">
+    ${empresa.bancoNombre ? `
+      <div class="info-extra-bloque">
+        <span class="info-extra-titulo">Pagos por transferencia</span>
+        <span>${escapeHtml(empresa.bancoNombre)} — ${escapeHtml(empresa.bancoTipoCuenta ?? '')} ${escapeHtml(empresa.bancoNumeroCuenta ?? '')}</span>
+        ${empresa.bancoTitular ? `<span>A nombre de: ${escapeHtml(empresa.bancoTitular)}</span>` : ''}
+      </div>` : ''}
+    <div class="info-extra-bloque info-extra-redes">
+      ${empresa.sitioWeb ? `<span>${escapeHtml(empresa.sitioWeb)}</span>` : ''}
+      ${empresa.whatsapp ? `<span>WhatsApp: ${escapeHtml(empresa.whatsapp)}</span>` : ''}
+      ${empresa.facebook ? `<span>Facebook: ${escapeHtml(empresa.facebook)}</span>` : ''}
+      ${empresa.instagram ? `<span>Instagram: ${escapeHtml(empresa.instagram)}</span>` : ''}
+    </div>
+  </div>` : ''}
 
 </body>
 </html>`;

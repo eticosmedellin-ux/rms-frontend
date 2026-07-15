@@ -62,8 +62,20 @@ export const enviarFacturaPorCorreo = async (ventaId: number): Promise<void> => 
   await apiClient.post(`/ventas/${ventaId}/enviar-factura`);
 };
 
-export const listarVentasPaginado = async (pagina: number, tamano: number): Promise<PaginaResponse<Venta>> =>
-  (await apiClient.get<PaginaResponse<Venta>>('/ventas/paginado', { params: { pagina, tamano } })).data;
+export interface FiltrosVentas {
+  desde?: string;
+  hasta?: string;
+  clienteId?: number;
+  usuarioId?: number;
+  sucursalId?: number;
+  cajaSesionId?: number;
+  texto?: string;
+}
+
+export const listarVentasPaginado = async (
+  pagina: number, tamano: number, filtros: FiltrosVentas = {}
+): Promise<PaginaResponse<Venta>> =>
+  (await apiClient.get<PaginaResponse<Venta>>('/ventas/paginado', { params: { pagina, tamano, ...filtros } })).data;
 
 export const registrarVenta = async (data: VentaRequest): Promise<Venta> =>
   (await apiClient.post<Venta>('/ventas', data)).data;

@@ -22,6 +22,7 @@ export default function ConfiguracionPage() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MiEmpresaCard />
         <MetodosPagoCard />
+        <RedesYBancoCard />
         <SistemaCard />
         <VentasGeneralCard />
         <InventarioGeneralCard />
@@ -478,6 +479,121 @@ function ImpresionCard() {
       >
         {actualizar.isPending && <Loader2 size={16} className="animate-spin" />}
         Guardar configuración de impresión
+      </button>
+    </div>
+  );
+}
+
+function RedesYBancoCard() {
+  const { data: empresa, isLoading } = useEmpresa();
+  const actualizar = useActualizarEmpresa();
+
+  const [facebook, setFacebook] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [bancoNombre, setBancoNombre] = useState('');
+  const [bancoTipoCuenta, setBancoTipoCuenta] = useState('');
+  const [bancoNumeroCuenta, setBancoNumeroCuenta] = useState('');
+  const [bancoTitular, setBancoTitular] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [guardado, setGuardado] = useState(false);
+
+  useEffect(() => {
+    if (empresa) {
+      setFacebook(empresa.facebook ?? '');
+      setInstagram(empresa.instagram ?? '');
+      setWhatsapp(empresa.whatsapp ?? '');
+      setBancoNombre(empresa.bancoNombre ?? '');
+      setBancoTipoCuenta(empresa.bancoTipoCuenta ?? '');
+      setBancoNumeroCuenta(empresa.bancoNumeroCuenta ?? '');
+      setBancoTitular(empresa.bancoTitular ?? '');
+    }
+  }, [empresa]);
+
+  async function handleGuardar() {
+    setError(null);
+    setGuardado(false);
+    if (!empresa) return;
+    try {
+      await actualizar.mutateAsync({
+        nombre: empresa.nombre,
+        facebook: facebook || undefined,
+        instagram: instagram || undefined,
+        whatsapp: whatsapp || undefined,
+        bancoNombre: bancoNombre || undefined,
+        bancoTipoCuenta: bancoTipoCuenta || undefined,
+        bancoNumeroCuenta: bancoNumeroCuenta || undefined,
+        bancoTitular: bancoTitular || undefined,
+      });
+      setGuardado(true);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo guardar'));
+    }
+  }
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white p-5 shadow-card lg:col-span-2">
+      <h3 className="font-display text-base font-semibold text-ink-800">Redes sociales y datos bancarios</h3>
+      <p className="mt-1 text-sm text-ink-400">
+        Aparecen en tus facturas y demás documentos, para que tus clientes te encuentren y te puedan pagar por
+        transferencia directamente.
+      </p>
+
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Facebook (opcional)</span>
+          <input className="input" placeholder="facebook.com/tunegocio" value={facebook} onChange={(e) => setFacebook(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">Instagram (opcional)</span>
+          <input className="input" placeholder="@tunegocio" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-700">WhatsApp (opcional)</span>
+          <input className="input" placeholder="+57 300 000 0000" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+        </label>
+      </div>
+
+      <div className="mt-5 border-t border-ink-100 pt-4">
+        <p className="mb-3 text-sm font-medium text-ink-700">Información bancaria (opcional)</p>
+        <div className="grid grid-cols-2 gap-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Banco</span>
+            <input className="input" value={bancoNombre} onChange={(e) => setBancoNombre(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Tipo de cuenta</span>
+            <select className="input" value={bancoTipoCuenta} onChange={(e) => setBancoTipoCuenta(e.target.value)}>
+              <option value="">Selecciona…</option>
+              <option value="AHORROS">Ahorros</option>
+              <option value="CORRIENTE">Corriente</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Número de cuenta</span>
+            <input className="input" value={bancoNumeroCuenta} onChange={(e) => setBancoNumeroCuenta(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">A nombre de</span>
+            <input className="input" value={bancoTitular} onChange={(e) => setBancoTitular(e.target.value)} />
+          </label>
+        </div>
+      </div>
+
+      {error && <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
+      {guardado && !error && (
+        <div className="mt-3 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">Guardado correctamente.</div>
+      )}
+
+      <button
+        onClick={handleGuardar}
+        disabled={actualizar.isPending}
+        className="mt-4 flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+      >
+        {actualizar.isPending && <Loader2 size={16} className="animate-spin" />}
+        Guardar
       </button>
     </div>
   );

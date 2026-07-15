@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail } from 'lucide-react';
-import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica, useEnviarFacturaPorCorreo } from '@/hooks/usePos';
+import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica, useEnviarFacturaPorCorreo, useClientes } from '@/hooks/usePos';
 import { useEmpresa } from '@/hooks/useGestion';
+import { useSucursales } from '@/hooks/useSucursales';
+import { useUsuarios } from '@/hooks/useNucleo';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { DevolucionModal } from '@/pages/pos/DevolucionModal';
 import { NotaDebitoModal } from '@/pages/pos/NotaDebitoModal';
@@ -33,19 +35,102 @@ const TAMANO_PAGINA = 25;
 
 export function VentasTab() {
   const [pagina, setPagina] = useState(0);
-  const { data: paginaVentas, isLoading } = useVentasPaginado(pagina, TAMANO_PAGINA);
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+  const [clienteId, setClienteId] = useState('');
+  const [sucursalId, setSucursalId] = useState('');
+  const [usuarioId, setUsuarioId] = useState('');
+  const [texto, setTexto] = useState('');
+
+  const filtros = {
+    desde: desde ? `${desde}T00:00:00` : undefined,
+    hasta: hasta ? `${hasta}T23:59:59` : undefined,
+    clienteId: clienteId ? Number(clienteId) : undefined,
+    sucursalId: sucursalId ? Number(sucursalId) : undefined,
+    usuarioId: usuarioId ? Number(usuarioId) : undefined,
+    texto: texto || undefined,
+  };
+
+  const { data: paginaVentas, isLoading } = useVentasPaginado(pagina, TAMANO_PAGINA, filtros);
   const { data: empresa } = useEmpresa();
+  const { data: clientes } = useClientes();
+  const { data: sucursales } = useSucursales();
+  const { data: usuarios } = useUsuarios();
   const [ventaDevolviendo, setVentaDevolviendo] = useState<Venta | null>(null);
   const [ventaNotaDebito, setVentaNotaDebito] = useState<Venta | null>(null);
 
+  function handleCambiarFiltro(actualizar: () => void) {
+    actualizar();
+    setPagina(0); // cualquier cambio de filtro vuelve a la primera página
+  }
+
   if (isLoading) return <LoadingState />;
   const ventas = paginaVentas?.contenido ?? [];
-  if (ventas.length === 0 && pagina === 0) {
+  const hayFiltrosActivos = Boolean(desde || hasta || clienteId || sucursalId || usuarioId || texto);
+  if (ventas.length === 0 && pagina === 0 && !hayFiltrosActivos) {
     return <EmptyState title="Sin ventas registradas todavía" description="Ve a la pestaña 'Vender' para registrar la primera." />;
   }
 
   return (
     <div>
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Buscar (n.° venta o factura)</span>
+          <input
+            className="input w-44"
+            value={texto}
+            onChange={(e) => handleCambiarFiltro(() => setTexto(e.target.value))}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Desde</span>
+          <input type="date" className="input" value={desde} onChange={(e) => handleCambiarFiltro(() => setDesde(e.target.value))} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Hasta</span>
+          <input type="date" className="input" value={hasta} onChange={(e) => handleCambiarFiltro(() => setHasta(e.target.value))} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Cliente</span>
+          <select className="input" value={clienteId} onChange={(e) => handleCambiarFiltro(() => setClienteId(e.target.value))}>
+            <option value="">Todos</option>
+            {clientes?.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Vendedor</span>
+          <select className="input" value={usuarioId} onChange={(e) => handleCambiarFiltro(() => setUsuarioId(e.target.value))}>
+            <option value="">Todos</option>
+            {usuarios?.map((u) => (
+              <option key={u.id} value={u.id}>{u.nombre}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Sucursal</span>
+          <select className="input" value={sucursalId} onChange={(e) => handleCambiarFiltro(() => setSucursalId(e.target.value))}>
+            <option value="">Todas</option>
+            {sucursales?.map((s) => (
+              <option key={s.id} value={s.id}>{s.nombre}</option>
+            ))}
+          </select>
+        </label>
+        {hayFiltrosActivos && (
+          <button
+            onClick={() => handleCambiarFiltro(() => { setDesde(''); setHasta(''); setClienteId(''); setSucursalId(''); setUsuarioId(''); setTexto(''); })}
+            className="rounded-lg border border-ink-200 px-3 py-2 text-xs font-medium text-ink-500 hover:bg-ink-50"
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      {ventas.length === 0 ? (
+        <EmptyState title="Sin resultados" description="Ninguna venta coincide con los filtros elegidos." />
+      ) : (
+      <div>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm text-ink-400">
           {paginaVentas?.totalElementos ?? 0} venta{paginaVentas?.totalElementos === 1 ? '' : 's'} en total
@@ -153,6 +238,8 @@ export function VentasTab() {
             <ChevronRight size={14} />
           </button>
         </div>
+      )}
+      </div>
       )}
 
       <DevolucionModal
