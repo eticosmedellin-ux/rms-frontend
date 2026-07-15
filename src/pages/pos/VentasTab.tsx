@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail } from 'lucide-react';
+import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail, Share2 } from 'lucide-react';
 import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica, useEnviarFacturaPorCorreo, useClientes } from '@/hooks/usePos';
 import { useEmpresa } from '@/hooks/useGestion';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useUsuarios } from '@/hooks/useNucleo';
+import { CompartirFacturaModal } from '@/pages/pos/CompartirFacturaModal';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { DevolucionModal } from '@/pages/pos/DevolucionModal';
 import { NotaDebitoModal } from '@/pages/pos/NotaDebitoModal';
@@ -58,6 +59,7 @@ export function VentasTab() {
   const { data: usuarios } = useUsuarios();
   const [ventaDevolviendo, setVentaDevolviendo] = useState<Venta | null>(null);
   const [ventaNotaDebito, setVentaNotaDebito] = useState<Venta | null>(null);
+  const [ventaCompartiendo, setVentaCompartiendo] = useState<Venta | null>(null);
 
   function handleCambiarFiltro(actualizar: () => void) {
     actualizar();
@@ -208,6 +210,13 @@ export function VentasTab() {
                       </button>
                     )}
                     <BotonEnviarCorreo venta={v} />
+                    <button
+                      onClick={() => setVentaCompartiendo(v)}
+                      title="Compartir"
+                      className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                    >
+                      <Share2 size={16} />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -256,6 +265,9 @@ export function VentasTab() {
           clienteId={undefined}
           clienteNombre={ventaNotaDebito.cliente}
         />
+      )}
+      {ventaCompartiendo && (
+        <CompartirFacturaModal venta={ventaCompartiendo} onClose={() => setVentaCompartiendo(null)} />
       )}
     </div>
   );
@@ -321,7 +333,7 @@ function BotonEnviarCorreo({ venta }: { venta: Venta }) {
     setEstado('idle');
     setMensajeError(null);
     try {
-      await enviar.mutateAsync(venta.id);
+      await enviar.mutateAsync({ ventaId: venta.id });
       setEstado('ok');
       setTimeout(() => setEstado('idle'), 3000);
     } catch (err) {

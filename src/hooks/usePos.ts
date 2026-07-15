@@ -94,7 +94,10 @@ export function useVentas() {
 }
 
 export function useEnviarFacturaPorCorreo() {
-  return useMutation({ mutationFn: (ventaId: number) => posApi.enviarFacturaPorCorreo(ventaId) });
+  return useMutation({
+    mutationFn: ({ ventaId, correo }: { ventaId: number; correo?: string }) =>
+      posApi.enviarFacturaPorCorreo(ventaId, correo),
+  });
 }
 
 export function useVentasPaginado(pagina: number, tamano: number, filtros: posApi.FiltrosVentas = {}) {
