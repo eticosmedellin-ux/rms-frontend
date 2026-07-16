@@ -10,11 +10,18 @@ import {
   useCancelarComanda,
 } from '@/hooks/useRestaurante';
 import { useProductos } from '@/hooks/useInventario';
-import { useMetodosPago } from '@/hooks/useGestion';
 import { useCajaAbierta } from '@/hooks/usePos';
 import { getApiErrorMessage } from '@/api/errors';
 import { LoadingState } from '@/components/ui/States';
 import type { Mesa, EstadoItemComanda } from '@/api/restaurante';
+import type { MetodoPagoVenta } from '@/types/pos';
+
+const METODOS_PAGO: { valor: MetodoPagoVenta; etiqueta: string }[] = [
+  { valor: 'EFECTIVO', etiqueta: 'Efectivo' },
+  { valor: 'TARJETA', etiqueta: 'Tarjeta' },
+  { valor: 'TRANSFERENCIA', etiqueta: 'Transferencia' },
+  { valor: 'CREDITO', etiqueta: 'Crédito' },
+];
 
 const ESTADO_ITEM_LABELS: Record<EstadoItemComanda, string> = {
   PENDIENTE: 'Pendiente',
@@ -38,7 +45,6 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   const abrir = useAbrirComanda();
   const { data: comanda, isLoading } = useComanda(mesa?.comandaActivaId ?? null);
   const { data: productos } = useProductos();
-  const { data: metodosPago } = useMetodosPago();
   const { data: cajaAbierta } = useCajaAbierta(mesa?.sucursalId ?? null);
   const agregarItem = useAgregarItemComanda();
   const cambiarEstado = useCambiarEstadoItem();
@@ -49,16 +55,16 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   const [cantidad, setCantidad] = useState('1');
   const [notasItem, setNotasItem] = useState('');
   const [mostrarCierre, setMostrarCierre] = useState(false);
-  const [metodoPago, setMetodoPago] = useState('');
+  const [metodoPago, setMetodoPago] = useState<MetodoPagoVenta>('EFECTIVO');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setMostrarCierre(false);
       setError(null);
-      if (metodosPago && metodosPago.length > 0) setMetodoPago(metodosPago[0].nombre);
+      setMetodoPago('EFECTIVO');
     }
-  }, [isOpen, metodosPago, mesa]);
+  }, [isOpen, mesa]);
 
   if (!mesa) return null;
 
@@ -147,10 +153,10 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
             </p>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-ink-600">Método de pago</span>
-              <select className="input" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)}>
-                {metodosPago?.map((m) => (
-                  <option key={m.id} value={m.nombre}>
-                    {m.nombre}
+              <select className="input" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as MetodoPagoVenta)}>
+                {METODOS_PAGO.map((m) => (
+                  <option key={m.valor} value={m.valor}>
+                    {m.etiqueta}
                   </option>
                 ))}
               </select>
