@@ -13,6 +13,7 @@ import {
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { getApiErrorMessage } from '@/api/errors';
 import { comprimirImagen } from '@/api/imagen';
+import { useTiposNegocioActivos } from '@/hooks/usePlataforma';
 
 export default function ConfiguracionPage() {
   return (
@@ -38,6 +39,7 @@ export default function ConfiguracionPage() {
 function MiEmpresaCard() {
   const { data: empresa, isLoading } = useEmpresa();
   const actualizar = useActualizarEmpresa();
+  const { data: tiposNegocio } = useTiposNegocioActivos();
 
   const [nombre, setNombre] = useState('');
   const [nombreComercial, setNombreComercial] = useState('');
@@ -48,6 +50,7 @@ function MiEmpresaCard() {
   const [email, setEmail] = useState('');
   const [sitioWeb, setSitioWeb] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [tiposNegocioIds, setTiposNegocioIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
 
@@ -62,8 +65,17 @@ function MiEmpresaCard() {
       setEmail(empresa.email ?? '');
       setSitioWeb(empresa.sitioWeb ?? '');
       setLogoUrl(empresa.logoUrl ?? null);
+      setTiposNegocioIds(empresa.tiposNegocio.map((t) => t.id));
     }
   }, [empresa]);
+
+  function toggleTipoNegocio(id: number) {
+    setTiposNegocioIds((actuales) => {
+      if (actuales.includes(id)) return actuales.filter((x) => x !== id);
+      if (actuales.length >= 2) return actuales;
+      return [...actuales, id];
+    });
+  }
 
   async function handleLogoSeleccionado(e: ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
@@ -94,6 +106,7 @@ function MiEmpresaCard() {
         email: email || undefined,
         sitioWeb: sitioWeb || undefined,
         logoUrl: logoUrl || undefined,
+        tiposNegocioIds: tiposNegocioIds.length > 0 ? tiposNegocioIds : undefined,
       });
       setGuardado(true);
     } catch (err) {
@@ -129,6 +142,31 @@ function MiEmpresaCard() {
             </button>
           )}
           <p className="mt-1 text-[11px] text-ink-400">Aparece en el sidebar y en tus documentos. Se ajusta automáticamente.</p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <span className="mb-1.5 block text-sm font-medium text-ink-700">
+          Tipo de negocio <span className="font-normal text-ink-400">(elige 1 o 2)</span>
+        </span>
+        <div className="grid grid-cols-3 gap-2">
+          {tiposNegocio?.map((t) => {
+            const seleccionado = tiposNegocioIds.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleTipoNegocio(t.id)}
+                className={`rounded-lg border px-3 py-2 text-left text-xs font-medium transition-colors ${
+                  seleccionado
+                    ? 'border-sicom-green bg-sicom-green/10 text-sicom-green'
+                    : 'border-ink-200 text-ink-600 hover:border-ink-300'
+                }`}
+              >
+                {t.nombre}
+              </button>
+            );
+          })}
         </div>
       </div>
 

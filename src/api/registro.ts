@@ -8,6 +8,7 @@ export interface RegistroEmpresaRequest {
   moneda?: string;
   zonaHoraria?: string;
   nombreSucursal?: string;
+  tiposNegocioIds: number[];
   administrador: {
     nombre: string;
     apellido?: string;

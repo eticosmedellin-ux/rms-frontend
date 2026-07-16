@@ -102,3 +102,68 @@ export function useEliminarNoticiaLogin() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['noticias-login'] }),
   });
 }
+
+// --- Tipos de negocio ---
+
+export function useTiposNegocioActivos() {
+  return useQuery({
+    queryKey: ['tipos-negocio-activos'],
+    queryFn: plataformaApi.listarTiposNegocioActivos,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useTiposNegocio() {
+  return useQuery({ queryKey: ['tipos-negocio'], queryFn: plataformaApi.listarTiposNegocio });
+}
+
+export function useCrearTipoNegocio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: plataformaApi.TipoNegocioRequest) => plataformaApi.crearTipoNegocio(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tipos-negocio'] });
+      queryClient.invalidateQueries({ queryKey: ['tipos-negocio-activos'] });
+    },
+  });
+}
+
+export function useActualizarTipoNegocio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: plataformaApi.TipoNegocioRequest }) =>
+      plataformaApi.actualizarTipoNegocio(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tipos-negocio'] });
+      queryClient.invalidateQueries({ queryKey: ['tipos-negocio-activos'] });
+    },
+  });
+}
+
+export function useDesactivarTipoNegocio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => plataformaApi.desactivarTipoNegocio(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tipos-negocio'] });
+      queryClient.invalidateQueries({ queryKey: ['tipos-negocio-activos'] });
+    },
+  });
+}
+
+export function useAgregarModuloTipoNegocio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tipoNegocioId, data }: { tipoNegocioId: number; data: plataformaApi.TipoNegocioModuloRequest }) =>
+      plataformaApi.agregarModuloTipoNegocio(tipoNegocioId, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tipos-negocio'] }),
+  });
+}
+
+export function useEliminarModuloTipoNegocio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (moduloId: number) => plataformaApi.eliminarModuloTipoNegocio(moduloId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tipos-negocio'] }),
+  });
+}

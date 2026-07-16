@@ -84,3 +84,60 @@ export const actualizarNoticiaLogin = async (id: number, data: NoticiaLoginReque
 export const eliminarNoticiaLogin = async (id: number): Promise<void> => {
   await apiClient.delete(`/noticias-login/${id}`);
 };
+
+// --- Tipos de negocio ---
+
+export interface TipoNegocioModulo {
+  id: number;
+  moduloClave: string;
+  moduloEtiqueta: string;
+  esFuturo: boolean;
+}
+
+export interface TipoNegocio {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  activo: boolean;
+  orden: number;
+  modulos: TipoNegocioModulo[];
+}
+
+export interface TipoNegocioRequest {
+  nombre: string;
+  descripcion?: string;
+  activo?: boolean;
+  orden?: number;
+}
+
+export interface TipoNegocioModuloRequest {
+  moduloClave: string;
+  moduloEtiqueta: string;
+  esFuturo?: boolean;
+}
+
+/** Público — lo consume el formulario de registro de empresa, sin sesión. */
+export const listarTiposNegocioActivos = async (): Promise<TipoNegocio[]> =>
+  (await apiClient.get<TipoNegocio[]>('/catalogo-tipos-negocio')).data;
+
+export const listarTiposNegocio = async (): Promise<TipoNegocio[]> =>
+  (await apiClient.get<TipoNegocio[]>('/plataforma/tipos-negocio')).data;
+
+export const crearTipoNegocio = async (data: TipoNegocioRequest): Promise<TipoNegocio> =>
+  (await apiClient.post<TipoNegocio>('/plataforma/tipos-negocio', data)).data;
+
+export const actualizarTipoNegocio = async (id: number, data: TipoNegocioRequest): Promise<TipoNegocio> =>
+  (await apiClient.put<TipoNegocio>(`/plataforma/tipos-negocio/${id}`, data)).data;
+
+export const desactivarTipoNegocio = async (id: number): Promise<void> => {
+  await apiClient.delete(`/plataforma/tipos-negocio/${id}`);
+};
+
+export const agregarModuloTipoNegocio = async (
+  tipoNegocioId: number,
+  data: TipoNegocioModuloRequest
+): Promise<TipoNegocio> => (await apiClient.post<TipoNegocio>(`/plataforma/tipos-negocio/${tipoNegocioId}/modulos`, data)).data;
+
+export const eliminarModuloTipoNegocio = async (moduloId: number): Promise<void> => {
+  await apiClient.delete(`/plataforma/tipos-negocio/modulos/${moduloId}`);
+};

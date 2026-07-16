@@ -3,12 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { registrarEmpresa } from '@/api/registro';
 import { getApiErrorMessage } from '@/api/errors';
+import { useTiposNegocioActivos } from '@/hooks/usePlataforma';
 
 export default function RegistroEmpresaPage() {
   const navigate = useNavigate();
+  const { data: tiposNegocio } = useTiposNegocioActivos();
   const [codigoInvitacion, setCodigoInvitacion] = useState('');
   const [nombreEmpresa, setNombreEmpresa] = useState('');
   const [nit, setNit] = useState('');
+  const [tiposNegocioIds, setTiposNegocioIds] = useState<number[]>([]);
   const [nombreAdmin, setNombreAdmin] = useState('');
   const [apellidoAdmin, setApellidoAdmin] = useState('');
   const [username, setUsername] = useState('');
@@ -17,6 +20,14 @@ export default function RegistroEmpresaPage() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [exito, setExito] = useState<string | null>(null);
+
+  function toggleTipoNegocio(id: number) {
+    setTiposNegocioIds((actuales) => {
+      if (actuales.includes(id)) return actuales.filter((x) => x !== id);
+      if (actuales.length >= 2) return actuales; // máximo 2
+      return [...actuales, id];
+    });
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -30,6 +41,10 @@ export default function RegistroEmpresaPage() {
       setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
+    if (tiposNegocioIds.length === 0) {
+      setError('Elige al menos 1 tipo de negocio (máximo 2)');
+      return;
+    }
 
     setCargando(true);
     try {
@@ -37,6 +52,7 @@ export default function RegistroEmpresaPage() {
         codigoInvitacion: codigoInvitacion.trim().toUpperCase(),
         nombreEmpresa,
         nit: nit || undefined,
+        tiposNegocioIds,
         administrador: {
           nombre: nombreAdmin,
           apellido: apellidoAdmin || undefined,
@@ -101,6 +117,31 @@ export default function RegistroEmpresaPage() {
             <span className="mb-1.5 block text-sm font-medium text-ink-700">NIT (opcional)</span>
             <input className="input" value={nit} onChange={(e) => setNit(e.target.value)} />
           </label>
+
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">
+              Tipo de negocio <span className="font-normal text-ink-400">(elige 1 o 2)</span>
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              {tiposNegocio?.map((t) => {
+                const seleccionado = tiposNegocioIds.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => toggleTipoNegocio(t.id)}
+                    className={`rounded-lg border px-3 py-2 text-left text-xs font-medium transition-colors ${
+                      seleccionado
+                        ? 'border-sicom-green bg-sicom-green/10 text-sicom-green'
+                        : 'border-ink-200 text-ink-600 hover:border-ink-300'
+                    }`}
+                  >
+                    {t.nombre}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="border-t border-ink-100 pt-4">
             <p className="mb-3 text-sm font-semibold text-ink-700">Tu usuario administrador</p>

@@ -8,6 +8,7 @@ import { BackupsTab } from '@/pages/plataforma/BackupsTab';
 import { CobroAutomaticoTab } from '@/pages/plataforma/CobroAutomaticoTab';
 import { AyudaAdminTab } from '@/pages/plataforma/AyudaAdminTab';
 import { NoticiasLoginTab } from '@/pages/plataforma/NoticiasLoginTab';
+import { TiposNegocioTab } from '@/pages/plataforma/TiposNegocioTab';
 
 const TABS = [
   { id: 'empresas', label: 'Empresas' },
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'backups', label: 'Copias de seguridad' },
   { id: 'cobro', label: 'Cobro automático' },
   { id: 'noticias', label: 'Noticias del login' },
+  { id: 'tipos-negocio', label: 'Tipos de negocio' },
   { id: 'ayuda', label: 'Asistente de ayuda' },
 ] as const;
 
@@ -50,6 +52,7 @@ export default function PlataformaPage() {
         {tab === 'backups' && <BackupsTab />}
         {tab === 'cobro' && <CobroAutomaticoTab />}
         {tab === 'noticias' && <NoticiasLoginTab />}
+        {tab === 'tipos-negocio' && <TiposNegocioTab />}
         {tab === 'ayuda' && <AyudaAdminTab />}
       </div>
     </div>

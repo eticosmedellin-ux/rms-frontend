@@ -151,6 +151,7 @@ export interface Empresa {
   bancoTipoCuenta: string | null;
   bancoNumeroCuenta: string | null;
   bancoTitular: string | null;
+  tiposNegocio: { id: number; nombre: string }[];
 }
 
 export interface EmpresaRequest {
@@ -182,6 +183,7 @@ export interface EmpresaRequest {
   bancoTipoCuenta?: string;
   bancoNumeroCuenta?: string;
   bancoTitular?: string;
+  tiposNegocioIds?: number[];
 }
 
 // --- Auditoría ---
