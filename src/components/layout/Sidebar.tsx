@@ -14,6 +14,7 @@ import {
   FileStack,
   Calculator,
   Users2,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
@@ -40,6 +41,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
       { to: '/inventario', label: 'Inventario', icon: Package },
       { to: '/compras', label: 'Compras', icon: ShoppingCart },
       { to: '/gastos', label: 'Gastos', icon: Receipt },
+      { to: '/restaurante', label: 'Restaurante', icon: UtensilsCrossed },
     ],
   },
   {

@@ -13,6 +13,7 @@ export const RUTA_A_MODULO: Record<string, string> = {
   '/configuracion': 'CONFIGURACION',
   '/contabilidad': 'CONTABILIDAD',
   '/nomina': 'NOMINA',
+  '/restaurante': 'RESTAURANTE',
 };
 
 export function moduloDePermiso(codigoPermiso: string): string {
@@ -43,6 +44,7 @@ export const RUTA_A_PLAN: Record<string, string> = {
   '/administracion': 'usuarios',
   '/contabilidad': 'contabilidad',
   '/nomina': 'nomina',
+  '/restaurante': 'restaurante',
 };
 
 export function incluidaEnPlan(rutasHabilitadas: string[] | undefined, ruta: string): boolean {
