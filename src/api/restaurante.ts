@@ -72,6 +72,9 @@ export const abrirComanda = async (
 export const listarComandasActivas = async (): Promise<Comanda[]> =>
   (await apiClient.get<Comanda[]>('/restaurante/comandas/activas')).data;
 
+export const listarComandasHistorial = async (): Promise<Comanda[]> =>
+  (await apiClient.get<Comanda[]>('/restaurante/comandas/historial')).data;
+
 export const obtenerComanda = async (id: number): Promise<Comanda> =>
   (await apiClient.get<Comanda>(`/restaurante/comandas/${id}`)).data;
 

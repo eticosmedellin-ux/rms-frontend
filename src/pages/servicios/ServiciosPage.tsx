@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { CitasTab } from '@/pages/servicios/CitasTab';
 import { OrdenesTrabajoTab } from '@/pages/servicios/OrdenesTrabajoTab';
 import { TiposServicioTab } from '@/pages/servicios/TiposServicioTab';
+import { HistorialTab } from '@/pages/servicios/HistorialTab';
 
 const TABS = [
   { id: 'citas', label: 'Citas' },
   { id: 'ordenes', label: 'Órdenes de trabajo' },
   { id: 'tipos', label: 'Tipos de servicio' },
+  { id: 'historial', label: 'Historial' },
 ] as const;
 
 export default function ServiciosPage() {
@@ -35,6 +37,7 @@ export default function ServiciosPage() {
         {tab === 'citas' && <CitasTab />}
         {tab === 'ordenes' && <OrdenesTrabajoTab />}
         {tab === 'tipos' && <TiposServicioTab />}
+        {tab === 'historial' && <HistorialTab />}
       </div>
     </div>
   );

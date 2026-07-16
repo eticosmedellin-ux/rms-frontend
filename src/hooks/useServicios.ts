@@ -26,6 +26,10 @@ export function useCitas() {
   return useQuery({ queryKey: ['citas'], queryFn: serviciosApi.listarCitas });
 }
 
+export function useCitasHistorial() {
+  return useQuery({ queryKey: ['citas-historial'], queryFn: serviciosApi.listarCitasHistorial });
+}
+
 export function useCrearCita() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -46,7 +50,10 @@ export function useCambiarEstadoCita() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, estado }: { id: number; estado: serviciosApi.EstadoCita }) => serviciosApi.cambiarEstadoCita(id, estado),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['citas'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['citas'] });
+      queryClient.invalidateQueries({ queryKey: ['citas-historial'] });
+    },
   });
 }
 

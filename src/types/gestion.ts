@@ -36,7 +36,8 @@ export type TipoAlerta =
   | 'CXC_POR_VENCER'
   | 'EFECTIVO_MAXIMO_CAJA'
   | 'CAJA_DIFERENCIA_CIERRE'
-  | 'NOMINA_PAGO_PROXIMO';
+  | 'NOMINA_PAGO_PROXIMO'
+  | 'PRESTAMO_CUOTA_PROXIMA';
 
 export interface Alerta {
   id: number;

@@ -22,6 +22,7 @@ import ContabilidadPage from '@/pages/contabilidad/ContabilidadPage';
 import NominaPage from '@/pages/nomina/NominaPage';
 import RestaurantePage from '@/pages/restaurante/RestaurantePage';
 import ServiciosPage from '@/pages/servicios/ServiciosPage';
+import PrestamosPage from '@/pages/prestamos/PrestamosPage';
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/nomina" element={<NominaPage />} />
           <Route path="/restaurante" element={<RestaurantePage />} />
           <Route path="/servicios" element={<ServiciosPage />} />
+          <Route path="/prestamos" element={<PrestamosPage />} />
           <Route path="/gastos" element={<GastosPage />} />
           <Route path="/reportes" element={<ReportesPage />} />
           <Route path="/alertas" element={<AlertasPage />} />

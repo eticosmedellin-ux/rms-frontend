@@ -15,6 +15,7 @@ export const RUTA_A_MODULO: Record<string, string> = {
   '/nomina': 'NOMINA',
   '/restaurante': 'RESTAURANTE',
   '/servicios': 'SERVICIOS',
+  '/prestamos': 'PRESTAMOS',
 };
 
 export function moduloDePermiso(codigoPermiso: string): string {
@@ -47,6 +48,7 @@ export const RUTA_A_PLAN: Record<string, string> = {
   '/nomina': 'nomina',
   '/restaurante': 'restaurante',
   '/servicios': 'servicios',
+  '/prestamos': 'prestamos',
 };
 
 export function incluidaEnPlan(rutasHabilitadas: string[] | undefined, ruta: string): boolean {

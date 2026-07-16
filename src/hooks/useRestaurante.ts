@@ -38,6 +38,10 @@ export function useComandasActivas() {
   return useQuery({ queryKey: ['comandas-activas'], queryFn: restauranteApi.listarComandasActivas, refetchInterval: 15000 });
 }
 
+export function useComandasHistorial() {
+  return useQuery({ queryKey: ['comandas-historial'], queryFn: restauranteApi.listarComandasHistorial });
+}
+
 export function useComanda(id: number | null) {
   return useQuery({
     queryKey: ['comanda', id],
@@ -79,6 +83,7 @@ export function useCerrarComanda() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mesas'] });
       queryClient.invalidateQueries({ queryKey: ['comandas-activas'] });
+      queryClient.invalidateQueries({ queryKey: ['comandas-historial'] });
       queryClient.invalidateQueries({ queryKey: ['ventas'] });
     },
   });
@@ -91,6 +96,7 @@ export function useCancelarComanda() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mesas'] });
       queryClient.invalidateQueries({ queryKey: ['comandas-activas'] });
+      queryClient.invalidateQueries({ queryKey: ['comandas-historial'] });
     },
   });
 }

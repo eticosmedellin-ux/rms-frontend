@@ -90,6 +90,9 @@ export const actualizarTipoServicio = async (id: number, data: TipoServicioReque
 
 export const listarCitas = async (): Promise<Cita[]> => (await apiClient.get<Cita[]>('/servicios/citas')).data;
 
+export const listarCitasHistorial = async (): Promise<Cita[]> =>
+  (await apiClient.get<Cita[]>('/servicios/citas/historial')).data;
+
 export const crearCita = async (data: CitaRequest): Promise<Cita> =>
   (await apiClient.post<Cita>('/servicios/citas', data)).data;
 
