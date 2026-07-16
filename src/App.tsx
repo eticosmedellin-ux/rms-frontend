@@ -20,7 +20,6 @@ import DescuentosPage from '@/pages/descuentos/DescuentosPage';
 import DocumentosPage from '@/pages/documentos/DocumentosPage';
 import ContabilidadPage from '@/pages/contabilidad/ContabilidadPage';
 import NominaPage from '@/pages/nomina/NominaPage';
-import NominaPage from '@/pages/nomina/NominaPage';
 
 export default function App() {
   return (
@@ -39,7 +38,6 @@ export default function App() {
           <Route path="/descuentos" element={<DescuentosPage />} />
           <Route path="/documentos" element={<DocumentosPage />} />
           <Route path="/contabilidad" element={<ContabilidadPage />} />
-          <Route path="/nomina" element={<NominaPage />} />
           <Route path="/nomina" element={<NominaPage />} />
           <Route path="/gastos" element={<GastosPage />} />
           <Route path="/reportes" element={<ReportesPage />} />
