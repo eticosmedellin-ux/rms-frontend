@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import { Plus, Loader2, FileSignature, Printer } from 'lucide-react';
 import {
   useMetodosPago,
@@ -12,6 +12,7 @@ import {
 } from '@/hooks/useGestion';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { getApiErrorMessage } from '@/api/errors';
+import { comprimirImagen } from '@/api/imagen';
 
 export default function ConfiguracionPage() {
   return (
@@ -46,6 +47,7 @@ function MiEmpresaCard() {
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
   const [sitioWeb, setSitioWeb] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
 
@@ -59,8 +61,20 @@ function MiEmpresaCard() {
       setTelefono(empresa.telefono ?? '');
       setEmail(empresa.email ?? '');
       setSitioWeb(empresa.sitioWeb ?? '');
+      setLogoUrl(empresa.logoUrl ?? null);
     }
   }, [empresa]);
+
+  async function handleLogoSeleccionado(e: ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    try {
+      const dataUrl = await comprimirImagen(archivo, 320, 0.85);
+      setLogoUrl(dataUrl);
+    } catch {
+      setError('No se pudo procesar la imagen. Intenta con otra foto.');
+    }
+  }
 
   async function handleGuardar() {
     setError(null);
@@ -79,6 +93,7 @@ function MiEmpresaCard() {
         telefono: telefono || undefined,
         email: email || undefined,
         sitioWeb: sitioWeb || undefined,
+        logoUrl: logoUrl || undefined,
       });
       setGuardado(true);
     } catch (err) {
@@ -92,7 +107,32 @@ function MiEmpresaCard() {
     <div className="rounded-xl border border-ink-100 bg-white p-5 shadow-card lg:col-span-2">
       <h3 className="font-display text-base font-semibold text-ink-800">Mi empresa</h3>
 
-      <div className="mt-3 grid grid-cols-2 gap-4">
+      <div className="mt-3 flex items-center gap-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-ink-100 bg-ink-50">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo de la empresa" className="h-full w-full object-contain" />
+          ) : (
+            <span className="text-[10px] text-ink-300">Sin logo</span>
+          )}
+        </div>
+        <div>
+          <label className="cursor-pointer rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50">
+            {logoUrl ? 'Cambiar logo' : 'Subir logo'}
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogoSeleccionado} />
+          </label>
+          {logoUrl && (
+            <button
+              onClick={() => setLogoUrl(null)}
+              className="ml-2 text-xs font-medium text-ink-400 hover:text-danger-500"
+            >
+              Quitar
+            </button>
+          )}
+          <p className="mt-1 text-[11px] text-ink-400">Aparece en el sidebar y en tus documentos. Se ajusta automáticamente.</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-ink-700">Razón social</span>
           <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} />

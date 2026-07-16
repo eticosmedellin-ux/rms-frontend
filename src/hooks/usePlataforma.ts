@@ -62,3 +62,43 @@ export function useActualizarPlanEmpresa() {
 export function useMiPlan() {
   return useQuery({ queryKey: ['mi-plan'], queryFn: plataformaApi.obtenerMiPlan, staleTime: 5 * 60 * 1000 });
 }
+
+// --- Noticias del login ---
+
+export function useNoticiasLoginActivas() {
+  return useQuery({
+    queryKey: ['noticias-login-activas'],
+    queryFn: plataformaApi.listarNoticiasLoginActivas,
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+}
+
+export function useNoticiasLogin() {
+  return useQuery({ queryKey: ['noticias-login'], queryFn: plataformaApi.listarNoticiasLogin });
+}
+
+export function useCrearNoticiaLogin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: plataformaApi.NoticiaLoginRequest) => plataformaApi.crearNoticiaLogin(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['noticias-login'] }),
+  });
+}
+
+export function useActualizarNoticiaLogin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: plataformaApi.NoticiaLoginRequest }) =>
+      plataformaApi.actualizarNoticiaLogin(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['noticias-login'] }),
+  });
+}
+
+export function useEliminarNoticiaLogin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => plataformaApi.eliminarNoticiaLogin(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['noticias-login'] }),
+  });
+}

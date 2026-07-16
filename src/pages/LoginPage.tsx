@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Lock, User, Store, Package, FileText, TrendingUp, Users } from 'lucide-react';
+import { Loader2, Lock, User, Store, Package, FileText, TrendingUp, Users, Megaphone } from 'lucide-react';
 import { login } from '@/api/auth';
 import { getApiErrorMessage } from '@/api/errors';
 import { useAuthStore } from '@/stores/authStore';
 import { loginSchema, type LoginFormValues } from '@/pages/login-schema';
+import { useNoticiasLoginActivas } from '@/hooks/usePlataforma';
 
 /** Íconos grandes y difuminados flotando en el fondo — son los mismos 5 del logo de SICOM
  *  (Punto de venta, Inventario, Facturación electrónica, Reportes, Multiusuario), no formas
@@ -25,6 +26,7 @@ export default function LoginPage() {
   const location = useLocation();
   const setSession = useAuthStore((state) => state.setSession);
   const [serverError, setServerError] = useState<string | null>(null);
+  const { data: noticias } = useNoticiasLoginActivas();
 
   const {
     register,
@@ -83,7 +85,27 @@ export default function LoginPage() {
       ))}
 
       {/* Tarjeta de login, tipo vidrio esmerilado */}
-      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.07] p-8 shadow-2xl backdrop-blur-2xl">
+      <div className="relative z-10 w-full max-w-sm">
+        {noticias && noticias.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {noticias.map((n) => (
+              <div
+                key={n.id}
+                className={`flex items-start gap-2 rounded-lg border px-3 py-2.5 text-xs backdrop-blur-xl ${
+                  n.tipo === 'ADVERTENCIA'
+                    ? 'border-amber-400/30 bg-amber-400/10 text-amber-100'
+                    : n.tipo === 'EXITO'
+                      ? 'border-sicom-greenLight/30 bg-sicom-greenLight/10 text-sicom-greenLight'
+                      : 'border-white/15 bg-white/[0.07] text-white/80'
+                }`}
+              >
+                <Megaphone size={14} className="mt-0.5 shrink-0" />
+                <p>{n.mensaje}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-8 shadow-2xl backdrop-blur-2xl">
         <div className="text-center">
           <span className="font-display text-2xl font-bold tracking-tight">
             <span className="text-white">SIC</span>
@@ -161,6 +183,7 @@ export default function LoginPage() {
             Registra tu negocio
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );

@@ -51,3 +51,36 @@ export const actualizarPlanEmpresa = async (empresaId: number, data: PlanEmpresa
 
 export const obtenerMiPlan = async (): Promise<PlanEmpresa> =>
   (await apiClient.get<PlanEmpresa>('/mi-plan')).data;
+
+// --- Noticias del login (barra de anuncios en la pantalla de login, de plataforma) ---
+
+export interface NoticiaLogin {
+  id: number;
+  mensaje: string;
+  tipo: 'INFO' | 'ADVERTENCIA' | 'EXITO';
+  activa: boolean;
+  creadoEn: string;
+}
+
+export interface NoticiaLoginRequest {
+  mensaje: string;
+  tipo?: 'INFO' | 'ADVERTENCIA' | 'EXITO';
+  activa?: boolean;
+}
+
+/** Público — no requiere sesión, la consume la pantalla de login. */
+export const listarNoticiasLoginActivas = async (): Promise<NoticiaLogin[]> =>
+  (await apiClient.get<NoticiaLogin[]>('/noticias-login/activas')).data;
+
+export const listarNoticiasLogin = async (): Promise<NoticiaLogin[]> =>
+  (await apiClient.get<NoticiaLogin[]>('/noticias-login')).data;
+
+export const crearNoticiaLogin = async (data: NoticiaLoginRequest): Promise<NoticiaLogin> =>
+  (await apiClient.post<NoticiaLogin>('/noticias-login', data)).data;
+
+export const actualizarNoticiaLogin = async (id: number, data: NoticiaLoginRequest): Promise<NoticiaLogin> =>
+  (await apiClient.put<NoticiaLogin>(`/noticias-login/${id}`, data)).data;
+
+export const eliminarNoticiaLogin = async (id: number): Promise<void> => {
+  await apiClient.delete(`/noticias-login/${id}`);
+};
