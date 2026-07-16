@@ -32,6 +32,38 @@ export interface CajaSesion {
   fechaCierre: string | null;
 }
 
+export interface ResumenCierreCajaMovimiento {
+  fecha: string;
+  tipo: 'INGRESO' | 'EGRESO';
+  concepto: string | null;
+  monto: number;
+  origen: string | null;
+}
+
+export interface ResumenCierreCaja {
+  sesionId: number;
+  sucursal: string;
+  usuario: string;
+  fechaApertura: string;
+  fechaCierre: string | null;
+  montoApertura: number;
+  ventasTotal: number;
+  numeroVentas: number;
+  ventasEfectivo: number;
+  ventasTarjeta: number;
+  ventasTransferencia: number;
+  ventasCredito: number;
+  ventasOtros: number;
+  ingresosManuales: number;
+  egresosManuales: number;
+  movimientos: ResumenCierreCajaMovimiento[];
+  montoCierreSistema: number | null;
+  montoCierreReal: number | null;
+  diferencia: number | null;
+  observaciones: string | null;
+  estado: 'ABIERTA' | 'CERRADA';
+}
+
 export interface CajaMovimiento {
   id: number;
   tipo: 'INGRESO' | 'EGRESO';

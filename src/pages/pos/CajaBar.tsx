@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Lock, Unlock, List, Plus, Loader2, AlertTriangle } from 'lucide-react';
+import { Lock, Unlock, List, Plus, Loader2, AlertTriangle, Download } from 'lucide-react';
 import { useSucursales } from '@/hooks/useSucursales';
 import { usePosStore } from '@/stores/posStore';
-import { useCajaAbierta, useAbrirCaja, useCerrarCaja, useMovimientosCaja, useRegistrarMovimientoCaja } from '@/hooks/usePos';
+import { useCajaAbierta, useAbrirCaja, useCerrarCaja, useMovimientosCaja, useRegistrarMovimientoCaja, useResumenCierre } from '@/hooks/usePos';
 import { Modal } from '@/components/ui/Modal';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { getApiErrorMessage } from '@/api/errors';
+import { descargarArchivo } from '@/lib/descargarArchivo';
 
 export function CajaBar() {
   const { data: sucursales } = useSucursales();
@@ -308,15 +309,17 @@ function AbrirCajaModal({
 
 function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose: () => void; cajaId: number }) {
   const cerrar = useCerrarCaja();
+  const { data: resumen, isLoading: cargandoResumen } = useResumenCierre(isOpen ? cajaId : null);
   const [montoReal, setMontoReal] = useState('');
+  const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [resultado, setResultado] = useState<{ sistema: number; diferencia: number } | null>(null);
+  const [cerrado, setCerrado] = useState(false);
 
   async function handleSubmit() {
     setError(null);
     try {
-      const sesion = await cerrar.mutateAsync({ id: cajaId, montoCierreReal: Number(montoReal) });
-      setResultado({ sistema: sesion.montoCierreSistema ?? 0, diferencia: sesion.diferencia ?? 0 });
+      await cerrar.mutateAsync({ id: cajaId, montoCierreReal: Number(montoReal), observaciones: observaciones || undefined });
+      setCerrado(true);
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo cerrar la caja'));
     }
@@ -324,35 +327,54 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
 
   function handleClose() {
     setMontoReal('');
-    setResultado(null);
+    setObservaciones('');
+    setCerrado(false);
     onClose();
   }
 
+  function money(v: number | null) {
+    return `$${(v ?? 0).toLocaleString('es-CO')}`;
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Cerrar caja (arqueo)" size="sm">
-      {resultado ? (
+    <Modal isOpen={isOpen} onClose={handleClose} title="Cierre de caja" size="md">
+      {cargandoResumen ? (
+        <LoadingState />
+      ) : !resumen ? null : cerrado ? (
         <div className="space-y-3">
-          <p className="text-sm text-ink-600">
-            Monto calculado por el sistema: <span className="font-semibold">${resultado.sistema.toLocaleString('es-CO')}</span>
-          </p>
-          <p className="text-sm text-ink-600">
-            Diferencia:{' '}
-            <span className={`font-semibold ${resultado.diferencia === 0 ? 'text-success-600' : 'text-amber-600'}`}>
-              ${resultado.diferencia.toLocaleString('es-CO')}
-            </span>
-          </p>
+          <div className="rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">
+            Caja cerrada correctamente.
+          </div>
+          <ResumenTabla resumen={resumen} montoReal={Number(montoReal)} money={money} />
           <button
-            onClick={handleClose}
-            className="w-full rounded-lg bg-ink-800 py-2 text-sm font-semibold text-white hover:bg-ink-700"
+            onClick={() => descargarArchivo(`/caja/${cajaId}/resumen-cierre/exportar`, `cierre-caja-${cajaId}.xlsx`)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-ink-200 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
           >
+            <Download size={15} />
+            Descargar en Excel
+          </button>
+          <button onClick={handleClose} className="w-full rounded-lg bg-ink-800 py-2 text-sm font-semibold text-white hover:bg-ink-700">
             Listo
           </button>
         </div>
       ) : (
         <div className="space-y-4">
+          <ResumenTabla resumen={resumen} montoReal={montoReal ? Number(montoReal) : null} money={money} />
+
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Efectivo contado físicamente</span>
             <input type="number" className="input" value={montoReal} onChange={(e) => setMontoReal(e.target.value)} />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Observaciones (opcional)</span>
+            <textarea
+              className="input"
+              rows={2}
+              placeholder="Explica cualquier diferencia, si la hay…"
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+            />
           </label>
 
           {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
@@ -364,13 +386,62 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
             <button
               onClick={handleSubmit}
               disabled={cerrar.isPending || !montoReal}
-              className="rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+              className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
             >
+              {cerrar.isPending && <Loader2 size={15} className="animate-spin" />}
               Confirmar cierre
             </button>
           </div>
         </div>
       )}
     </Modal>
+  );
+}
+
+function ResumenTabla({
+  resumen,
+  montoReal,
+  money,
+}: {
+  resumen: import('@/types/pos').ResumenCierreCaja;
+  montoReal: number | null;
+  money: (v: number | null) => string;
+}) {
+  const diferencia = montoReal !== null ? montoReal - (resumen.montoCierreSistema ?? 0) : resumen.diferencia;
+  return (
+    <div className="space-y-3 rounded-lg border border-ink-100 bg-ink-50/60 p-4 text-sm">
+      <div className="flex justify-between text-ink-600">
+        <span>Apertura</span>
+        <span className="font-medium text-ink-800">{money(resumen.montoApertura)}</span>
+      </div>
+      <div className="border-t border-ink-100 pt-2">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
+          Ventas ({resumen.numeroVentas})
+        </p>
+        <div className="flex justify-between text-ink-600"><span>Efectivo</span><span>{money(resumen.ventasEfectivo)}</span></div>
+        <div className="flex justify-between text-ink-600"><span>Tarjeta</span><span>{money(resumen.ventasTarjeta)}</span></div>
+        <div className="flex justify-between text-ink-600"><span>Transferencia</span><span>{money(resumen.ventasTransferencia)}</span></div>
+        <div className="flex justify-between text-ink-600"><span>Crédito</span><span>{money(resumen.ventasCredito)}</span></div>
+        {resumen.ventasOtros > 0 && (
+          <div className="flex justify-between text-ink-600"><span>Otros</span><span>{money(resumen.ventasOtros)}</span></div>
+        )}
+        <div className="mt-1 flex justify-between font-medium text-ink-800"><span>Total ventas</span><span>{money(resumen.ventasTotal)}</span></div>
+      </div>
+      <div className="border-t border-ink-100 pt-2">
+        <div className="flex justify-between text-ink-600"><span>Ingresos manuales</span><span>{money(resumen.ingresosManuales)}</span></div>
+        <div className="flex justify-between text-ink-600"><span>Egresos manuales</span><span>{money(resumen.egresosManuales)}</span></div>
+      </div>
+      <div className="border-t border-ink-100 pt-2 font-medium text-ink-800">
+        <div className="flex justify-between"><span>Efectivo esperado en caja</span><span>{money(resumen.montoCierreSistema)}</span></div>
+        {montoReal !== null && (
+          <>
+            <div className="flex justify-between"><span>Efectivo contado</span><span>{money(montoReal)}</span></div>
+            <div className={`flex justify-between ${diferencia === 0 ? 'text-success-600' : 'text-amber-600'}`}>
+              <span>Diferencia</span><span>{money(diferencia)}</span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

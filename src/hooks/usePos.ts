@@ -61,11 +61,19 @@ export function useAbrirCaja() {
 export function useCerrarCaja() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, montoCierreReal }: { id: number; montoCierreReal: number }) =>
-      posApi.cerrarCaja(id, montoCierreReal),
+    mutationFn: ({ id, montoCierreReal, observaciones }: { id: number; montoCierreReal: number; observaciones?: string }) =>
+      posApi.cerrarCaja(id, montoCierreReal, observaciones),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['caja-abierta'] });
     },
+  });
+}
+
+export function useResumenCierre(id: number | null) {
+  return useQuery({
+    queryKey: ['resumen-cierre', id],
+    queryFn: () => posApi.obtenerResumenCierre(id as number),
+    enabled: id !== null,
   });
 }
 

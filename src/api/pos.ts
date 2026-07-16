@@ -4,6 +4,7 @@ import type {
   ClienteRequest,
   CajaSesion,
   CajaMovimiento,
+  ResumenCierreCaja,
   Venta,
   VentaRequest,
   DevolucionVentaRequest,
@@ -44,8 +45,11 @@ export const obtenerCajaAbierta = async (sucursalId: number): Promise<CajaSesion
 export const abrirCaja = async (data: { sucursalId: number; montoApertura: number }): Promise<CajaSesion> =>
   (await apiClient.post<CajaSesion>('/caja/abrir', data)).data;
 
-export const cerrarCaja = async (id: number, montoCierreReal: number): Promise<CajaSesion> =>
-  (await apiClient.post<CajaSesion>(`/caja/${id}/cerrar`, { montoCierreReal })).data;
+export const cerrarCaja = async (id: number, montoCierreReal: number, observaciones?: string): Promise<CajaSesion> =>
+  (await apiClient.post<CajaSesion>(`/caja/${id}/cerrar`, { montoCierreReal, observaciones })).data;
+
+export const obtenerResumenCierre = async (id: number): Promise<ResumenCierreCaja> =>
+  (await apiClient.get<ResumenCierreCaja>(`/caja/${id}/resumen-cierre`)).data;
 
 export const listarMovimientosCaja = async (id: number): Promise<CajaMovimiento[]> =>
   (await apiClient.get<CajaMovimiento[]>(`/caja/${id}/movimientos`)).data;
