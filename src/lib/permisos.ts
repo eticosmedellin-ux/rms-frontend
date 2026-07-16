@@ -12,6 +12,7 @@ export const RUTA_A_MODULO: Record<string, string> = {
   '/administracion': 'USUARIOS',
   '/configuracion': 'CONFIGURACION',
   '/contabilidad': 'CONTABILIDAD',
+  '/nomina': 'NOMINA',
 };
 
 export function moduloDePermiso(codigoPermiso: string): string {
@@ -41,6 +42,7 @@ export const RUTA_A_PLAN: Record<string, string> = {
   '/alertas': 'alertas',
   '/administracion': 'usuarios',
   '/contabilidad': 'contabilidad',
+  '/nomina': 'nomina',
 };
 
 export function incluidaEnPlan(rutasHabilitadas: string[] | undefined, ruta: string): boolean {

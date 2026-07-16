@@ -10,7 +10,7 @@ const PLANTILLAS: Record<string, string[]> = {
   Básico: ['ventas', 'productos', 'caja', 'documentos-caja'],
   Profesional: [
     'ventas', 'productos', 'caja', 'documentos-caja', 'cotizaciones', 'tipos-descuento',
-    'clientes', 'cuentas-por-cobrar', 'proveedores', 'cuentas-por-pagar', 'reportes', 'alertas',
+    'clientes', 'cuentas-por-cobrar', 'proveedores', 'cuentas-por-pagar', 'reportes', 'alertas', 'nomina',
   ],
 };
 
