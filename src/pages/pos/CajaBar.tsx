@@ -346,13 +346,15 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
             Caja cerrada correctamente.
           </div>
           <ResumenTabla resumen={resumen} montoReal={Number(montoReal)} money={money} />
-          <button
-            onClick={() => descargarArchivo(`/caja/${cajaId}/resumen-cierre/exportar`, `cierre-caja-${cajaId}.xlsx`)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-ink-200 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
-          >
-            <Download size={15} />
-            Descargar en Excel
-          </button>
+          {resumen.resumenCompleto && (
+            <button
+              onClick={() => descargarArchivo(`/caja/${cajaId}/resumen-cierre/exportar`, `cierre-caja-${cajaId}.xlsx`)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-ink-200 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
+            >
+              <Download size={15} />
+              Descargar en Excel
+            </button>
+          )}
           <button onClick={handleClose} className="w-full rounded-lg bg-ink-800 py-2 text-sm font-semibold text-white hover:bg-ink-700">
             Listo
           </button>
@@ -407,6 +409,23 @@ function ResumenTabla({
   montoReal: number | null;
   money: (v: number | null) => string;
 }) {
+  if (!resumen.resumenCompleto) {
+    // Sin el permiso "Caja: Ver resumen financiero" el cajero cuenta a ciegas: no ve
+    // ventas por medio de pago, ingresos/egresos ni el monto esperado en sistema.
+    return (
+      <div className="space-y-3 rounded-lg border border-ink-100 bg-ink-50/60 p-4 text-sm">
+        <div className="flex justify-between text-ink-600">
+          <span>Apertura</span>
+          <span className="font-medium text-ink-800">{money(resumen.montoApertura)}</span>
+        </div>
+        <p className="border-t border-ink-100 pt-2 text-xs text-ink-400">
+          Cuenta el efectivo físico de la caja y escribe el total abajo. Tu rol no tiene permiso para ver el
+          desglose financiero de este cierre.
+        </p>
+      </div>
+    );
+  }
+
   const diferencia = montoReal !== null ? montoReal - (resumen.montoCierreSistema ?? 0) : resumen.diferencia;
   return (
     <div className="space-y-3 rounded-lg border border-ink-100 bg-ink-50/60 p-4 text-sm">

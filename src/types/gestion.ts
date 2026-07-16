@@ -34,7 +34,8 @@ export type TipoAlerta =
   | 'CAJA_SIN_CERRAR'
   | 'CXP_POR_VENCER'
   | 'CXC_POR_VENCER'
-  | 'EFECTIVO_MAXIMO_CAJA';
+  | 'EFECTIVO_MAXIMO_CAJA'
+  | 'CAJA_DIFERENCIA_CIERRE';
 
 export interface Alerta {
   id: number;

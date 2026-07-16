@@ -20,6 +20,7 @@ const TIPO_LABELS: Record<TipoAlerta, string> = {
   CXP_POR_VENCER: 'Cuenta por pagar próxima a vencer',
   CXC_POR_VENCER: 'Cuenta por cobrar próxima a vencer',
   EFECTIVO_MAXIMO_CAJA: 'Efectivo máximo en caja',
+  CAJA_DIFERENCIA_CIERRE: 'Descuadre en cierre de caja',
 };
 
 const TIPO_TONES: Record<TipoAlerta, string> = {
@@ -31,6 +32,7 @@ const TIPO_TONES: Record<TipoAlerta, string> = {
   CXP_POR_VENCER: 'bg-amber-100 text-amber-700',
   CXC_POR_VENCER: 'bg-amber-100 text-amber-700',
   EFECTIVO_MAXIMO_CAJA: 'bg-amber-100 text-amber-700',
+  CAJA_DIFERENCIA_CIERRE: 'bg-danger-50 text-danger-600',
 };
 
 export default function AlertasPage() {
@@ -109,6 +111,7 @@ const TIPOS_CONFIGURABLES: TipoAlerta[] = [
   'CXP_POR_VENCER',
   'CXC_POR_VENCER',
   'EFECTIVO_MAXIMO_CAJA',
+  'CAJA_DIFERENCIA_CIERRE',
 ];
 
 function ConfiguracionAlertasModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {

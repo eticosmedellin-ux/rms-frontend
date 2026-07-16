@@ -62,6 +62,9 @@ export interface ResumenCierreCaja {
   diferencia: number | null;
   observaciones: string | null;
   estado: 'ABIERTA' | 'CERRADA';
+  /** false si el usuario no tiene el permiso CAJA_VER_RESUMEN — en ese caso los campos
+   *  financieros de arriba vienen en null/cero y no deben mostrarse. */
+  resumenCompleto: boolean;
 }
 
 export interface CajaMovimiento {
