@@ -26,6 +26,8 @@ const TIPO_LABELS: Record<TipoAlerta, string> = {
   DOMICILIO_NUEVO: 'Nuevo pedido a domicilio',
   MESA_OCUPADA_MUCHO_TIEMPO: 'Mesa ocupada hace mucho',
   CITA_PROXIMA: 'Cita próxima',
+  RESERVA_PROXIMA: 'Reserva próxima',
+  CLIENTE_CUMPLEANOS: 'Cumpleaños de cliente',
 };
 
 const TIPO_TONES: Record<TipoAlerta, string> = {
@@ -43,6 +45,8 @@ const TIPO_TONES: Record<TipoAlerta, string> = {
   DOMICILIO_NUEVO: 'bg-blue-100 text-blue-700',
   MESA_OCUPADA_MUCHO_TIEMPO: 'bg-amber-100 text-amber-700',
   CITA_PROXIMA: 'bg-blue-100 text-blue-700',
+  RESERVA_PROXIMA: 'bg-blue-100 text-blue-700',
+  CLIENTE_CUMPLEANOS: 'bg-pink-100 text-pink-700',
 };
 
 export default function AlertasPage() {
@@ -126,6 +130,8 @@ const TIPOS_CONFIGURABLES: TipoAlerta[] = [
   'PRESTAMO_CUOTA_PROXIMA',
   'MESA_OCUPADA_MUCHO_TIEMPO',
   'CITA_PROXIMA',
+  'RESERVA_PROXIMA',
+  'CLIENTE_CUMPLEANOS',
 ];
 
 function ConfiguracionAlertasModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {

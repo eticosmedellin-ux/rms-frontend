@@ -64,6 +64,7 @@ export function ClientesTab() {
                 <th className="px-4 py-3 text-left font-medium">Documento</th>
                 <th className="px-4 py-3 text-left font-medium">Teléfono</th>
                 <th className="px-4 py-3 text-left font-medium">Correo</th>
+                <th className="px-4 py-3 text-right font-medium">Puntos</th>
                 <th className="px-4 py-3 text-right font-medium">Límite crédito</th>
                 <th className="px-4 py-3 text-right font-medium">Saldo pendiente</th>
                 <th className="px-4 py-3 text-right font-medium">Acciones</th>
@@ -72,10 +73,18 @@ export function ClientesTab() {
             <tbody className="divide-y divide-ink-50">
               {clientes.map((c) => (
                 <tr key={c.id} className="hover:bg-ink-50/60">
-                  <td className="px-4 py-3 font-medium text-ink-800">{c.nombre}</td>
+                  <td className="px-4 py-3 font-medium text-ink-800">
+                    <span className="flex items-center gap-1.5">
+                      {c.nombre}
+                      {c.esVip && (
+                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700">VIP</span>
+                      )}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-ink-500">{c.documento ?? '—'}</td>
                   <td className="px-4 py-3 text-ink-500">{c.telefono ?? '—'}</td>
                   <td className="px-4 py-3 text-ink-500">{c.email ?? <span className="text-ink-300">Sin correo</span>}</td>
+                  <td className="px-4 py-3 text-right text-ink-600">{c.puntosFidelizacion}</td>
                   <td className="px-4 py-3 text-right text-ink-700">${c.limiteCredito.toLocaleString('es-CO')}</td>
                   <td className={`px-4 py-3 text-right font-medium ${c.saldoPendiente > 0 ? 'text-amber-600' : 'text-ink-700'}`}>
                     ${c.saldoPendiente.toLocaleString('es-CO')}
@@ -132,6 +141,7 @@ function ClienteFormModal({
   const [email, setEmail] = useState('');
   const [direccion, setDireccion] = useState('');
   const [limiteCredito, setLimiteCredito] = useState('0');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -142,6 +152,7 @@ function ClienteFormModal({
       setEmail(editando.email ?? '');
       setDireccion(editando.direccion ?? '');
       setLimiteCredito(String(editando.limiteCredito));
+      setFechaNacimiento(editando.fechaNacimiento ?? '');
     } else {
       setNombre('');
       setDocumento('');
@@ -149,6 +160,7 @@ function ClienteFormModal({
       setEmail('');
       setDireccion('');
       setLimiteCredito('0');
+      setFechaNacimiento('');
     }
     setError(null);
   }, [editando, isOpen]);
@@ -163,6 +175,7 @@ function ClienteFormModal({
       email: email || undefined,
       direccion: direccion || undefined,
       limiteCredito: Number(limiteCredito) || 0,
+      fechaNacimiento: fechaNacimiento || undefined,
     };
     try {
       if (editando) {
@@ -209,10 +222,16 @@ function ClienteFormModal({
           <span className="mb-1.5 block text-sm font-medium text-ink-700">Dirección</span>
           <input className="input" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
         </label>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-ink-700">Límite de crédito</span>
-          <input type="number" className="input" value={limiteCredito} onChange={(e) => setLimiteCredito(e.target.value)} />
-        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Límite de crédito</span>
+            <input type="number" className="input" value={limiteCredito} onChange={(e) => setLimiteCredito(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Fecha de nacimiento</span>
+            <input type="date" className="input" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
+          </label>
+        </div>
 
         {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
 

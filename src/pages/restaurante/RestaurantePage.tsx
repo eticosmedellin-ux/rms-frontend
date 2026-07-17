@@ -1,6 +1,12 @@
 import { useState } from 'react';
-import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles } from 'lucide-react';
-import { useMesas, useComandasHistorial, useComandasActivas, useCambiarEstadoMesa, useCambiarEstadoItem } from '@/hooks/useRestaurante';
+import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X } from 'lucide-react';
+import {
+  useMesas, useComandasHistorial, useComandasActivas, useCambiarEstadoMesa, useCambiarEstadoItem,
+  useReservas, useCrearReserva, useCambiarEstadoReserva,
+} from '@/hooks/useRestaurante';
+import { useSucursales } from '@/hooks/useSucursales';
+import { useClientes } from '@/hooks/usePos';
+import { getApiErrorMessage } from '@/api/errors';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { MesaFormModal } from '@/pages/restaurante/MesaFormModal';
@@ -46,7 +52,7 @@ export default function RestaurantePage() {
   const [mesaEditar, setMesaEditar] = useState<Mesa | null>(null);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
   const [mesaQr, setMesaQr] = useState<Mesa | null>(null);
-  const [vista, setVista] = useState<'mesas' | 'cocina' | 'historial'>('mesas');
+  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'historial'>('mesas');
 
   function manejarClicMesa(m: Mesa) {
     // Una mesa en Limpieza no tiene comanda que gestionar — clic rápido la libera.
@@ -93,6 +99,15 @@ export default function RestaurantePage() {
         >
           <ChefHat size={14} />
           Cocina / Bar
+        </button>
+        <button
+          onClick={() => setVista('reservas')}
+          className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            vista === 'reservas' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
+          }`}
+        >
+          <CalendarPlus size={14} />
+          Reservas
         </button>
         <button
           onClick={() => setVista('historial')}
@@ -167,6 +182,7 @@ export default function RestaurantePage() {
       )}
 
       {vista === 'cocina' && <PantallaCocina />}
+      {vista === 'reservas' && <ReservasTab />}
       {vista === 'historial' && <HistorialComandas />}
 
       <MesaFormModal isOpen={formAbierto} onClose={() => setFormAbierto(false)} mesa={mesaEditar} />
@@ -247,6 +263,193 @@ function PantallaCocina() {
       ) : (
         <EmptyState title="Sin pedidos pendientes" description="Aquí aparecen los ítems de todas las mesas mientras se preparan." />
       )}
+    </div>
+  );
+}
+
+const ESTADO_RESERVA_LABELS: Record<string, string> = {
+  PENDIENTE: 'Pendiente',
+  CONFIRMADA: 'Confirmada',
+  CUMPLIDA: 'Cumplida',
+  CANCELADA: 'Cancelada',
+  NO_ASISTIO: 'No asistió',
+};
+
+const ESTADO_RESERVA_TONOS: Record<string, string> = {
+  PENDIENTE: 'bg-ink-100 text-ink-600',
+  CONFIRMADA: 'bg-blue-100 text-blue-700',
+  CUMPLIDA: 'bg-success-50 text-success-600',
+  CANCELADA: 'bg-danger-50 text-danger-500',
+  NO_ASISTIO: 'bg-danger-50 text-danger-500',
+};
+
+function ReservasTab() {
+  const { data: reservas, isLoading } = useReservas();
+  const { data: sucursales } = useSucursales();
+  const { data: clientes } = useClientes();
+  const crear = useCrearReserva();
+  const cambiarEstado = useCambiarEstadoReserva();
+
+  const [mostrarForm, setMostrarForm] = useState(false);
+  const [sucursalId, setSucursalId] = useState('');
+  const [clienteId, setClienteId] = useState('');
+  const [nombreContacto, setNombreContacto] = useState('');
+  const [telefonoContacto, setTelefonoContacto] = useState('');
+  const [fechaHora, setFechaHora] = useState('');
+  const [numeroPersonas, setNumeroPersonas] = useState('2');
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCrear() {
+    setError(null);
+    if (!sucursalId || !fechaHora) {
+      setError('Sucursal y fecha/hora son obligatorias');
+      return;
+    }
+    try {
+      await crear.mutateAsync({
+        sucursalId: Number(sucursalId),
+        clienteId: clienteId ? Number(clienteId) : undefined,
+        nombreContacto: nombreContacto || undefined,
+        telefonoContacto: telefonoContacto || undefined,
+        fechaHora: new Date(fechaHora).toISOString(),
+        numeroPersonas: Number(numeroPersonas) || 1,
+      });
+      setMostrarForm(false);
+      setClienteId('');
+      setNombreContacto('');
+      setTelefonoContacto('');
+      setFechaHora('');
+      setNumeroPersonas('2');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo crear la reserva'));
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <div className="flex justify-end">
+        <button
+          onClick={() => {
+            setSucursalId(sucursales?.[0] ? String(sucursales[0].id) : '');
+            setMostrarForm(true);
+          }}
+          className="flex items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
+        >
+          <Plus size={16} />
+          Nueva reserva
+        </button>
+      </div>
+
+      {mostrarForm && (
+        <div className="mt-4 rounded-xl border border-ink-100 bg-ink-50 p-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Sucursal</span>
+              <select className="input text-sm" value={sucursalId} onChange={(e) => setSucursalId(e.target.value)}>
+                {sucursales?.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Cliente (opcional)</span>
+              <select className="input text-sm" value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
+                <option value="">Sin registrar</option>
+                {clientes?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Nombre de contacto</span>
+              <input className="input text-sm" value={nombreContacto} onChange={(e) => setNombreContacto(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Teléfono</span>
+              <input className="input text-sm" value={telefonoContacto} onChange={(e) => setTelefonoContacto(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Fecha y hora</span>
+              <input type="datetime-local" className="input text-sm" value={fechaHora} onChange={(e) => setFechaHora(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Personas</span>
+              <input type="number" min={1} className="input text-sm" value={numeroPersonas} onChange={(e) => setNumeroPersonas(e.target.value)} />
+            </label>
+          </div>
+          {error && <p className="mt-2 text-xs text-danger-500">{error}</p>}
+          <div className="mt-3 flex justify-end gap-2">
+            <button onClick={() => setMostrarForm(false)} className="rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-white">
+              Cancelar
+            </button>
+            <button
+              onClick={handleCrear}
+              disabled={crear.isPending}
+              className="rounded-lg bg-ink-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-ink-700"
+            >
+              Crear reserva
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4">
+        {isLoading ? (
+          <LoadingState />
+        ) : reservas && reservas.length > 0 ? (
+          <div className="space-y-2">
+            {reservas.map((r) => (
+              <div key={r.id} className="flex items-center justify-between rounded-xl border border-ink-100 bg-white px-4 py-3 shadow-card">
+                <div>
+                  <p className="text-sm font-medium text-ink-800">
+                    {r.clienteNombre ?? r.nombreContacto ?? 'Sin nombre'} · {r.numeroPersonas} personas
+                  </p>
+                  <p className="text-xs text-ink-400">
+                    {new Date(r.fechaHora).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {r.mesaNumero ? ` · Mesa ${r.mesaNumero}` : ''}
+                    {r.telefonoContacto ? ` · ${r.telefonoContacto}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {r.estado === 'PENDIENTE' && (
+                    <button
+                      onClick={() => cambiarEstado.mutate({ id: r.id, estado: 'CONFIRMADA' })}
+                      className="rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
+                    >
+                      Confirmar
+                    </button>
+                  )}
+                  {(r.estado === 'PENDIENTE' || r.estado === 'CONFIRMADA') && (
+                    <>
+                      <button
+                        onClick={() => cambiarEstado.mutate({ id: r.id, estado: 'CUMPLIDA' })}
+                        className="rounded-full bg-success-50 px-2.5 py-1 text-xs font-medium text-success-600 hover:bg-success-100"
+                      >
+                        Cumplida
+                      </button>
+                      <button
+                        onClick={() => cambiarEstado.mutate({ id: r.id, estado: 'CANCELADA' })}
+                        className="rounded p-1 text-ink-300 hover:text-danger-500"
+                      >
+                        <X size={14} />
+                      </button>
+                    </>
+                  )}
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ESTADO_RESERVA_TONOS[r.estado]}`}>
+                    {ESTADO_RESERVA_LABELS[r.estado]}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Sin reservas" description="Crea la primera reserva de mesa." />
+        )}
+      </div>
     </div>
   );
 }

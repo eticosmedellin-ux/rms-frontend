@@ -25,8 +25,10 @@ export type EstadoItemComanda = 'PENDIENTE' | 'PREPARANDO' | 'LISTO' | 'ENTREGAD
 
 export interface ComandaItem {
   id: number;
-  productoId: number;
-  productoNombre: string;
+  productoId: number | null;
+  productoNombre: string | null;
+  comboId: number | null;
+  comboNombre: string | null;
   cantidad: number;
   precioUnitario: number;
   notas: string | null;
@@ -86,7 +88,7 @@ export const obtenerComanda = async (id: number): Promise<Comanda> =>
 
 export const agregarItemComanda = async (
   comandaId: number,
-  data: { productoId: number; cantidad: number; notas?: string }
+  data: { productoId?: number; comboId?: number; cantidad: number; notas?: string }
 ): Promise<Comanda> => (await apiClient.post<Comanda>(`/restaurante/comandas/${comandaId}/items`, data)).data;
 
 export const cambiarEstadoItem = async (
@@ -110,3 +112,46 @@ export const unirComanda = async (comandaId: number, otraComandaId: number): Pro
 
 export const asignarMesero = async (comandaId: number, meseroUsuarioId: number): Promise<Comanda> =>
   (await apiClient.patch<Comanda>(`/restaurante/comandas/${comandaId}/mesero`, { meseroUsuarioId })).data;
+
+// --- Reservas (Fase 2) ---
+
+export type EstadoReserva = 'PENDIENTE' | 'CONFIRMADA' | 'CUMPLIDA' | 'CANCELADA' | 'NO_ASISTIO';
+
+export interface Reserva {
+  id: number;
+  sucursalId: number;
+  sucursalNombre: string;
+  mesaId: number | null;
+  mesaNumero: string | null;
+  clienteId: number | null;
+  clienteNombre: string | null;
+  nombreContacto: string | null;
+  telefonoContacto: string | null;
+  fechaHora: string;
+  numeroPersonas: number;
+  estado: EstadoReserva;
+  notas: string | null;
+}
+
+export interface ReservaRequest {
+  sucursalId: number;
+  mesaId?: number;
+  clienteId?: number;
+  nombreContacto?: string;
+  telefonoContacto?: string;
+  fechaHora: string;
+  numeroPersonas: number;
+  notas?: string;
+}
+
+export const listarReservas = async (soloProximas = false): Promise<Reserva[]> =>
+  (await apiClient.get<Reserva[]>('/restaurante/reservas', { params: { soloProximas } })).data;
+
+export const crearReserva = async (data: ReservaRequest): Promise<Reserva> =>
+  (await apiClient.post<Reserva>('/restaurante/reservas', data)).data;
+
+export const actualizarReserva = async (id: number, data: ReservaRequest): Promise<Reserva> =>
+  (await apiClient.put<Reserva>(`/restaurante/reservas/${id}`, data)).data;
+
+export const cambiarEstadoReserva = async (id: number, estado: EstadoReserva): Promise<Reserva> =>
+  (await apiClient.patch<Reserva>(`/restaurante/reservas/${id}/estado`, { estado })).data;

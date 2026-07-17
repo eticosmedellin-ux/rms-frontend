@@ -8,6 +8,9 @@ export interface Cliente {
   limiteCredito: number;
   saldoPendiente: number;
   estado: boolean;
+  fechaNacimiento: string | null;
+  puntosFidelizacion: number;
+  esVip: boolean;
 }
 
 export interface ClienteRequest {
@@ -17,6 +20,7 @@ export interface ClienteRequest {
   email?: string;
   direccion?: string;
   limiteCredito?: number;
+  fechaNacimiento?: string;
 }
 
 export interface CajaSesion {

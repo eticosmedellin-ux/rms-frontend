@@ -40,7 +40,9 @@ export type TipoAlerta =
   | 'PRESTAMO_CUOTA_PROXIMA'
   | 'DOMICILIO_NUEVO'
   | 'MESA_OCUPADA_MUCHO_TIEMPO'
-  | 'CITA_PROXIMA';
+  | 'CITA_PROXIMA'
+  | 'RESERVA_PROXIMA'
+  | 'CLIENTE_CUMPLEANOS';
 
 export interface Alerta {
   id: number;

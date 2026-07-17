@@ -63,7 +63,7 @@ export function useComanda(id: number | null) {
 export function useAgregarItemComanda() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ comandaId, data }: { comandaId: number; data: { productoId: number; cantidad: number; notas?: string } }) =>
+    mutationFn: ({ comandaId, data }: { comandaId: number; data: { productoId?: number; comboId?: number; cantidad: number; notas?: string } }) =>
       restauranteApi.agregarItemComanda(comandaId, data),
     onSuccess: (_data, { comandaId }) => {
       queryClient.invalidateQueries({ queryKey: ['comanda', comandaId] });
@@ -140,5 +140,38 @@ export function useAsignarMesero() {
     mutationFn: ({ comandaId, meseroUsuarioId }: { comandaId: number; meseroUsuarioId: number }) =>
       restauranteApi.asignarMesero(comandaId, meseroUsuarioId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comandas-activas'] }),
+  });
+}
+
+// --- Reservas (Fase 2) ---
+
+export function useReservas(soloProximas = false) {
+  return useQuery({ queryKey: ['reservas', soloProximas], queryFn: () => restauranteApi.listarReservas(soloProximas) });
+}
+
+export function useCrearReserva() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: restauranteApi.ReservaRequest) => restauranteApi.crearReserva(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservas'] }),
+  });
+}
+
+export function useActualizarReserva() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: restauranteApi.ReservaRequest }) => restauranteApi.actualizarReserva(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservas'] }),
+  });
+}
+
+export function useCambiarEstadoReserva() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, estado }: { id: number; estado: restauranteApi.EstadoReserva }) => restauranteApi.cambiarEstadoReserva(id, estado),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservas'] });
+      queryClient.invalidateQueries({ queryKey: ['mesas'] });
+    },
   });
 }
