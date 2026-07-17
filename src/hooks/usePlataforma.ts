@@ -167,3 +167,9 @@ export function useEliminarModuloTipoNegocio() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tipos-negocio'] }),
   });
 }
+
+// --- Dashboard ejecutivo ---
+
+export function useDashboardEjecutivo() {
+  return useQuery({ queryKey: ['dashboard-ejecutivo'], queryFn: plataformaApi.obtenerDashboardEjecutivo });
+}

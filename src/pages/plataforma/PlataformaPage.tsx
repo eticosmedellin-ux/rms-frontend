@@ -9,8 +9,10 @@ import { CobroAutomaticoTab } from '@/pages/plataforma/CobroAutomaticoTab';
 import { AyudaAdminTab } from '@/pages/plataforma/AyudaAdminTab';
 import { NoticiasLoginTab } from '@/pages/plataforma/NoticiasLoginTab';
 import { TiposNegocioTab } from '@/pages/plataforma/TiposNegocioTab';
+import { DashboardEjecutivoTab } from '@/pages/plataforma/DashboardEjecutivoTab';
 
 const TABS = [
+  { id: 'dashboard', label: 'Dashboard' },
   { id: 'empresas', label: 'Empresas' },
   { id: 'codigos', label: 'Códigos de invitación' },
   { id: 'backups', label: 'Copias de seguridad' },
@@ -23,7 +25,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 export default function PlataformaPage() {
-  const [tab, setTab] = useState<TabId>('empresas');
+  const [tab, setTab] = useState<TabId>('dashboard');
 
   return (
     <div>
@@ -47,6 +49,7 @@ export default function PlataformaPage() {
       </div>
 
       <div className="mt-5">
+        {tab === 'dashboard' && <DashboardEjecutivoTab />}
         {tab === 'empresas' && <EmpresasTab />}
         {tab === 'codigos' && <CodigosInvitacionTab />}
         {tab === 'backups' && <BackupsTab />}

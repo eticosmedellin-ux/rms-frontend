@@ -141,3 +141,21 @@ export const agregarModuloTipoNegocio = async (
 export const eliminarModuloTipoNegocio = async (moduloId: number): Promise<void> => {
   await apiClient.delete(`/plataforma/tipos-negocio/modulos/${moduloId}`);
 };
+
+// --- Dashboard ejecutivo ---
+
+export interface DashboardEjecutivo {
+  totalEmpresas: number;
+  empresasActivas: number;
+  empresasSuspendidas: number;
+  empresasNuevasEsteMes: number;
+  mrr: number;
+  totalUsuarios: number;
+  ingresosPorMes: { mes: string; monto: number }[];
+  empresasPorTipoNegocio: { etiqueta: string; cantidad: number }[];
+  modulosMasUsados: { etiqueta: string; cantidad: number }[];
+  empresasEnRiesgo: { empresaId: number; nombreEmpresa: string; estadoSuscripcion: string; ultimoPagoMensaje: string | null }[];
+}
+
+export const obtenerDashboardEjecutivo = async (): Promise<DashboardEjecutivo> =>
+  (await apiClient.get<DashboardEjecutivo>('/plataforma/dashboard')).data;
