@@ -13,6 +13,14 @@ export function useSuspenderEmpresa() {
   });
 }
 
+export function useEliminarEmpresa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => plataformaApi.eliminarEmpresa(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plataforma-empresas'] }),
+  });
+}
+
 export function useActivarEmpresa() {
   const queryClient = useQueryClient();
   return useMutation({

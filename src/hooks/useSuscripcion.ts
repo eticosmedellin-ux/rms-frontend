@@ -17,8 +17,8 @@ export function useHistorialSuscripcion(empresaId: number | null) {
 export function useActivarSuscripcion() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ empresaId, valorMensual }: { empresaId: number; valorMensual: number }) =>
-      api.activarSuscripcion(empresaId, valorMensual),
+    mutationFn: ({ empresaId, valorMensual, frecuencia }: { empresaId: number; valorMensual: number; frecuencia?: 'MENSUAL' | 'ANUAL' }) =>
+      api.activarSuscripcion(empresaId, valorMensual, frecuencia),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suscripciones'] }),
   });
 }
@@ -34,8 +34,12 @@ export function useCancelarSuscripcion() {
 export function useMarcarPagoManual() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (empresaId: number) => api.marcarPagoManual(empresaId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suscripciones'] }),
+    mutationFn: ({ empresaId, data }: { empresaId: number; data?: { monto?: number; comprobante?: string } }) =>
+      api.marcarPagoManual(empresaId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suscripciones'] });
+      queryClient.invalidateQueries({ queryKey: ['historial-suscripcion'] });
+    },
   });
 }
 

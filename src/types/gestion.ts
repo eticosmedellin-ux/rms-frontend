@@ -37,7 +37,8 @@ export type TipoAlerta =
   | 'EFECTIVO_MAXIMO_CAJA'
   | 'CAJA_DIFERENCIA_CIERRE'
   | 'NOMINA_PAGO_PROXIMO'
-  | 'PRESTAMO_CUOTA_PROXIMA';
+  | 'PRESTAMO_CUOTA_PROXIMA'
+  | 'DOMICILIO_NUEVO';
 
 export interface Alerta {
   id: number;

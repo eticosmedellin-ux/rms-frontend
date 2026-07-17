@@ -28,6 +28,10 @@ export const suspenderEmpresa = async (id: number): Promise<void> => {
   await apiClient.post(`/plataforma/empresas/${id}/suspender`);
 };
 
+export const eliminarEmpresa = async (id: number): Promise<void> => {
+  await apiClient.delete(`/plataforma/empresas/${id}`);
+};
+
 export const activarEmpresa = async (id: number): Promise<void> => {
   await apiClient.post(`/plataforma/empresas/${id}/activar`);
 };

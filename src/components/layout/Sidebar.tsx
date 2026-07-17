@@ -17,6 +17,7 @@ import {
   UtensilsCrossed,
   CalendarClock,
   Landmark,
+  Bike,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
@@ -46,6 +47,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
       { to: '/restaurante', label: 'Restaurante', icon: UtensilsCrossed },
       { to: '/servicios', label: 'Servicios', icon: CalendarClock },
       { to: '/prestamos', label: 'Préstamos', icon: Landmark },
+      { to: '/domicilios', label: 'Domicilios', icon: Bike },
     ],
   },
   {

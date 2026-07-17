@@ -2,6 +2,7 @@ export interface SuscripcionEmpresa {
   empresaId: number;
   empresaNombre: string;
   valorMensual: number;
+  frecuencia: 'MENSUAL' | 'ANUAL';
   estado: 'SIN_CONFIGURAR' | 'PENDIENTE' | 'ACTIVA' | 'VENCIDA' | 'CANCELADA';
   proximoCobro: string | null;
   ultimoPagoFecha: string | null;
@@ -16,6 +17,7 @@ export interface PagoSuscripcion {
   referenciaProveedor: string | null;
   mensaje: string | null;
   fecha: string;
+  comprobante: string | null;
 }
 
 export interface ConfiguracionPagoRecurrente {

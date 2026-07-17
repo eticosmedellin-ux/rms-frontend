@@ -23,6 +23,7 @@ const TIPO_LABELS: Record<TipoAlerta, string> = {
   CAJA_DIFERENCIA_CIERRE: 'Descuadre en cierre de caja',
   NOMINA_PAGO_PROXIMO: 'Pago de nómina próximo',
   PRESTAMO_CUOTA_PROXIMA: 'Cuota de préstamo próxima',
+  DOMICILIO_NUEVO: 'Nuevo pedido a domicilio',
 };
 
 const TIPO_TONES: Record<TipoAlerta, string> = {
@@ -37,6 +38,7 @@ const TIPO_TONES: Record<TipoAlerta, string> = {
   CAJA_DIFERENCIA_CIERRE: 'bg-danger-50 text-danger-600',
   NOMINA_PAGO_PROXIMO: 'bg-amber-100 text-amber-700',
   PRESTAMO_CUOTA_PROXIMA: 'bg-amber-100 text-amber-700',
+  DOMICILIO_NUEVO: 'bg-blue-100 text-blue-700',
 };
 
 export default function AlertasPage() {

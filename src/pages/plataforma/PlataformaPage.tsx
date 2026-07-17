@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Settings2 } from 'lucide-react';
-import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa } from '@/hooks/usePlataforma';
+import { Settings2, Trash2 } from 'lucide-react';
+import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa, useEliminarEmpresa } from '@/hooks/usePlataforma';
 import { LoadingState, EmptyState } from '@/components/ui/States';
+import { Modal } from '@/components/ui/Modal';
 import { CodigosInvitacionTab } from '@/pages/plataforma/CodigosInvitacionTab';
 import { PlanEmpresaModal } from '@/pages/plataforma/PlanEmpresaModal';
 import { BackupsTab } from '@/pages/plataforma/BackupsTab';
@@ -66,7 +67,10 @@ function EmpresasTab() {
   const { data: empresas, isLoading } = useEmpresasPlataforma();
   const suspender = useSuspenderEmpresa();
   const activar = useActivarEmpresa();
+  const eliminar = useEliminarEmpresa();
   const [empresaPlan, setEmpresaPlan] = useState<{ id: number; nombre: string } | null>(null);
+  const [empresaEliminar, setEmpresaEliminar] = useState<{ id: number; nombre: string } | null>(null);
+  const [confirmacionTexto, setConfirmacionTexto] = useState('');
 
   return (
     <div>
@@ -133,6 +137,16 @@ function EmpresasTab() {
                           Reactivar
                         </button>
                       )}
+                      <button
+                        onClick={() => {
+                          setEmpresaEliminar({ id: e.id, nombre: e.nombreComercial ?? e.nombre });
+                          setConfirmacionTexto('');
+                        }}
+                        title="Eliminar empresa (ya no funcional)"
+                        className="rounded-lg p-1.5 text-ink-300 hover:bg-danger-50 hover:text-danger-500"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -152,6 +166,42 @@ function EmpresasTab() {
         empresaId={empresaPlan?.id ?? null}
         empresaNombre={empresaPlan?.nombre ?? ''}
       />
+
+      <Modal isOpen={empresaEliminar !== null} onClose={() => setEmpresaEliminar(null)} title="Eliminar empresa" size="sm">
+        {empresaEliminar && (
+          <div className="space-y-4">
+            <p className="text-sm text-ink-600">
+              Vas a eliminar <span className="font-semibold text-ink-800">{empresaEliminar.nombre}</span>. Sus datos
+              (ventas, facturas, historial) NO se borran, pero la empresa desaparece de este listado y queda
+              completamente bloqueada — nadie de ahí podrá volver a entrar.
+            </p>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">
+                Escribe <span className="font-mono font-semibold">eliminar empresa</span> para confirmar
+              </span>
+              <input className="input" value={confirmacionTexto} onChange={(e) => setConfirmacionTexto(e.target.value)} />
+            </label>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setEmpresaEliminar(null)}
+                className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  await eliminar.mutateAsync(empresaEliminar.id);
+                  setEmpresaEliminar(null);
+                }}
+                disabled={confirmacionTexto.trim().toLowerCase() !== 'eliminar empresa' || eliminar.isPending}
+                className="rounded-lg bg-danger-500 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-600 disabled:opacity-50"
+              >
+                Eliminar empresa
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
