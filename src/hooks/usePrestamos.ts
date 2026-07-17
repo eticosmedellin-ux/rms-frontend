@@ -66,3 +66,27 @@ export function useResumenClientePrestamos(clienteId: number | null) {
     enabled: clienteId !== null,
   });
 }
+
+export function useInfoRenovacion(prestamoId: number | null) {
+  return useQuery({
+    queryKey: ['info-renovacion', prestamoId],
+    queryFn: () => prestamosApi.obtenerInfoRenovacion(prestamoId as number),
+    enabled: prestamoId !== null,
+  });
+}
+
+export function useRenovarPrestamo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ prestamoId, data }: { prestamoId: number; data: prestamosApi.RenovarPrestamoRequest }) =>
+      prestamosApi.renovarPrestamo(prestamoId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prestamos'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-prestamos'] });
+    },
+  });
+}
+
+export function useDashboardPrestamos() {
+  return useQuery({ queryKey: ['dashboard-prestamos'], queryFn: prestamosApi.obtenerDashboardPrestamos });
+}

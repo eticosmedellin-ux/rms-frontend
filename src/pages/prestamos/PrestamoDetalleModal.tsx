@@ -1,10 +1,11 @@
 import { useState, type ChangeEvent } from 'react';
-import { Loader2, Camera, CheckCircle2, Pencil, AlertTriangle } from 'lucide-react';
+import { Loader2, Camera, CheckCircle2, Pencil, AlertTriangle, RefreshCcw } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { usePrestamo, usePagarCuota, useActualizarPagoCuota } from '@/hooks/usePrestamos';
 import { comprimirImagen } from '@/api/imagen';
 import { getApiErrorMessage } from '@/api/errors';
 import { LoadingState } from '@/components/ui/States';
+import { RenovarPrestamoModal } from '@/pages/prestamos/RenovarPrestamoModal';
 import type { CuotaPrestamo, MetodoPagoCuota } from '@/api/prestamos';
 
 function formatoMoneda(v: number) {
@@ -26,8 +27,10 @@ export function PrestamoDetalleModal({
 }) {
   const { data: prestamo, isLoading } = usePrestamo(prestamoId);
   const [cuotaEnEdicion, setCuotaEnEdicion] = useState<CuotaPrestamo | null>(null);
+  const [mostrarRenovar, setMostrarRenovar] = useState(false);
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={prestamo ? `Préstamo — ${prestamo.clienteNombre}` : 'Préstamo'} size="lg">
       {isLoading || !prestamo ? (
         <LoadingState />
@@ -54,6 +57,21 @@ export function PrestamoDetalleModal({
               <p className="font-medium text-ink-800">{prestamo.frecuenciaPago}</p>
             </div>
           </div>
+
+          {(prestamo.estado === 'ACTIVO' || prestamo.estado === 'EN_MORA') && (
+            <button
+              onClick={() => setMostrarRenovar(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-sicom-green/40 bg-success-50/50 py-2.5 text-sm font-semibold text-sicom-greenDark hover:bg-success-50"
+            >
+              <RefreshCcw size={15} />
+              Renovar / Refinanciar este préstamo
+            </button>
+          )}
+          {prestamo.renovadoDesdeId && (
+            <p className="text-center text-xs text-ink-400">
+              Este préstamo viene de renovar el préstamo #{prestamo.renovadoDesdeId}
+            </p>
+          )}
 
           <div className="space-y-2">
             {prestamo.cuotas.map((c) => (
@@ -103,6 +121,8 @@ export function PrestamoDetalleModal({
         </div>
       )}
     </Modal>
+    <RenovarPrestamoModal isOpen={mostrarRenovar} onClose={() => setMostrarRenovar(false)} prestamoId={prestamoId} />
+    </>
   );
 }
 
