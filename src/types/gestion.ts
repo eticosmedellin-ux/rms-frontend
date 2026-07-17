@@ -38,7 +38,9 @@ export type TipoAlerta =
   | 'CAJA_DIFERENCIA_CIERRE'
   | 'NOMINA_PAGO_PROXIMO'
   | 'PRESTAMO_CUOTA_PROXIMA'
-  | 'DOMICILIO_NUEVO';
+  | 'DOMICILIO_NUEVO'
+  | 'MESA_OCUPADA_MUCHO_TIEMPO'
+  | 'CITA_PROXIMA';
 
 export interface Alerta {
   id: number;

@@ -6,8 +6,15 @@ import { useAuthStore } from '@/stores/authStore';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useAlertas } from '@/hooks/useGestion';
+import { useMiPlan } from '@/hooks/usePlataforma';
+import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
+import { useMesas } from '@/hooks/useRestaurante';
+import { useCitas } from '@/hooks/useServicios';
+import { useDashboardPrestamos } from '@/hooks/usePrestamos';
+import { useDomicilios } from '@/hooks/useDomicilios';
 import {
   TrendingUp, TrendingDown, Package, AlertTriangle, Wallet, Users, ShoppingCart, Percent,
+  UtensilsCrossed, CalendarClock, Landmark, Bike,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LoadingState } from '@/components/ui/States';
@@ -27,6 +34,9 @@ function money(v: number) {
 
 export default function DashboardPage() {
   const nombreCompleto = useAuthStore((state) => state.nombreCompleto);
+  const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
+  const permisos = useAuthStore((state) => state.permisos);
+  const { data: miPlan } = useMiPlan();
   const { data: sucursales } = useSucursales();
   const [desde, setDesde] = useState(primerDiaDelMes());
   const [hasta, setHasta] = useState(hoy());
@@ -34,6 +44,21 @@ export default function DashboardPage() {
 
   const { data, isLoading } = useDashboard(desde, hasta, sucursalId);
   const { data: alertas } = useAlertas();
+
+  function moduloHabilitado(ruta: string) {
+    const tienePermiso = esAdministradorTotal || puedeVerRuta(permisos, ruta);
+    return tienePermiso && incluidaEnPlan(miPlan?.rutasHabilitadas, ruta);
+  }
+  const mostrarRestaurante = moduloHabilitado('/restaurante');
+  const mostrarServicios = moduloHabilitado('/servicios');
+  const mostrarPrestamos = moduloHabilitado('/prestamos');
+  const mostrarDomicilios = moduloHabilitado('/domicilios');
+  const hayModuloEspecializado = mostrarRestaurante || mostrarServicios || mostrarPrestamos || mostrarDomicilios;
+
+  const { data: mesas } = useMesas();
+  const { data: citas } = useCitas();
+  const { data: dashPrestamos } = useDashboardPrestamos();
+  const { data: domicilios } = useDomicilios(true);
 
   return (
     <div>
@@ -185,9 +210,86 @@ export default function DashboardPage() {
               <Kpi label="Productos vendidos" value={String(data.indicadores.cantidadProductosVendidos)} icon={Package} tone="text-ink-600" />
             </div>
           </Seccion>
+
+          {/* Módulos especializados */}
+          {hayModuloEspecializado && (
+            <Seccion titulo="Tus módulos">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {mostrarRestaurante && mesas && (
+                  <TarjetaModulo
+                    to="/restaurante"
+                    icon={UtensilsCrossed}
+                    titulo="Restaurante"
+                    valor={`${mesas.filter((m) => m.estado === 'OCUPADA').length} / ${mesas.length}`}
+                    etiqueta="mesas ocupadas"
+                  />
+                )}
+                {mostrarServicios && citas && (
+                  <TarjetaModulo
+                    to="/servicios"
+                    icon={CalendarClock}
+                    titulo="Servicios"
+                    valor={String(citas.length)}
+                    etiqueta="citas próximas"
+                  />
+                )}
+                {mostrarPrestamos && dashPrestamos && (
+                  <TarjetaModulo
+                    to="/prestamos"
+                    icon={Landmark}
+                    titulo="Préstamos"
+                    valor={String(dashPrestamos.prestamosActivos)}
+                    etiqueta={`activos · ${dashPrestamos.prestamosEnMora} en mora`}
+                    alerta={dashPrestamos.prestamosEnMora > 0}
+                  />
+                )}
+                {mostrarDomicilios && domicilios && (
+                  <TarjetaModulo
+                    to="/domicilios"
+                    icon={Bike}
+                    titulo="Domicilios"
+                    valor={String(domicilios.length)}
+                    etiqueta="pedidos activos"
+                  />
+                )}
+              </div>
+            </Seccion>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function TarjetaModulo({
+  to,
+  icon: Icon,
+  titulo,
+  valor,
+  etiqueta,
+  alerta,
+}: {
+  to: string;
+  icon: typeof UtensilsCrossed;
+  titulo: string;
+  valor: string;
+  etiqueta: string;
+  alerta?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className="rounded-xl border border-ink-100 bg-white p-4 shadow-card transition-colors hover:border-ink-200"
+    >
+      <div className="flex items-center justify-between">
+        <span className={`rounded-lg p-1.5 ${alerta ? 'bg-danger-50 text-danger-600' : 'bg-ink-100 text-ink-600'}`}>
+          <Icon size={16} />
+        </span>
+        <span className="text-xs font-medium text-ink-400">{titulo}</span>
+      </div>
+      <p className="mt-2 font-display text-xl font-bold text-ink-800">{valor}</p>
+      <p className="text-xs text-ink-400">{etiqueta}</p>
+    </Link>
   );
 }
 

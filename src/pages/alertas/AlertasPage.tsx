@@ -24,6 +24,8 @@ const TIPO_LABELS: Record<TipoAlerta, string> = {
   NOMINA_PAGO_PROXIMO: 'Pago de nómina próximo',
   PRESTAMO_CUOTA_PROXIMA: 'Cuota de préstamo próxima',
   DOMICILIO_NUEVO: 'Nuevo pedido a domicilio',
+  MESA_OCUPADA_MUCHO_TIEMPO: 'Mesa ocupada hace mucho',
+  CITA_PROXIMA: 'Cita próxima',
 };
 
 const TIPO_TONES: Record<TipoAlerta, string> = {
@@ -39,6 +41,8 @@ const TIPO_TONES: Record<TipoAlerta, string> = {
   NOMINA_PAGO_PROXIMO: 'bg-amber-100 text-amber-700',
   PRESTAMO_CUOTA_PROXIMA: 'bg-amber-100 text-amber-700',
   DOMICILIO_NUEVO: 'bg-blue-100 text-blue-700',
+  MESA_OCUPADA_MUCHO_TIEMPO: 'bg-amber-100 text-amber-700',
+  CITA_PROXIMA: 'bg-blue-100 text-blue-700',
 };
 
 export default function AlertasPage() {
@@ -120,6 +124,8 @@ const TIPOS_CONFIGURABLES: TipoAlerta[] = [
   'CAJA_DIFERENCIA_CIERRE',
   'NOMINA_PAGO_PROXIMO',
   'PRESTAMO_CUOTA_PROXIMA',
+  'MESA_OCUPADA_MUCHO_TIEMPO',
+  'CITA_PROXIMA',
 ];
 
 function ConfiguracionAlertasModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {

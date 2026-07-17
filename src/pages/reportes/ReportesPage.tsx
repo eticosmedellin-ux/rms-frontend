@@ -7,6 +7,10 @@ import {
 } from '@/hooks/useReportesExtendidos';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { descargarArchivo } from '@/lib/descargarArchivo';
+import { useComandasHistorial } from '@/hooks/useRestaurante';
+import { useCitasHistorial, useOrdenes } from '@/hooks/useServicios';
+import { useDashboardPrestamos } from '@/hooks/usePrestamos';
+import { useDomicilios } from '@/hooks/useDomicilios';
 
 function primerDiaDelMes(): string {
   const d = new Date();
@@ -28,6 +32,7 @@ const TABS = [
   { id: 'proveedores', label: 'Proveedores', usaFechas: false },
   { id: 'arqueos', label: 'Arqueos de caja', usaFechas: true },
   { id: 'cxp', label: 'Cuentas por pagar', usaFechas: false },
+  { id: 'modulos', label: 'Restaurante, Servicios, Préstamos, Domicilios', usaFechas: false },
 ] as const;
 
 export default function ReportesPage() {
@@ -85,6 +90,7 @@ export default function ReportesPage() {
         {tab === 'proveedores' && <ProveedoresReporteTab />}
         {tab === 'arqueos' && <ArqueosTab desde={desde} hasta={hasta} consultar={consultar} />}
         {tab === 'cxp' && <CuentasPorPagarTab />}
+        {tab === 'modulos' && <ModulosReporteTab />}
       </div>
     </div>
   );
@@ -325,6 +331,95 @@ function CuentasPorPagarTab() {
           c.fechaVencimiento ? new Date(c.fechaVencimiento).toLocaleDateString('es-CO') : '—', c.estado,
         ])}
       />
+    </div>
+  );
+}
+
+function ModulosReporteTab() {
+  const { data: comandas, isLoading: cargandoComandas } = useComandasHistorial();
+  const { data: citasHistorial, isLoading: cargandoCitas } = useCitasHistorial();
+  const { data: ordenes, isLoading: cargandoOrdenes } = useOrdenes(false);
+  const { data: dashPrestamos, isLoading: cargandoPrestamos } = useDashboardPrestamos();
+  const { data: domicilios, isLoading: cargandoDomicilios } = useDomicilios(false);
+
+  const comandasFacturadas = comandas?.filter((c) => c.estado === 'CERRADA') ?? [];
+  const totalRestaurante = comandasFacturadas.reduce((acc, c) => acc + c.total, 0);
+  const domiciliosEntregados = domicilios?.filter((d) => d.estado === 'ENTREGADO') ?? [];
+  const totalDomicilios = domiciliosEntregados.reduce((acc, d) => acc + d.total, 0);
+  const ordenesEntregadas = ordenes?.filter((o) => o.estado === 'ENTREGADA') ?? [];
+  const totalServicios = ordenesEntregadas.reduce((acc, o) => acc + (o.costoFinal ?? 0), 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+          <p className="text-xs font-medium text-ink-400">Restaurante — facturado</p>
+          {cargandoComandas ? (
+            <LoadingState />
+          ) : (
+            <>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{money(totalRestaurante)}</p>
+              <p className="text-xs text-ink-400">{comandasFacturadas.length} comandas cerradas</p>
+            </>
+          )}
+        </div>
+        <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+          <p className="text-xs font-medium text-ink-400">Servicios — facturado</p>
+          {cargandoOrdenes ? (
+            <LoadingState />
+          ) : (
+            <>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{money(totalServicios)}</p>
+              <p className="text-xs text-ink-400">{ordenesEntregadas.length} órdenes entregadas</p>
+            </>
+          )}
+        </div>
+        <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+          <p className="text-xs font-medium text-ink-400">Préstamos — intereses generados</p>
+          {cargandoPrestamos ? (
+            <LoadingState />
+          ) : (
+            <>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{money(dashPrestamos?.interesesGenerados ?? 0)}</p>
+              <p className="text-xs text-ink-400">{dashPrestamos?.prestamosActivos ?? 0} préstamos activos</p>
+            </>
+          )}
+        </div>
+        <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+          <p className="text-xs font-medium text-ink-400">Domicilios — facturado</p>
+          {cargandoDomicilios ? (
+            <LoadingState />
+          ) : (
+            <>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{money(totalDomicilios)}</p>
+              <p className="text-xs text-ink-400">{domiciliosEntregados.length} pedidos entregados</p>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <Encabezado titulo="Citas atendidas (historial)" />
+        {cargandoCitas ? (
+          <LoadingState />
+        ) : citasHistorial && citasHistorial.length > 0 ? (
+          <Tabla
+            columnas={['Cliente', 'Servicio', 'Fecha', 'Estado']}
+            filas={citasHistorial.map((c) => [
+              c.clienteNombre ?? 'Sin cliente', c.tipoServicioNombre ?? '—',
+              new Date(c.fechaHora).toLocaleString('es-CO'), c.estado,
+            ])}
+          />
+        ) : (
+          <EmptyState title="Sin citas en el historial todavía" />
+        )}
+      </div>
+
+      <p className="text-xs text-ink-400">
+        Nota: estos totales se calculan a partir del historial completo de cada módulo (no filtran por fecha
+        todavía) — para el detalle exacto y exportable, consulta también las pestañas de Ventas y Contabilidad, que
+        ya incluyen las ventas generadas por Restaurante y Domicilios junto con las demás.
+      </p>
     </div>
   );
 }
