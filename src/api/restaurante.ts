@@ -8,7 +8,7 @@ export interface Mesa {
   capacidad: number | null;
   sucursalId: number;
   sucursalNombre: string;
-  estado: 'LIBRE' | 'OCUPADA' | 'RESERVADA';
+  estado: 'LIBRE' | 'OCUPADA' | 'RESERVADA' | 'LIMPIEZA';
   activa: boolean;
   comandaActivaId: number | null;
 }
@@ -37,6 +37,7 @@ export interface Comanda {
   id: number;
   mesaId: number;
   mesaNumero: string;
+  meseroId: number;
   meseroNombre: string;
   estado: 'ABIERTA' | 'CERRADA' | 'CANCELADA';
   numeroComensales: number | null;
@@ -45,6 +46,7 @@ export interface Comanda {
   fechaCierre: string | null;
   ventaId: number | null;
   total: number;
+  propina: number | null;
   items: ComandaItem[];
 }
 
@@ -54,6 +56,7 @@ export interface CerrarComandaRequest {
   pagos: { metodoPago: string; monto: number }[];
   tipoDescuentoFacturaId?: number;
   facturar?: boolean;
+  propina?: number;
 }
 
 export const listarMesas = async (): Promise<Mesa[]> => (await apiClient.get<Mesa[]>('/restaurante/mesas')).data;
@@ -63,6 +66,9 @@ export const crearMesa = async (data: MesaRequest): Promise<Mesa> =>
 
 export const actualizarMesa = async (id: number, data: MesaRequest): Promise<Mesa> =>
   (await apiClient.put<Mesa>(`/restaurante/mesas/${id}`, data)).data;
+
+export const cambiarEstadoMesa = async (id: number, estado: Mesa['estado']): Promise<Mesa> =>
+  (await apiClient.patch<Mesa>(`/restaurante/mesas/${id}/estado`, { estado })).data;
 
 export const abrirComanda = async (
   mesaId: number,
@@ -95,3 +101,12 @@ export const cerrarComanda = async (comandaId: number, data: CerrarComandaReques
 export const cancelarComanda = async (comandaId: number): Promise<void> => {
   await apiClient.post(`/restaurante/comandas/${comandaId}/cancelar`);
 };
+
+export const cambiarMesaComanda = async (comandaId: number, nuevaMesaId: number): Promise<Comanda> =>
+  (await apiClient.post<Comanda>(`/restaurante/comandas/${comandaId}/cambiar-mesa`, { nuevaMesaId })).data;
+
+export const unirComanda = async (comandaId: number, otraComandaId: number): Promise<Comanda> =>
+  (await apiClient.post<Comanda>(`/restaurante/comandas/${comandaId}/unir/${otraComandaId}`)).data;
+
+export const asignarMesero = async (comandaId: number, meseroUsuarioId: number): Promise<Comanda> =>
+  (await apiClient.patch<Comanda>(`/restaurante/comandas/${comandaId}/mesero`, { meseroUsuarioId })).data;

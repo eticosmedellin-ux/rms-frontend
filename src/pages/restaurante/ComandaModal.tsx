@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, X, Receipt, Ban } from 'lucide-react';
+import { Loader2, Plus, X, Receipt, Ban, ArrowRightLeft, Merge, UserCog } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import {
   useAbrirComanda,
@@ -8,9 +8,15 @@ import {
   useCambiarEstadoItem,
   useCerrarComanda,
   useCancelarComanda,
+  useMesas,
+  useComandasActivas,
+  useCambiarMesaComanda,
+  useUnirComanda,
+  useAsignarMesero,
 } from '@/hooks/useRestaurante';
 import { useProductos } from '@/hooks/useInventario';
 import { useCajaAbierta } from '@/hooks/usePos';
+import { useUsuarios } from '@/hooks/useNucleo';
 import { getApiErrorMessage } from '@/api/errors';
 import { LoadingState } from '@/components/ui/States';
 import type { Mesa, EstadoItemComanda } from '@/api/restaurante';
@@ -37,6 +43,11 @@ const SIGUIENTE_ESTADO: Partial<Record<EstadoItemComanda, EstadoItemComanda>> = 
   LISTO: 'ENTREGADO',
 };
 
+interface LineaPago {
+  metodoPago: MetodoPagoVenta;
+  monto: string;
+}
+
 function formatoMoneda(v: number) {
   return v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 }
@@ -46,27 +57,51 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   const { data: comanda, isLoading } = useComanda(mesa?.comandaActivaId ?? null);
   const { data: productos } = useProductos();
   const { data: cajaAbierta } = useCajaAbierta(mesa?.sucursalId ?? null);
+  const { data: mesas } = useMesas();
+  const { data: comandasActivas } = useComandasActivas();
+  const { data: usuarios } = useUsuarios();
   const agregarItem = useAgregarItemComanda();
   const cambiarEstado = useCambiarEstadoItem();
   const cerrar = useCerrarComanda();
   const cancelar = useCancelarComanda();
+  const cambiarMesa = useCambiarMesaComanda();
+  const unir = useUnirComanda();
+  const asignarMesero = useAsignarMesero();
 
   const [productoId, setProductoId] = useState('');
   const [cantidad, setCantidad] = useState('1');
   const [notasItem, setNotasItem] = useState('');
-  const [mostrarCierre, setMostrarCierre] = useState(false);
-  const [metodoPago, setMetodoPago] = useState<MetodoPagoVenta>('EFECTIVO');
+  const [vista, setVista] = useState<'comanda' | 'cierre' | 'cambiarMesa' | 'unir'>('comanda');
+  const [pagos, setPagos] = useState<LineaPago[]>([{ metodoPago: 'EFECTIVO', monto: '' }]);
+  const [propina, setPropina] = useState('');
+  const [mesaDestinoId, setMesaDestinoId] = useState('');
+  const [comandaAUnirId, setComandaAUnirId] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setMostrarCierre(false);
+      setVista('comanda');
       setError(null);
-      setMetodoPago('EFECTIVO');
+      setPropina('');
+      setMesaDestinoId('');
+      setComandaAUnirId('');
     }
   }, [isOpen, mesa]);
 
+  useEffect(() => {
+    if (vista === 'cierre' && comanda) {
+      setPagos([{ metodoPago: 'EFECTIVO', monto: String(comanda.total) }]);
+    }
+  }, [vista, comanda]);
+
   if (!mesa) return null;
+
+  const totalPagos = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
+  const diferenciaPago = comanda ? Math.round((totalPagos - comanda.total) * 100) / 100 : 0;
+
+  function actualizarLineaPago(i: number, campo: keyof LineaPago, valor: string) {
+    setPagos((prev) => prev.map((p, idx) => (idx === i ? { ...p, [campo]: valor } : p)));
+  }
 
   async function handleAbrir() {
     setError(null);
@@ -100,8 +135,8 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
       setError('No hay una caja abierta en esta sucursal — ábrela primero desde el POS');
       return;
     }
-    if (!metodoPago) {
-      setError('Elige un método de pago');
+    if (Math.abs(diferenciaPago) > 0.5) {
+      setError(`Los pagos suman ${formatoMoneda(totalPagos)}, pero el total es ${formatoMoneda(comanda.total)} — ajusta los montos.`);
       return;
     }
     try {
@@ -109,7 +144,8 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
         comandaId: comanda.id,
         data: {
           cajaSesionId: cajaAbierta.id,
-          pagos: [{ metodoPago, monto: comanda.total }],
+          pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
+          propina: propina ? Number(propina) : undefined,
         },
       });
       onClose();
@@ -129,6 +165,31 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
     }
   }
 
+  async function handleCambiarMesa() {
+    setError(null);
+    if (!comanda || !mesaDestinoId) return;
+    try {
+      await cambiarMesa.mutateAsync({ comandaId: comanda.id, nuevaMesaId: Number(mesaDestinoId) });
+      onClose();
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo cambiar de mesa'));
+    }
+  }
+
+  async function handleUnir() {
+    setError(null);
+    if (!comanda || !comandaAUnirId) return;
+    try {
+      await unir.mutateAsync({ comandaId: comanda.id, otraComandaId: Number(comandaAUnirId) });
+      setVista('comanda');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudieron unir las mesas'));
+    }
+  }
+
+  const mesasLibres = mesas?.filter((m) => m.estado === 'LIBRE') ?? [];
+  const otrasComandasAbiertas = comandasActivas?.filter((c) => c.id !== comanda?.id) ?? [];
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Mesa ${mesa.numero}`} size="lg">
       <div className="space-y-4">
@@ -146,21 +207,69 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
           </div>
         ) : isLoading || !comanda ? (
           <LoadingState />
-        ) : mostrarCierre ? (
+        ) : vista === 'cierre' ? (
           <div className="space-y-4">
             <p className="text-sm text-ink-600">
-              Total a cobrar: <span className="font-semibold text-ink-800">{formatoMoneda(comanda.total)}</span>
+              Total de la cuenta: <span className="font-semibold text-ink-800">{formatoMoneda(comanda.total)}</span>
             </p>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink-600">Método de pago</span>
-              <select className="input" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as MetodoPagoVenta)}>
-                {METODOS_PAGO.map((m) => (
-                  <option key={m.valor} value={m.valor}>
-                    {m.etiqueta}
-                  </option>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-xs font-medium text-ink-600">Métodos de pago (divide la cuenta si hace falta)</span>
+                <button
+                  onClick={() => setPagos((prev) => [...prev, { metodoPago: 'EFECTIVO', monto: '' }])}
+                  className="flex items-center gap-1 text-xs font-medium text-ink-600 hover:text-ink-800"
+                >
+                  <Plus size={12} />
+                  Agregar pago
+                </button>
+              </div>
+              <div className="space-y-2">
+                {pagos.map((p, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
+                    <select
+                      className="input text-sm"
+                      value={p.metodoPago}
+                      onChange={(e) => actualizarLineaPago(i, 'metodoPago', e.target.value)}
+                    >
+                      {METODOS_PAGO.map((m) => (
+                        <option key={m.valor} value={m.valor}>
+                          {m.etiqueta}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      className="input text-sm"
+                      value={p.monto}
+                      onChange={(e) => actualizarLineaPago(i, 'monto', e.target.value)}
+                      placeholder="Monto"
+                    />
+                    {pagos.length > 1 && (
+                      <button
+                        onClick={() => setPagos((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="rounded p-1.5 text-ink-300 hover:text-danger-500"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                 ))}
-              </select>
+              </div>
+              {Math.abs(diferenciaPago) > 0.5 && (
+                <p className={`mt-1.5 text-xs ${diferenciaPago > 0 ? 'text-amber-600' : 'text-danger-500'}`}>
+                  {diferenciaPago > 0
+                    ? `Los pagos suman ${formatoMoneda(diferenciaPago)} de más`
+                    : `Faltan ${formatoMoneda(Math.abs(diferenciaPago))} por cubrir`}
+                </p>
+              )}
+            </div>
+
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Propina (opcional)</span>
+              <input type="number" className="input" value={propina} onChange={(e) => setPropina(e.target.value)} placeholder="0" />
             </label>
+
             {!cajaAbierta && (
               <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 No hay una caja abierta en esta sucursal. Ábrela desde el POS antes de cerrar la cuenta.
@@ -169,7 +278,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
             {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setMostrarCierre(false)}
+                onClick={() => setVista('comanda')}
                 className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
               >
                 Volver
@@ -184,8 +293,88 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
               </button>
             </div>
           </div>
+        ) : vista === 'cambiarMesa' ? (
+          <div className="space-y-4">
+            <p className="text-sm text-ink-600">Elige la mesa libre a la que quieres mover esta comanda.</p>
+            <select className="input" value={mesaDestinoId} onChange={(e) => setMesaDestinoId(e.target.value)}>
+              <option value="">Elegir mesa...</option>
+              {mesasLibres.map((m) => (
+                <option key={m.id} value={m.id}>
+                  Mesa {m.numero} {m.zona ? `— ${m.zona}` : ''}
+                </option>
+              ))}
+            </select>
+            {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setVista('comanda')} className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50">
+                Cancelar
+              </button>
+              <button
+                onClick={handleCambiarMesa}
+                disabled={!mesaDestinoId || cambiarMesa.isPending}
+                className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+              >
+                {cambiarMesa.isPending && <Loader2 size={16} className="animate-spin" />}
+                Mover comanda
+              </button>
+            </div>
+          </div>
+        ) : vista === 'unir' ? (
+          <div className="space-y-4">
+            <p className="text-sm text-ink-600">Elige la otra mesa que quieres unir a esta cuenta — sus productos se sumarán aquí.</p>
+            <select className="input" value={comandaAUnirId} onChange={(e) => setComandaAUnirId(e.target.value)}>
+              <option value="">Elegir mesa...</option>
+              {otrasComandasAbiertas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  Mesa {c.mesaNumero} — {formatoMoneda(c.total)}
+                </option>
+              ))}
+            </select>
+            {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setVista('comanda')} className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50">
+                Cancelar
+              </button>
+              <button
+                onClick={handleUnir}
+                disabled={!comandaAUnirId || unir.isPending}
+                className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+              >
+                {unir.isPending && <Loader2 size={16} className="animate-spin" />}
+                Unir mesas
+              </button>
+            </div>
+          </div>
         ) : (
           <>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-ink-50 px-3 py-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <UserCog size={13} className="text-ink-400" />
+                <span className="text-ink-500">Mesero:</span>
+                <select
+                  className="rounded border border-ink-200 bg-white px-1.5 py-0.5 text-xs"
+                  value={comanda.meseroId}
+                  onChange={(e) => asignarMesero.mutate({ comandaId: comanda.id, meseroUsuarioId: Number(e.target.value) })}
+                >
+                  {usuarios?.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nombre} {u.apellido ?? ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setVista('cambiarMesa')} className="flex items-center gap-1 text-ink-500 hover:text-ink-800">
+                  <ArrowRightLeft size={12} />
+                  Cambiar mesa
+                </button>
+                <button onClick={() => setVista('unir')} className="flex items-center gap-1 text-ink-500 hover:text-ink-800">
+                  <Merge size={12} />
+                  Unir mesa
+                </button>
+              </div>
+            </div>
+
             <div className="rounded-lg border border-ink-100 bg-ink-50 p-3">
               <div className="grid grid-cols-[1fr_auto_1fr_auto] items-end gap-2">
                 <label className="block">
@@ -272,7 +461,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
                   Cancelar comanda
                 </button>
                 <button
-                  onClick={() => setMostrarCierre(true)}
+                  onClick={() => setVista('cierre')}
                   className="flex items-center gap-1.5 rounded-lg bg-success-600 px-4 py-2 text-sm font-semibold text-white hover:bg-success-700"
                 >
                   <Receipt size={15} />

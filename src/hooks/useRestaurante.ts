@@ -22,6 +22,15 @@ export function useActualizarMesa() {
   });
 }
 
+export function useCambiarEstadoMesa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, estado }: { id: number; estado: restauranteApi.Mesa['estado'] }) =>
+      restauranteApi.cambiarEstadoMesa(id, estado),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mesas'] }),
+  });
+}
+
 export function useAbrirComanda() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -98,5 +107,38 @@ export function useCancelarComanda() {
       queryClient.invalidateQueries({ queryKey: ['comandas-activas'] });
       queryClient.invalidateQueries({ queryKey: ['comandas-historial'] });
     },
+  });
+}
+
+export function useCambiarMesaComanda() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ comandaId, nuevaMesaId }: { comandaId: number; nuevaMesaId: number }) =>
+      restauranteApi.cambiarMesaComanda(comandaId, nuevaMesaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mesas'] });
+      queryClient.invalidateQueries({ queryKey: ['comandas-activas'] });
+    },
+  });
+}
+
+export function useUnirComanda() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ comandaId, otraComandaId }: { comandaId: number; otraComandaId: number }) =>
+      restauranteApi.unirComanda(comandaId, otraComandaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mesas'] });
+      queryClient.invalidateQueries({ queryKey: ['comandas-activas'] });
+    },
+  });
+}
+
+export function useAsignarMesero() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ comandaId, meseroUsuarioId }: { comandaId: number; meseroUsuarioId: number }) =>
+      restauranteApi.asignarMesero(comandaId, meseroUsuarioId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comandas-activas'] }),
   });
 }
