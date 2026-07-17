@@ -3,18 +3,36 @@ import type { Empresa } from '@/types/gestion';
 import { estiloPagina } from '@/lib/tamanoImpresion';
 
 /** Genera y abre una factura con diseño profesional en una ventana nueva, lista para
- *  imprimir o "Guardar como PDF" desde el diálogo de impresión del navegador. */
-export function abrirFactura(venta: Venta, empresa: Empresa) {
+ *  imprimir o "Guardar como PDF" desde el diálogo de impresión del navegador.
+ *
+ *  `cufe`: cuando la facturación electrónica (DIAN) esté conectada, pásalo aquí — el QR
+ *  usará ese código real de verificación en vez del genérico interno. Mientras tanto,
+ *  cada factura ya sale con su propio QR independiente (código interno de trazabilidad). */
+export function abrirFactura(venta: Venta, empresa: Empresa, cufe?: string) {
   const ventana = window.open('', '_blank', 'width=820,height=1000');
   if (!ventana) return;
 
-  ventana.document.write(construirHtmlFactura(venta, empresa));
+  ventana.document.write(construirHtmlFactura(venta, empresa, cufe));
   ventana.document.close();
   ventana.focus();
-  setTimeout(() => ventana.print(), 300); // pequeña espera para que cargue el logo si hay uno
+  setTimeout(() => ventana.print(), 300); // pequeña espera para que cargue el logo/QR si hay
 }
 
-function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
+/** Contenido del QR: si ya hay CUFE (facturación electrónica activa), se usa ese código
+ *  real; si no, se arma uno propio con los datos clave de ESTA factura — único e
+ *  independiente por cada una, listo para escanear/verificar aunque todavía no haya DIAN. */
+function contenidoQr(venta: Venta, empresa: Empresa, cufe?: string): string {
+  if (cufe) return cufe;
+  const nit = empresa.nit ?? 'SIN-NIT';
+  const numero = venta.numeroFactura || venta.numero;
+  return `SICOM|NIT:${nit}|FACTURA:${numero}|FECHA:${venta.fecha}|TOTAL:${venta.total}|VENTA:${venta.id}`;
+}
+
+function urlQr(contenido: string): string {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=130x130&margin=0&data=${encodeURIComponent(contenido)}`;
+}
+
+function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): string {
   const nombreEmpresa = empresa.nombreComercial || empresa.nombre;
   const fecha = new Date(venta.fecha).toLocaleString('es-CO', {
     dateStyle: 'long',
@@ -88,6 +106,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
     font-variant-numeric: tabular-nums;
   }
   .doc-tipo .fecha { font-size: 11.5px; color: #64748b; margin-top: 6px; }
+  .qr-factura { width: 76px; height: 76px; margin-top: 10px; margin-left: auto; display: block; }
   .aviso-no-formal {
     display: inline-block;
     margin-top: 6px;
@@ -168,6 +187,17 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
   .info-extra-bloque { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #64748b; }
   .info-extra-titulo { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; }
   .info-extra-redes { text-align: right; align-items: flex-end; }
+
+  .marca-sicom {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid #eef1f4;
+    text-align: center;
+    font-size: 9.5px;
+    color: #b6bec8;
+    letter-spacing: 0.3px;
+  }
+  .marca-sicom b { color: #94a3b8; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -189,6 +219,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
       <div class="numero">${numero}</div>
       <div class="fecha">${fecha}</div>
       ${!esFacturaFormal ? '<div class="aviso-no-formal">Sin factura formal</div>' : ''}
+      <img class="qr-factura" src="${urlQr(contenidoQr(venta, empresa, cufe))}" alt="Código QR de verificación" />
     </div>
   </div>
 
@@ -256,6 +287,8 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa): string {
       ${empresa.instagram ? `<span>Instagram: ${escapeHtml(empresa.instagram)}</span>` : ''}
     </div>
   </div>` : ''}
+
+  <div class="marca-sicom">Generado con <b>SICOM</b> — Sistema Integrado Comercial</div>
 
 </body>
 </html>`;
