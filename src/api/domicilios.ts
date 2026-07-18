@@ -5,8 +5,10 @@ export type EstadoDomicilio = 'RECIBIDO' | 'EN_PREPARACION' | 'EN_CAMINO' | 'ENT
 
 export interface DomicilioItem {
   id: number;
-  productoId: number;
-  productoNombre: string;
+  productoId: number | null;
+  productoNombre: string | null;
+  comboId: number | null;
+  comboNombre: string | null;
   cantidad: number;
   precioUnitario: number;
 }
@@ -39,7 +41,7 @@ export interface DomicilioRequest {
   telefonoContacto?: string;
   repartidorUsuarioId?: number;
   notas?: string;
-  items: { productoId: number; cantidad: number }[];
+  items: { productoId?: number; comboId?: number; cantidad: number }[];
 }
 
 export interface ConfirmarEntregaRequest {

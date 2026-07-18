@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, X, Receipt, Ban, ArrowRightLeft, Merge, UserCog } from 'lucide-react';
+import { Loader2, Plus, X, Receipt, Ban, ArrowRightLeft, Merge, UserCog, Package2, ImageOff } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import {
   useAbrirComanda,
@@ -14,11 +14,10 @@ import {
   useUnirComanda,
   useAsignarMesero,
 } from '@/hooks/useRestaurante';
-import { useProductos } from '@/hooks/useInventario';
-import { useCombos } from '@/hooks/useCombos';
 import { useCajaAbierta } from '@/hooks/usePos';
 import { useUsuarios } from '@/hooks/useNucleo';
 import { useTiposDescuento } from '@/hooks/useDescuentos';
+import { SelectorProductoOCombo, type ItemSeleccionable } from '@/components/SelectorProductoOCombo';
 import { getApiErrorMessage } from '@/api/errors';
 import { LoadingState } from '@/components/ui/States';
 import type { Mesa, EstadoItemComanda } from '@/api/restaurante';
@@ -57,8 +56,6 @@ function formatoMoneda(v: number) {
 export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClose: () => void; mesa: Mesa | null }) {
   const abrir = useAbrirComanda();
   const { data: comanda, isLoading } = useComanda(mesa?.comandaActivaId ?? null);
-  const { data: productos } = useProductos();
-  const { data: combos } = useCombos();
   const { data: cajaAbierta } = useCajaAbierta(mesa?.sucursalId ?? null);
   const { data: mesas } = useMesas();
   const { data: comandasActivas } = useComandasActivas();
@@ -72,7 +69,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   const unir = useUnirComanda();
   const asignarMesero = useAsignarMesero();
 
-  const [itemSeleccionado, setItemSeleccionado] = useState('');
+  const [itemElegido, setItemElegido] = useState<ItemSeleccionable | null>(null);
   const [cantidad, setCantidad] = useState('1');
   const [notasItem, setNotasItem] = useState('');
   const [vista, setVista] = useState<'comanda' | 'cierre' | 'cambiarMesa' | 'unir'>('comanda');
@@ -91,6 +88,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
       setTipoDescuentoFacturaId('');
       setMesaDestinoId('');
       setComandaAUnirId('');
+      setItemElegido(null);
     }
   }, [isOpen, mesa]);
 
@@ -134,19 +132,18 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
 
   async function handleAgregarItem() {
     setError(null);
-    if (!comanda || !itemSeleccionado) return;
-    const [tipo, idTexto] = itemSeleccionado.split('-');
+    if (!comanda || !itemElegido) return;
     try {
       await agregarItem.mutateAsync({
         comandaId: comanda.id,
         data: {
-          productoId: tipo === 'p' ? Number(idTexto) : undefined,
-          comboId: tipo === 'c' ? Number(idTexto) : undefined,
+          productoId: itemElegido.tipo === 'PRODUCTO' ? itemElegido.id : undefined,
+          comboId: itemElegido.tipo === 'COMBO' ? itemElegido.id : undefined,
           cantidad: Number(cantidad) || 1,
           notas: notasItem || undefined,
         },
       });
-      setItemSeleccionado('');
+      setItemElegido(null);
       setCantidad('1');
       setNotasItem('');
     } catch (err) {
@@ -430,45 +427,42 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
             </div>
 
             <div className="rounded-lg border border-ink-100 bg-ink-50 p-3">
-              <div className="grid grid-cols-[1fr_auto_1fr_auto] items-end gap-2">
-                <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium text-ink-500">Producto o plato del menú</span>
-                  <select className="input text-sm" value={itemSeleccionado} onChange={(e) => setItemSeleccionado(e.target.value)}>
-                    <option value="">Elegir...</option>
-                    {combos && combos.length > 0 && (
-                      <optgroup label="Platos del menú (recetas)">
-                        {combos.filter((c) => c.estado).map((c) => (
-                          <option key={`c-${c.id}`} value={`c-${c.id}`}>
-                            {c.nombre} — {formatoMoneda(c.precioVenta)}
-                          </option>
-                        ))}
-                      </optgroup>
+              {itemElegido ? (
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
+                    {itemElegido.imagen ? (
+                      <img src={itemElegido.imagen} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-ink-300">
+                        {itemElegido.tipo === 'COMBO' ? <Package2 size={18} /> : <ImageOff size={18} />}
+                      </div>
                     )}
-                    <optgroup label="Productos individuales">
-                      {productos?.filter((p) => p.estado).map((p) => (
-                        <option key={`p-${p.id}`} value={`p-${p.id}`}>
-                          {p.nombre} — {formatoMoneda(p.precioVenta)}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </label>
-                <label className="block w-20">
-                  <span className="mb-1 block text-[11px] font-medium text-ink-500">Cant.</span>
-                  <input type="number" min={1} className="input text-sm" value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium text-ink-500">Notas (opcional)</span>
-                  <input className="input text-sm" value={notasItem} onChange={(e) => setNotasItem(e.target.value)} placeholder="sin cebolla..." />
-                </label>
-                <button
-                  onClick={handleAgregarItem}
-                  disabled={!itemSeleccionado || agregarItem.isPending}
-                  className="flex items-center gap-1 rounded-lg bg-ink-800 px-3 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-50"
-                >
-                  <Plus size={15} />
-                </button>
-              </div>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink-800">{itemElegido.nombre}</p>
+                    <button onClick={() => setItemElegido(null)} className="text-xs font-medium text-ink-500 hover:text-ink-800">
+                      Cambiar
+                    </button>
+                  </div>
+                  <label className="block w-16">
+                    <span className="mb-1 block text-[11px] font-medium text-ink-500">Cant.</span>
+                    <input type="number" min={1} className="input text-sm" value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
+                  </label>
+                  <label className="block flex-1">
+                    <span className="mb-1 block text-[11px] font-medium text-ink-500">Notas</span>
+                    <input className="input text-sm" value={notasItem} onChange={(e) => setNotasItem(e.target.value)} placeholder="sin cebolla..." />
+                  </label>
+                  <button
+                    onClick={handleAgregarItem}
+                    disabled={agregarItem.isPending}
+                    className="flex items-center gap-1 self-end rounded-lg bg-ink-800 px-3 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-50"
+                  >
+                    <Plus size={15} />
+                  </button>
+                </div>
+              ) : (
+                <SelectorProductoOCombo onSeleccionar={(item) => setItemElegido(item)} />
+              )}
             </div>
 
             <div className="max-h-72 space-y-1.5 overflow-y-auto">

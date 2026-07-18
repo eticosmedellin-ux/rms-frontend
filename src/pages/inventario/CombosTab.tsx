@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, Pencil, Package2, X } from 'lucide-react';
+import { Plus, Loader2, Pencil, Package2, X, Camera } from 'lucide-react';
 import { useCombos, useCrearCombo, useActualizarCombo, useDesactivarCombo, useReactivarCombo } from '@/hooks/useCombos';
 import { useProductos } from '@/hooks/useInventario';
+import { comprimirImagen } from '@/api/imagen';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
@@ -46,12 +47,18 @@ export function CombosTab() {
           {combos.map((c) => (
             <div key={c.id} className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
               <div className="flex items-start justify-between">
-                <div>
-                  <p className="flex items-center gap-1.5 font-display font-semibold text-ink-800">
-                    <Package2 size={16} className="text-ink-400" />
-                    {c.nombre}
-                  </p>
-                  <p className="font-mono text-xs text-ink-400">{c.codigo}</p>
+                <div className="flex items-center gap-3">
+                  {c.imagen ? (
+                    <img src={c.imagen} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-ink-50 text-ink-300">
+                      <Package2 size={20} />
+                    </div>
+                  )}
+                  <div>
+                    <p className="flex items-center gap-1.5 font-display font-semibold text-ink-800">{c.nombre}</p>
+                    <p className="font-mono text-xs text-ink-400">{c.codigo}</p>
+                  </div>
                 </div>
                 <button onClick={() => abrirEditar(c)} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700">
                   <Pencil size={14} />
@@ -106,6 +113,7 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
   const [codigo, setCodigo] = useState('');
   const [nombre, setNombre] = useState('');
   const [precioVenta, setPrecioVenta] = useState('');
+  const [imagen, setImagen] = useState<string | null>(null);
   const [items, setItems] = useState<{ productoId: string; cantidad: string }[]>([{ productoId: '', cantidad: '1' }]);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,11 +122,13 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
       setCodigo(editando.codigo);
       setNombre(editando.nombre);
       setPrecioVenta(String(editando.precioVenta));
+      setImagen(editando.imagen);
       setItems(editando.items.map((i) => ({ productoId: String(i.productoId), cantidad: String(i.cantidad) })));
     } else {
       setCodigo('');
       setNombre('');
       setPrecioVenta('');
+      setImagen(null);
       setItems([{ productoId: '', cantidad: '1' }]);
     }
     setError(null);
@@ -152,6 +162,7 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
       codigo,
       nombre,
       precioVenta: Number(precioVenta),
+      imagen,
       items: itemsValidos.map((i) => ({ productoId: Number(i.productoId), cantidad: Number(i.cantidad) })),
     };
 
@@ -181,6 +192,36 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
           <label className="col-span-2 block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Nombre</span>
             <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          </label>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {imagen ? (
+            <img src={imagen} alt="" className="h-16 w-16 rounded-lg border border-ink-200 object-cover" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-ink-200 text-ink-300">
+              <Package2 size={22} />
+            </div>
+          )}
+          <label className="cursor-pointer rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50">
+            <span className="flex items-center gap-1.5">
+              <Camera size={13} />
+              {imagen ? 'Cambiar foto' : 'Agregar foto'}
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const archivo = e.target.files?.[0];
+                if (!archivo) return;
+                try {
+                  setImagen(await comprimirImagen(archivo, 500, 0.8));
+                } catch {
+                  setError('No se pudo procesar la foto');
+                }
+              }}
+            />
           </label>
         </div>
 

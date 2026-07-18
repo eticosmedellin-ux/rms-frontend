@@ -183,7 +183,7 @@ export function VenderTab() {
         id: c.id,
         nombre: c.nombre,
         precioVenta: c.precioVenta,
-        imagen: null,
+        imagen: c.imagen ?? null,
         manejaInventario: false,
         codigoInterno: c.codigo,
         stock: null,

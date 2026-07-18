@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Loader2, Plus, X, Package2, ImageOff } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useCrearDomicilio } from '@/hooks/useDomicilios';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useClientes } from '@/hooks/usePos';
-import { useProductos } from '@/hooks/useInventario';
 import { useUsuarios } from '@/hooks/useNucleo';
+import { SelectorProductoOCombo, type ItemSeleccionable } from '@/components/SelectorProductoOCombo';
 import { getApiErrorMessage } from '@/api/errors';
 
 const CANALES = ['TELEFONO', 'WHATSAPP', 'PAGINA_WEB', 'RAPPI', 'OTRO'];
@@ -18,14 +18,13 @@ const CANAL_LABELS: Record<string, string> = {
 };
 
 interface LineaItem {
-  productoId: string;
+  item: ItemSeleccionable | null;
   cantidad: string;
 }
 
 export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { data: sucursales } = useSucursales();
   const { data: clientes } = useClientes();
-  const { data: productos } = useProductos();
   const { data: usuarios } = useUsuarios();
   const crear = useCrearDomicilio();
 
@@ -36,7 +35,7 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [telefonoContacto, setTelefonoContacto] = useState('');
   const [repartidorId, setRepartidorId] = useState('');
   const [notas, setNotas] = useState('');
-  const [items, setItems] = useState<LineaItem[]>([{ productoId: '', cantidad: '1' }]);
+  const [items, setItems] = useState<LineaItem[]>([{ item: null, cantidad: '1' }]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,18 +47,18 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
       setTelefonoContacto('');
       setRepartidorId('');
       setNotas('');
-      setItems([{ productoId: '', cantidad: '1' }]);
+      setItems([{ item: null, cantidad: '1' }]);
       setError(null);
     }
   }, [isOpen, sucursales]);
 
-  function actualizarItem(i: number, campo: keyof LineaItem, valor: string) {
-    setItems((prev) => prev.map((item, idx) => (idx === i ? { ...item, [campo]: valor } : item)));
+  function actualizarItem(i: number, cambios: Partial<LineaItem>) {
+    setItems((prev) => prev.map((item, idx) => (idx === i ? { ...item, ...cambios } : item)));
   }
 
   async function handleCrear() {
     setError(null);
-    const itemsValidos = items.filter((it) => it.productoId && Number(it.cantidad) > 0);
+    const itemsValidos = items.filter((it) => it.item && Number(it.cantidad) > 0);
     if (!sucursalId || !direccionEntrega.trim() || itemsValidos.length === 0) {
       setError('Sucursal, dirección de entrega y al menos un producto son obligatorios');
       return;
@@ -73,7 +72,11 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
         telefonoContacto: telefonoContacto || undefined,
         repartidorUsuarioId: repartidorId ? Number(repartidorId) : undefined,
         notas: notas || undefined,
-        items: itemsValidos.map((it) => ({ productoId: Number(it.productoId), cantidad: Number(it.cantidad) })),
+        items: itemsValidos.map((it) => ({
+          productoId: it.item!.tipo === 'PRODUCTO' ? it.item!.id : undefined,
+          comboId: it.item!.tipo === 'COMBO' ? it.item!.id : undefined,
+          cantidad: Number(it.cantidad),
+        })),
       });
       onClose();
     } catch (err) {
@@ -139,35 +142,48 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
         <div className="border-t border-ink-100 pt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Productos</p>
-          <div className="space-y-2">
-            {items.map((item, i) => (
-              <div key={i} className="grid grid-cols-[1fr_80px_auto] items-center gap-2">
-                <select className="input text-sm" value={item.productoId} onChange={(e) => actualizarItem(i, 'productoId', e.target.value)}>
-                  <option value="">Elegir producto...</option>
-                  {productos?.filter((p) => p.estado).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={1}
-                  className="input text-sm"
-                  value={item.cantidad}
-                  onChange={(e) => actualizarItem(i, 'cantidad', e.target.value)}
-                />
-                <button
-                  onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="rounded p-1.5 text-ink-300 hover:text-danger-500"
-                >
-                  <X size={15} />
-                </button>
+          <div className="space-y-3">
+            {items.map((linea, i) => (
+              <div key={i} className="rounded-lg border border-ink-100 bg-ink-50 p-2">
+                {linea.item ? (
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white">
+                      {linea.item.imagen ? (
+                        <img src={linea.item.imagen} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-ink-300">
+                          {linea.item.tipo === 'COMBO' ? <Package2 size={16} /> : <ImageOff size={16} />}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-ink-800">{linea.item.nombre}</p>
+                      <button onClick={() => actualizarItem(i, { item: null })} className="text-xs font-medium text-ink-500 hover:text-ink-800">
+                        Cambiar
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      min={1}
+                      className="input w-16 text-sm"
+                      value={linea.cantidad}
+                      onChange={(e) => actualizarItem(i, { cantidad: e.target.value })}
+                    />
+                    <button
+                      onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="rounded p-1.5 text-ink-300 hover:text-danger-500"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                ) : (
+                  <SelectorProductoOCombo onSeleccionar={(item) => actualizarItem(i, { item })} />
+                )}
               </div>
             ))}
           </div>
           <button
-            onClick={() => setItems((prev) => [...prev, { productoId: '', cantidad: '1' }])}
+            onClick={() => setItems((prev) => [...prev, { item: null, cantidad: '1' }])}
             className="mt-2 flex items-center gap-1 text-xs font-medium text-ink-600 hover:text-ink-800"
           >
             <Plus size={13} />

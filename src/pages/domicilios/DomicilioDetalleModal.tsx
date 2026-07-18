@@ -131,7 +131,7 @@ export function DomicilioDetalleModal({
             {domicilio.items.map((i) => (
               <div key={i.id} className="flex items-center justify-between text-sm">
                 <span className="text-ink-700">
-                  {i.cantidad}× {i.productoNombre}
+                  {i.cantidad}× {i.comboNombre ?? i.productoNombre}
                 </span>
                 <span className="text-ink-500">{formatoMoneda(i.precioUnitario * i.cantidad)}</span>
               </div>
