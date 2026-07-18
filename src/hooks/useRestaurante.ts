@@ -175,3 +175,12 @@ export function useCambiarEstadoReserva() {
     },
   });
 }
+
+// --- Analítica (Fase 3) ---
+
+export function useAnaliticaRestaurante(desde: string, hasta: string) {
+  return useQuery({
+    queryKey: ['analitica-restaurante', desde, hasta],
+    queryFn: () => restauranteApi.obtenerAnaliticaRestaurante(desde, hasta),
+  });
+}

@@ -1,8 +1,10 @@
 import { useState, type ChangeEvent } from 'react';
-import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X, Loader2, BarChart3, Clock, Award, Bike } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import {
   useMesas, useComandasHistorial, useComandasActivas, useCambiarEstadoMesa, useCambiarEstadoItem,
-  useReservas, useCrearReserva, useCambiarEstadoReserva,
+  useReservas, useCrearReserva, useCambiarEstadoReserva, useAnaliticaRestaurante,
 } from '@/hooks/useRestaurante';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useClientes } from '@/hooks/usePos';
@@ -54,7 +56,7 @@ export default function RestaurantePage() {
   const [mesaEditar, setMesaEditar] = useState<Mesa | null>(null);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
   const [mesaQr, setMesaQr] = useState<Mesa | null>(null);
-  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'menu' | 'historial'>('mesas');
+  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'menu' | 'analitica' | 'historial'>('mesas');
 
   function manejarClicMesa(m: Mesa) {
     // Una mesa en Limpieza no tiene comanda que gestionar — clic rápido la libera.
@@ -72,16 +74,25 @@ export default function RestaurantePage() {
           <h1 className="font-display text-2xl font-semibold text-ink-800">Restaurante</h1>
           <p className="mt-1 text-sm text-ink-400">Mesas y comandas en tiempo real.</p>
         </div>
-        <button
-          onClick={() => {
-            setMesaEditar(null);
-            setFormAbierto(true);
-          }}
-          className="flex items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
-        >
-          <Plus size={16} />
-          Nueva mesa
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/domicilios"
+            className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
+          >
+            <Bike size={16} />
+            Ir a Domicilios
+          </Link>
+          <button
+            onClick={() => {
+              setMesaEditar(null);
+              setFormAbierto(true);
+            }}
+            className="flex items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
+          >
+            <Plus size={16} />
+            Nueva mesa
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 flex gap-1 border-b border-ink-100">
@@ -119,6 +130,15 @@ export default function RestaurantePage() {
         >
           <QrCode size={14} />
           Menú digital
+        </button>
+        <button
+          onClick={() => setVista('analitica')}
+          className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            vista === 'analitica' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
+          }`}
+        >
+          <BarChart3 size={14} />
+          Analítica
         </button>
         <button
           onClick={() => setVista('historial')}
@@ -195,6 +215,7 @@ export default function RestaurantePage() {
       {vista === 'cocina' && <PantallaCocina />}
       {vista === 'reservas' && <ReservasTab />}
       {vista === 'menu' && <MenuDigitalTab />}
+      {vista === 'analitica' && <AnaliticaTab />}
       {vista === 'historial' && <HistorialComandas />}
 
       <MesaFormModal isOpen={formAbierto} onClose={() => setFormAbierto(false)} mesa={mesaEditar} />
@@ -573,6 +594,140 @@ function MenuDigitalTab() {
           <EmptyState title="Sin menú digital todavía" description="Sube tu primera foto o PDF del menú." />
         )}
       </div>
+    </div>
+  );
+}
+
+function formatoHora(hora: number) {
+  return `${hora.toString().padStart(2, '0')}:00`;
+}
+
+function AnaliticaTab() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const primerDiaMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  const [desde, setDesde] = useState(primerDiaMes);
+  const [hasta, setHasta] = useState(hoy);
+  const { data, isLoading } = useAnaliticaRestaurante(desde, hasta);
+
+  return (
+    <div className="mt-6 space-y-6">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Desde</span>
+          <input type="date" className="input text-sm" value={desde} onChange={(e) => setDesde(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Hasta</span>
+          <input type="date" className="input text-sm" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+        </label>
+      </div>
+
+      {isLoading || !data ? (
+        <LoadingState />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="text-xs font-medium text-ink-400">Ventas totales</p>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{formatoMoneda(data.ventasTotales)}</p>
+            </div>
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="text-xs font-medium text-ink-400">Comandas cerradas</p>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{data.numeroComandas}</p>
+            </div>
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="text-xs font-medium text-ink-400">Ticket promedio</p>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{formatoMoneda(data.ticketPromedio)}</p>
+            </div>
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="text-xs font-medium text-ink-400">Propinas</p>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">{formatoMoneda(data.propinasTotales)}</p>
+            </div>
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="flex items-center gap-1 text-xs font-medium text-ink-400">
+                <Clock size={12} />
+                Tiempo promedio
+              </p>
+              <p className="mt-1 font-display text-xl font-bold text-ink-800">
+                {data.tiempoPromedioAtencionMinutos != null ? `${Math.round(data.tiempoPromedioAtencionMinutos)} min` : '—'}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+            <p className="mb-3 text-sm font-semibold text-ink-700">Ventas por hora</p>
+            {data.ventasPorHora.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={data.ventasPorHora.map((v) => ({ ...v, horaTexto: formatoHora(v.hora) }))} margin={{ left: 8, right: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="horaTexto" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => formatoMoneda(v)} />
+                  <Bar dataKey="total" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState title="Sin ventas en este rango" />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="mb-3 text-sm font-semibold text-ink-700">Ventas por mesero</p>
+              {data.ventasPorMesero.length > 0 ? (
+                <div className="space-y-2">
+                  {data.ventasPorMesero.map((m) => (
+                    <div key={m.meseroId} className="flex items-center justify-between text-sm">
+                      <span className="text-ink-600">{m.meseroNombre}</span>
+                      <span className="font-medium text-ink-800">
+                        {formatoMoneda(m.ventasTotales)}
+                        {m.propinas > 0 && <span className="ml-1 text-xs text-ink-400">(+{formatoMoneda(m.propinas)} propina)</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="Sin datos" />
+              )}
+            </div>
+
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-ink-700">
+                <Award size={14} className="text-amber-500" />
+                Platos más vendidos
+              </p>
+              {data.platosMasVendidos.length > 0 ? (
+                <div className="space-y-2">
+                  {data.platosMasVendidos.map((p) => (
+                    <div key={p.nombre} className="flex items-center justify-between text-sm">
+                      <span className="text-ink-600">{p.nombre}</span>
+                      <span className="font-medium text-ink-800">{p.cantidad}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="Sin datos" />
+              )}
+            </div>
+
+            <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+              <p className="mb-3 text-sm font-semibold text-ink-700">Mesas más utilizadas</p>
+              {data.mesasMasUtilizadas.length > 0 ? (
+                <div className="space-y-2">
+                  {data.mesasMasUtilizadas.map((m) => (
+                    <div key={m.nombre} className="flex items-center justify-between text-sm">
+                      <span className="text-ink-600">Mesa {m.nombre}</span>
+                      <span className="font-medium text-ink-800">{m.cantidad} veces</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="Sin datos" />
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -155,3 +155,20 @@ export const actualizarReserva = async (id: number, data: ReservaRequest): Promi
 
 export const cambiarEstadoReserva = async (id: number, estado: EstadoReserva): Promise<Reserva> =>
   (await apiClient.patch<Reserva>(`/restaurante/reservas/${id}/estado`, { estado })).data;
+
+// --- Analítica (Fase 3) ---
+
+export interface RestauranteAnalitica {
+  ventasTotales: number;
+  numeroComandas: number;
+  ticketPromedio: number;
+  propinasTotales: number;
+  tiempoPromedioAtencionMinutos: number | null;
+  ventasPorHora: { hora: number; total: number }[];
+  ventasPorMesero: { meseroId: number; meseroNombre: string; numeroComandas: number; ventasTotales: number; propinas: number }[];
+  platosMasVendidos: { nombre: string; cantidad: number }[];
+  mesasMasUtilizadas: { nombre: string; cantidad: number }[];
+}
+
+export const obtenerAnaliticaRestaurante = async (desde: string, hasta: string): Promise<RestauranteAnalitica> =>
+  (await apiClient.get<RestauranteAnalitica>('/restaurante/analitica', { params: { desde, hasta } })).data;
