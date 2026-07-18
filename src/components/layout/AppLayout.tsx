@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
@@ -16,6 +17,7 @@ export function AppLayout() {
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const { data: miPlan } = useMiPlan();
   useAplicarTema();
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
   if (!esSuperadmin && miPlan && miPlan.estadoLicencia !== 'ACTIVA') {
     return (
@@ -34,10 +36,10 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen bg-ink-50 dark:bg-ink-900">
-      <Sidebar />
+      <Sidebar abierto={menuMovilAbierto} onCerrar={() => setMenuMovilAbierto(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto px-6 py-6">
+        <Topbar onAbrirMenu={() => setMenuMovilAbierto(true)} />
+        <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
           <Outlet />
         </main>
       </div>

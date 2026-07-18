@@ -25,6 +25,8 @@ import RestaurantePage from '@/pages/restaurante/RestaurantePage';
 import ServiciosPage from '@/pages/servicios/ServiciosPage';
 import PrestamosPage from '@/pages/prestamos/PrestamosPage';
 import DomiciliosPage from '@/pages/domicilios/DomiciliosPage';
+import AppMeseroPage from '@/pages/restaurante/AppMeseroPage';
+import AppCocinaPage from '@/pages/restaurante/AppCocinaPage';
 
 export default function App() {
   return (
@@ -56,6 +58,12 @@ export default function App() {
           <Route path="/configuracion" element={<ConfiguracionPage />} />
           <Route path="/plataforma" element={<PlataformaPage />} />
         </Route>
+
+        {/* Apps simplificadas de pantalla completa — protegidas por sesión, pero SIN el
+            layout administrativo (sidebar/topbar), para dejar montadas en la tablet de
+            cocina o en el celular del mesero. */}
+        <Route path="/app/mesero" element={<AppMeseroPage />} />
+        <Route path="/app/cocina" element={<AppCocinaPage />} />
       </Route>
 
       <Route path="/404" element={<NotFoundPage />} />

@@ -220,7 +220,7 @@ function MovimientosCajaModal({
         {isLoading ? (
           <LoadingState />
         ) : movimientos && movimientos.length > 0 ? (
-          <div className="max-h-72 overflow-y-auto rounded-lg border border-ink-100">
+          <div className="max-h-72 overflow-x-auto overflow-y-auto rounded-lg border border-ink-100">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-ink-50 text-xs text-ink-500">
                 <tr>

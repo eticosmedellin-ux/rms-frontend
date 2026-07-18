@@ -69,12 +69,30 @@ export default function RestaurantePage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink-800">Restaurante</h1>
           <p className="mt-1 text-sm text-ink-400">Mesas y comandas en tiempo real.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/app/mesero"
+            target="_blank"
+            className="hidden items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50 sm:flex"
+            title="Abrir la app simplificada para meseros en una pestaña/dispositivo nuevo"
+          >
+            <UtensilsCrossed size={15} />
+            App mesero
+          </Link>
+          <Link
+            to="/app/cocina"
+            target="_blank"
+            className="hidden items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50 sm:flex"
+            title="Abrir la app simplificada de cocina en una pestaña/dispositivo nuevo"
+          >
+            <ChefHat size={15} />
+            App cocina
+          </Link>
           <Link
             to="/domicilios"
             className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"

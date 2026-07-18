@@ -77,7 +77,7 @@ export function ImportarProductosModal({ isOpen, onClose }: { isOpen: boolean; o
           </div>
 
           {resultado.errores.length > 0 && (
-            <div className="max-h-56 overflow-y-auto rounded-lg border border-danger-50">
+            <div className="max-h-56 overflow-x-auto overflow-y-auto rounded-lg border border-danger-50">
               <table className="w-full text-sm">
                 <thead className="bg-danger-50 text-xs text-danger-600">
                   <tr>
