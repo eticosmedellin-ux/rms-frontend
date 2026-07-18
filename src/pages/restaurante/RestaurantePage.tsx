@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X } from 'lucide-react';
+import { useState, type ChangeEvent } from 'react';
+import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X, Loader2 } from 'lucide-react';
 import {
   useMesas, useComandasHistorial, useComandasActivas, useCambiarEstadoMesa, useCambiarEstadoItem,
   useReservas, useCrearReserva, useCambiarEstadoReserva,
@@ -7,6 +7,8 @@ import {
 import { useSucursales } from '@/hooks/useSucursales';
 import { useClientes } from '@/hooks/usePos';
 import { getApiErrorMessage } from '@/api/errors';
+import { comprimirImagen } from '@/api/imagen';
+import { useMenuArchivos, useSubirArchivoMenu, useActivarArchivoMenu, useEliminarArchivoMenu } from '@/hooks/useMenu';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { MesaFormModal } from '@/pages/restaurante/MesaFormModal';
@@ -52,7 +54,7 @@ export default function RestaurantePage() {
   const [mesaEditar, setMesaEditar] = useState<Mesa | null>(null);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
   const [mesaQr, setMesaQr] = useState<Mesa | null>(null);
-  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'historial'>('mesas');
+  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'menu' | 'historial'>('mesas');
 
   function manejarClicMesa(m: Mesa) {
     // Una mesa en Limpieza no tiene comanda que gestionar — clic rápido la libera.
@@ -108,6 +110,15 @@ export default function RestaurantePage() {
         >
           <CalendarPlus size={14} />
           Reservas
+        </button>
+        <button
+          onClick={() => setVista('menu')}
+          className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            vista === 'menu' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
+          }`}
+        >
+          <QrCode size={14} />
+          Menú digital
         </button>
         <button
           onClick={() => setVista('historial')}
@@ -183,6 +194,7 @@ export default function RestaurantePage() {
 
       {vista === 'cocina' && <PantallaCocina />}
       {vista === 'reservas' && <ReservasTab />}
+      {vista === 'menu' && <MenuDigitalTab />}
       {vista === 'historial' && <HistorialComandas />}
 
       <MesaFormModal isOpen={formAbierto} onClose={() => setFormAbierto(false)} mesa={mesaEditar} />
@@ -192,19 +204,21 @@ export default function RestaurantePage() {
   );
 }
 
-/** QR por mesa — de momento enlaza a la vista de Restaurante del sistema (uso interno del
- *  personal); cuando exista un menú digital público, este mismo botón se puede apuntar
- *  a esa URL sin tocar nada más. */
+/** QR por mesa — enlaza al menú digital público (imágenes/PDF que el administrador sube
+ *  desde "Menú digital"), NO al sistema interno — así el cliente lo ve sin iniciar sesión. */
 function QrMesaModal({ mesa, onClose }: { mesa: Mesa | null; onClose: () => void }) {
   if (!mesa) return null;
-  const contenido = `${window.location.origin}/restaurante?mesa=${mesa.id}`;
+  const contenido = `${window.location.origin}/menu?sucursal=${mesa.sucursalId}`;
   const urlQr = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(contenido)}`;
 
   return (
     <Modal isOpen={mesa !== null} onClose={onClose} title={`Código QR — Mesa ${mesa.numero}`} size="sm">
       <div className="flex flex-col items-center gap-3 py-2">
         <img src={urlQr} alt={`QR de la mesa ${mesa.numero}`} className="rounded-lg border border-ink-100" />
-        <p className="text-center text-xs text-ink-400">Imprime y pega este código en la mesa {mesa.numero}.</p>
+        <p className="text-center text-xs text-ink-400">
+          Imprime y pega este código en la mesa {mesa.numero}. Abre tu menú digital — súbelo desde la pestaña
+          "Menú digital" si todavía no lo has hecho.
+        </p>
       </div>
     </Modal>
   );
@@ -244,7 +258,7 @@ function PantallaCocina() {
                 </span>
               </div>
               <p className="mt-2 font-display text-base font-semibold text-ink-800">
-                {item.cantidad}× {item.productoNombre}
+                {item.cantidad}× {item.comboNombre ?? item.productoNombre}
               </p>
               {item.notas && <p className="text-xs text-ink-400">{item.notas}</p>}
               {SIGUIENTE_ESTADO_ITEM[item.estado] && (
@@ -448,6 +462,115 @@ function ReservasTab() {
           </div>
         ) : (
           <EmptyState title="Sin reservas" description="Crea la primera reserva de mesa." />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function leerArchivoComoBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    lector.onload = () => resolve(lector.result as string);
+    lector.readAsDataURL(file);
+  });
+}
+
+function MenuDigitalTab() {
+  const { data: archivos, isLoading } = useMenuArchivos();
+  const { data: sucursales } = useSucursales();
+  const subir = useSubirArchivoMenu();
+  const activar = useActivarArchivoMenu();
+  const eliminar = useEliminarArchivoMenu();
+  const [sucursalId, setSucursalId] = useState('');
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleArchivo(e: ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    setError(null);
+    setSubiendo(true);
+    try {
+      const esPdf = archivo.type === 'application/pdf';
+      const contenido = esPdf ? await leerArchivoComoBase64(archivo) : await comprimirImagen(archivo, 1200, 0.85);
+      await subir.mutateAsync({
+        nombre: archivo.name,
+        tipoArchivo: esPdf ? 'PDF' : 'IMAGEN',
+        contenido,
+        sucursalId: sucursalId ? Number(sucursalId) : undefined,
+      });
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo subir el archivo'));
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <p className="text-sm text-ink-400">
+        Sube tu carta/menú como foto o PDF — esto es justo lo que ven tus clientes al escanear el código QR de la
+        mesa, sin necesidad de entrar al sistema. Puedes subir un menú general (deja "Todas las sucursales") o uno
+        distinto por sucursal.
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-ink-100 bg-ink-50 p-4">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Sucursal (opcional)</span>
+          <select className="input text-sm" value={sucursalId} onChange={(e) => setSucursalId(e.target.value)}>
+            <option value="">Todas las sucursales</option>
+            {sucursales?.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700">
+          {subiendo && <Loader2 size={15} className="animate-spin" />}
+          Subir foto o PDF
+          <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleArchivo} disabled={subiendo} />
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-white">
+          Tomar foto
+          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleArchivo} disabled={subiendo} />
+        </label>
+      </div>
+      {error && <p className="mt-2 text-xs text-danger-500">{error}</p>}
+
+      <div className="mt-4">
+        {isLoading ? (
+          <LoadingState />
+        ) : archivos && archivos.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {archivos.map((a) => (
+              <div key={a.id} className={`rounded-xl border border-ink-100 bg-white p-2 shadow-card ${!a.activo ? 'opacity-50' : ''}`}>
+                {a.tipoArchivo === 'PDF' ? (
+                  <div className="flex h-32 items-center justify-center rounded-lg bg-ink-50 text-xs text-ink-400">Archivo PDF</div>
+                ) : (
+                  <img src={a.contenido} alt={a.nombre} className="h-32 w-full rounded-lg object-cover" />
+                )}
+                <p className="mt-1.5 truncate text-xs font-medium text-ink-700">{a.nombre}</p>
+                <p className="text-[10px] text-ink-400">{a.sucursalNombre ?? 'Todas las sucursales'}</p>
+                <div className="mt-1.5 flex items-center justify-between">
+                  <button
+                    onClick={() => activar.mutate({ id: a.id, activo: !a.activo })}
+                    className="text-[11px] font-medium text-ink-500 hover:text-ink-800"
+                  >
+                    {a.activo ? 'Desactivar' : 'Activar'}
+                  </button>
+                  <button onClick={() => eliminar.mutate(a.id)} className="rounded p-1 text-ink-300 hover:text-danger-500">
+                    <X size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Sin menú digital todavía" description="Sube tu primera foto o PDF del menú." />
         )}
       </div>
     </div>

@@ -18,6 +18,7 @@ import { useProductos } from '@/hooks/useInventario';
 import { useCombos } from '@/hooks/useCombos';
 import { useCajaAbierta } from '@/hooks/usePos';
 import { useUsuarios } from '@/hooks/useNucleo';
+import { useTiposDescuento } from '@/hooks/useDescuentos';
 import { getApiErrorMessage } from '@/api/errors';
 import { LoadingState } from '@/components/ui/States';
 import type { Mesa, EstadoItemComanda } from '@/api/restaurante';
@@ -62,6 +63,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   const { data: mesas } = useMesas();
   const { data: comandasActivas } = useComandasActivas();
   const { data: usuarios } = useUsuarios();
+  const { data: tiposDescuento } = useTiposDescuento();
   const agregarItem = useAgregarItemComanda();
   const cambiarEstado = useCambiarEstadoItem();
   const cerrar = useCerrarComanda();
@@ -76,6 +78,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   const [vista, setVista] = useState<'comanda' | 'cierre' | 'cambiarMesa' | 'unir'>('comanda');
   const [pagos, setPagos] = useState<LineaPago[]>([{ metodoPago: 'EFECTIVO', monto: '' }]);
   const [propina, setPropina] = useState('');
+  const [tipoDescuentoFacturaId, setTipoDescuentoFacturaId] = useState('');
   const [mesaDestinoId, setMesaDestinoId] = useState('');
   const [comandaAUnirId, setComandaAUnirId] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +88,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
       setVista('comanda');
       setError(null);
       setPropina('');
+      setTipoDescuentoFacturaId('');
       setMesaDestinoId('');
       setComandaAUnirId('');
     }
@@ -92,14 +96,28 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
 
   useEffect(() => {
     if (vista === 'cierre' && comanda) {
-      setPagos([{ metodoPago: 'EFECTIVO', monto: String(comanda.total) }]);
+      const descuento = tiposDescuento?.find((t) => String(t.id) === tipoDescuentoFacturaId);
+      const monto = descuento
+        ? descuento.tipo === 'PORCENTAJE'
+          ? (comanda.total * descuento.valor) / 100
+          : descuento.valor
+        : 0;
+      setPagos([{ metodoPago: 'EFECTIVO', monto: String(Math.max(0, comanda.total - monto)) }]);
     }
-  }, [vista, comanda]);
+  }, [vista, comanda, tipoDescuentoFacturaId]);
 
   if (!mesa) return null;
 
   const totalPagos = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
-  const diferenciaPago = comanda ? Math.round((totalPagos - comanda.total) * 100) / 100 : 0;
+  const descuentoSeleccionado = tiposDescuento?.find((t) => String(t.id) === tipoDescuentoFacturaId);
+  const montoDescuento =
+    comanda && descuentoSeleccionado
+      ? descuentoSeleccionado.tipo === 'PORCENTAJE'
+        ? (comanda.total * descuentoSeleccionado.valor) / 100
+        : descuentoSeleccionado.valor
+      : 0;
+  const totalConDescuento = comanda ? Math.max(0, comanda.total - montoDescuento) : 0;
+  const diferenciaPago = comanda ? Math.round((totalPagos - totalConDescuento) * 100) / 100 : 0;
 
   function actualizarLineaPago(i: number, campo: keyof LineaPago, valor: string) {
     setPagos((prev) => prev.map((p, idx) => (idx === i ? { ...p, [campo]: valor } : p)));
@@ -144,7 +162,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
       return;
     }
     if (Math.abs(diferenciaPago) > 0.5) {
-      setError(`Los pagos suman ${formatoMoneda(totalPagos)}, pero el total es ${formatoMoneda(comanda.total)} — ajusta los montos.`);
+      setError(`Los pagos suman ${formatoMoneda(totalPagos)}, pero el total es ${formatoMoneda(totalConDescuento)} — ajusta los montos.`);
       return;
     }
     try {
@@ -154,6 +172,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
           cajaSesionId: cajaAbierta.id,
           pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
           propina: propina ? Number(propina) : undefined,
+          tipoDescuentoFacturaId: tipoDescuentoFacturaId ? Number(tipoDescuentoFacturaId) : undefined,
         },
       });
       onClose();
@@ -217,9 +236,36 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
           <LoadingState />
         ) : vista === 'cierre' ? (
           <div className="space-y-4">
-            <p className="text-sm text-ink-600">
-              Total de la cuenta: <span className="font-semibold text-ink-800">{formatoMoneda(comanda.total)}</span>
-            </p>
+            <div className="rounded-lg bg-ink-50 p-3 text-sm">
+              <div className="flex justify-between text-ink-500">
+                <span>Subtotal</span>
+                <span>{formatoMoneda(comanda.total)}</span>
+              </div>
+              {montoDescuento > 0 && (
+                <div className="flex justify-between text-success-600">
+                  <span>Descuento</span>
+                  <span>- {formatoMoneda(montoDescuento)}</span>
+                </div>
+              )}
+              <div className="mt-1 flex justify-between border-t border-ink-200 pt-1 font-semibold text-ink-800">
+                <span>Total a cobrar</span>
+                <span>{formatoMoneda(totalConDescuento)}</span>
+              </div>
+            </div>
+
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-600">Descuento (opcional)</span>
+              <select className="input" value={tipoDescuentoFacturaId} onChange={(e) => setTipoDescuentoFacturaId(e.target.value)}>
+                <option value="">Sin descuento</option>
+                {tiposDescuento
+                  ?.filter((t) => t.vigente && (t.aplicaA === 'FACTURA' || t.aplicaA === 'AMBOS'))
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nombre} ({t.tipo === 'PORCENTAJE' ? `${t.valor}%` : formatoMoneda(t.valor)})
+                    </option>
+                  ))}
+              </select>
+            </label>
 
             <div>
               <div className="mb-1.5 flex items-center justify-between">

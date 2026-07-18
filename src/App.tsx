@@ -5,6 +5,7 @@ import LoginPage from '@/pages/LoginPage';
 import RegistroEmpresaPage from '@/pages/RegistroEmpresaPage';
 import OlvidePasswordPage from '@/pages/OlvidePasswordPage';
 import RestablecerPasswordPage from '@/pages/RestablecerPasswordPage';
+import MenuPublicoPage from '@/pages/MenuPublicoPage';
 import DashboardPage from '@/pages/DashboardPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import InventarioPage from '@/pages/inventario/InventarioPage';
@@ -32,6 +33,7 @@ export default function App() {
       <Route path="/registro" element={<RegistroEmpresaPage />} />
       <Route path="/olvide-password" element={<OlvidePasswordPage />} />
       <Route path="/restablecer" element={<RestablecerPasswordPage />} />
+      <Route path="/menu" element={<MenuPublicoPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
