@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X, Loader2, BarChart3, Clock, Award, Bike } from 'lucide-react';
+import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X, Loader2, BarChart3, Clock, Award, Bike, UtensilsCrossed } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import {
   useMesas, useComandasHistorial, useComandasActivas, useCambiarEstadoMesa, useCambiarEstadoItem,
