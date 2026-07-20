@@ -7,7 +7,10 @@ import { useSucursales } from '@/hooks/useSucursales';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useAlertas } from '@/hooks/useGestion';
 import { useMiPlan } from '@/hooks/usePlataforma';
-import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
+import {
+  puedeVerRuta, incluidaEnPlan, incluidaEnPlanDirecta, puedeVerModulo,
+  MODULO_SERVICIOS_CITAS, MODULO_SERVICIOS_ORDENES, PLAN_SERVICIOS_CITAS, PLAN_SERVICIOS_ORDENES,
+} from '@/lib/permisos';
 import { useMesas, useAnaliticaRestaurante } from '@/hooks/useRestaurante';
 import { useCitas, useAnaliticaServicios } from '@/hooks/useServicios';
 import { useDashboardPrestamos } from '@/hooks/usePrestamos';
@@ -50,7 +53,13 @@ export default function DashboardPage() {
     return tienePermiso && incluidaEnPlan(miPlan?.rutasHabilitadas, ruta);
   }
   const mostrarRestaurante = moduloHabilitado('/restaurante');
-  const mostrarServicios = moduloHabilitado('/servicios');
+  const mostrarServiciosCitas =
+    incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, PLAN_SERVICIOS_CITAS) &&
+    (esAdministradorTotal || puedeVerModulo(permisos, MODULO_SERVICIOS_CITAS));
+  const mostrarServiciosOrdenes =
+    incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, PLAN_SERVICIOS_ORDENES) &&
+    (esAdministradorTotal || puedeVerModulo(permisos, MODULO_SERVICIOS_ORDENES));
+  const mostrarServicios = mostrarServiciosCitas || mostrarServiciosOrdenes;
   const mostrarPrestamos = moduloHabilitado('/prestamos');
   const mostrarDomicilios = moduloHabilitado('/domicilios');
   const hayModuloEspecializado = mostrarRestaurante || mostrarServicios || mostrarPrestamos || mostrarDomicilios;

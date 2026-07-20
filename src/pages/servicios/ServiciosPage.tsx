@@ -3,8 +3,11 @@ import { CitasTab } from '@/pages/servicios/CitasTab';
 import { OrdenesTrabajoTab } from '@/pages/servicios/OrdenesTrabajoTab';
 import { TiposServicioTab } from '@/pages/servicios/TiposServicioTab';
 import { HistorialTab } from '@/pages/servicios/HistorialTab';
+import { useAuthStore } from '@/stores/authStore';
+import { useMiPlan } from '@/hooks/usePlataforma';
+import { incluidaEnPlanDirecta, puedeVerModulo, MODULO_SERVICIOS_CITAS, MODULO_SERVICIOS_ORDENES, PLAN_SERVICIOS_CITAS, PLAN_SERVICIOS_ORDENES } from '@/lib/permisos';
 
-const TABS = [
+const TODOS_LOS_TABS = [
   { id: 'citas', label: 'Citas' },
   { id: 'ordenes', label: 'Órdenes de trabajo' },
   { id: 'tipos', label: 'Tipos de servicio' },
@@ -12,7 +15,31 @@ const TABS = [
 ] as const;
 
 export default function ServiciosPage() {
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('citas');
+  const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
+  const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
+  const permisos = useAuthStore((state) => state.permisos);
+  const { data: miPlan } = useMiPlan();
+
+  // "Servicios" son dos cosas independientes: Citas (barbería, spa, consultorios) y
+  // Órdenes de trabajo/Casos (talleres, abogados, contadores) — un negocio con el plan de
+  // Barbería NO debe ver los casos legales de Abogados, y viceversa.
+  const puedeCitas =
+    esSuperadmin ||
+    (incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, PLAN_SERVICIOS_CITAS) &&
+      (esAdministradorTotal || puedeVerModulo(permisos, MODULO_SERVICIOS_CITAS)));
+  const puedeOrdenes =
+    esSuperadmin ||
+    (incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, PLAN_SERVICIOS_ORDENES) &&
+      (esAdministradorTotal || puedeVerModulo(permisos, MODULO_SERVICIOS_ORDENES)));
+
+  const TABS = TODOS_LOS_TABS.filter((t) => {
+    if (t.id === 'citas') return puedeCitas;
+    if (t.id === 'ordenes') return puedeOrdenes;
+    if (t.id === 'tipos') return puedeCitas || puedeOrdenes; // tipos de servicio alimenta a Citas
+    return true; // historial sirve para cualquiera de los dos
+  });
+
+  const [tab, setTab] = useState<(typeof TODOS_LOS_TABS)[number]['id']>(TABS[0]?.id ?? 'historial');
 
   return (
     <div>
@@ -34,8 +61,8 @@ export default function ServiciosPage() {
       </div>
 
       <div className="mt-5">
-        {tab === 'citas' && <CitasTab />}
-        {tab === 'ordenes' && <OrdenesTrabajoTab />}
+        {tab === 'citas' && puedeCitas && <CitasTab />}
+        {tab === 'ordenes' && puedeOrdenes && <OrdenesTrabajoTab />}
         {tab === 'tipos' && <TiposServicioTab />}
         {tab === 'historial' && <HistorialTab />}
       </div>

@@ -14,10 +14,33 @@ export const RUTA_A_MODULO: Record<string, string> = {
   '/contabilidad': 'CONTABILIDAD',
   '/nomina': 'NOMINA',
   '/restaurante': 'RESTAURANTE',
-  '/servicios': 'SERVICIOS',
   '/prestamos': 'PRESTAMOS',
   '/domicilios': 'DOMICILIOS',
 };
+
+/** "Servicios" en realidad son dos cosas independientes que un negocio puede tener una
+ *  sin la otra: Citas (barbería, spa, consultorios) y Órdenes de trabajo/Casos (talleres,
+ *  abogados, contadores) — antes compartían un solo módulo, lo que hacía que CUALQUIER
+ *  plan con Servicios viera TODO, incluidos los casos legales de Abogados aunque el
+ *  negocio fuera una barbería. Debe reflejar exactamente segmentoEfectivo() de
+ *  ModuloAuthorizationFilter.java. */
+export const MODULO_SERVICIOS_CITAS = 'SERVICIOS_CITAS';
+export const MODULO_SERVICIOS_ORDENES = 'SERVICIOS_ORDENES';
+export const PLAN_SERVICIOS_CITAS = 'servicios-citas';
+export const PLAN_SERVICIOS_ORDENES = 'servicios-ordenes';
+
+export function puedeVerServiciosCitas(permisos: string[], rutasHabilitadas: string[] | undefined): boolean {
+  return puedeVerModulo(permisos, MODULO_SERVICIOS_CITAS) && incluidaEnPlanDirecta(rutasHabilitadas, PLAN_SERVICIOS_CITAS);
+}
+
+export function puedeVerServiciosOrdenes(permisos: string[], rutasHabilitadas: string[] | undefined): boolean {
+  return puedeVerModulo(permisos, MODULO_SERVICIOS_ORDENES) && incluidaEnPlanDirecta(rutasHabilitadas, PLAN_SERVICIOS_ORDENES);
+}
+
+export function incluidaEnPlanDirecta(rutasHabilitadas: string[] | undefined, rutaPlan: string): boolean {
+  if (!rutasHabilitadas) return true;
+  return rutasHabilitadas.includes(rutaPlan);
+}
 
 export function moduloDePermiso(codigoPermiso: string): string {
   return codigoPermiso.split('_')[0];
@@ -48,7 +71,6 @@ export const RUTA_A_PLAN: Record<string, string> = {
   '/contabilidad': 'contabilidad',
   '/nomina': 'nomina',
   '/restaurante': 'restaurante',
-  '/servicios': 'servicios',
   '/prestamos': 'prestamos',
   '/domicilios': 'domicilios',
 };
@@ -70,6 +92,8 @@ const MODULO_A_RUTA: Record<string, string> = Object.fromEntries(
  *  el sistema va a bloquear igual. Los módulos "core" (sin ruta gestionada por planes,
  *  como CAJA o CLIENTES) siempre se muestran. */
 export function permisoIncluidoEnPlan(rutasHabilitadas: string[] | undefined, moduloPermiso: string): boolean {
+  if (moduloPermiso === MODULO_SERVICIOS_CITAS) return incluidaEnPlanDirecta(rutasHabilitadas, PLAN_SERVICIOS_CITAS);
+  if (moduloPermiso === MODULO_SERVICIOS_ORDENES) return incluidaEnPlanDirecta(rutasHabilitadas, PLAN_SERVICIOS_ORDENES);
   const ruta = MODULO_A_RUTA[moduloPermiso];
   if (!ruta) return true;
   return incluidaEnPlan(rutasHabilitadas, ruta);

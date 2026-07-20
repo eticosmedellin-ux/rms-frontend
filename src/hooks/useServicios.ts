@@ -85,6 +85,33 @@ export function useActualizarOrden() {
   });
 }
 
+export function useNotasOrden(ordenId: number | null) {
+  return useQuery({
+    queryKey: ['notas-orden', ordenId],
+    queryFn: () => serviciosApi.listarNotasOrden(ordenId as number),
+    enabled: ordenId !== null,
+  });
+}
+
+export function useAgregarNotaOrden() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ordenId, texto }: { ordenId: number; texto: string }) => serviciosApi.agregarNotaOrden(ordenId, texto),
+    onSuccess: (_data, { ordenId }) => queryClient.invalidateQueries({ queryKey: ['notas-orden', ordenId] }),
+  });
+}
+
+export function useRegistrarAbonoOrden() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ordenId, data }: { ordenId: number; data: { monto: number; metodoPago: string; cajaSesionId?: number } }) =>
+      serviciosApi.registrarAbonoOrden(ordenId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ordenes-trabajo'] });
+    },
+  });
+}
+
 export function useCambiarEstadoOrden() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
-import { useCrearOrden, useActualizarOrden, useCambiarEstadoOrden } from '@/hooks/useServicios';
+import { useCrearOrden, useActualizarOrden, useCambiarEstadoOrden, useRegistrarAbonoOrden, useNotasOrden, useAgregarNotaOrden } from '@/hooks/useServicios';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useClientes } from '@/hooks/usePos';
 import { useUsuarios } from '@/hooks/useNucleo';
@@ -166,6 +166,9 @@ export function OrdenTrabajoFormModal({
           <input className="input" value={notas} onChange={(e) => setNotas(e.target.value)} />
         </label>
 
+        {orden && <PagosCasoSeccion orden={orden} />}
+        {orden && <AnotacionesCasoSeccion ordenId={orden.id} />}
+
         {puedeEntregar && (
           <div className="rounded-lg border border-success-200 bg-success-50/60 p-3">
             <p className="mb-2 text-xs font-semibold text-success-700">Marcar como entregada</p>
@@ -204,5 +207,135 @@ export function OrdenTrabajoFormModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+function formatoMoneda(v: number) {
+  return v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+}
+
+/** Pagos parciales del caso — reutiliza Cuentas por Cobrar, así que un caso largo (ej. un
+ *  proceso legal) puede cobrarse por etapas en vez de un solo pago al final. */
+function PagosCasoSeccion({ orden }: { orden: OrdenTrabajo }) {
+  const registrarAbono = useRegistrarAbonoOrden();
+  const [monto, setMonto] = useState('');
+  const [metodoPago, setMetodoPago] = useState('EFECTIVO');
+  const [mostrarForm, setMostrarForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const tieneCosto = orden.costoFinal != null || orden.costoEstimado != null;
+
+  async function handleRegistrar() {
+    setError(null);
+    if (!monto || Number(monto) <= 0) {
+      setError('Escribe un monto válido');
+      return;
+    }
+    try {
+      await registrarAbono.mutateAsync({ ordenId: orden.id, data: { monto: Number(monto), metodoPago } });
+      setMonto('');
+      setMostrarForm(false);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo registrar el pago'));
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-ink-100 bg-ink-50 p-3">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">Pagos del caso</p>
+      {orden.cuentaPorCobrarId ? (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-ink-600">Abonado: {formatoMoneda(orden.totalAbonado ?? 0)}</span>
+          <span className={`font-semibold ${(orden.saldoPendiente ?? 0) > 0 ? 'text-amber-600' : 'text-success-600'}`}>
+            Saldo: {formatoMoneda(orden.saldoPendiente ?? 0)}
+          </span>
+        </div>
+      ) : (
+        <p className="text-xs text-ink-400">Todavía no se ha registrado ningún pago para este caso.</p>
+      )}
+
+      {!mostrarForm ? (
+        <button
+          onClick={() => setMostrarForm(true)}
+          disabled={!tieneCosto}
+          className="mt-2 text-xs font-medium text-ink-600 underline hover:text-ink-800 disabled:opacity-50"
+        >
+          {tieneCosto ? 'Registrar pago' : 'Define un costo estimado o final primero'}
+        </button>
+      ) : (
+        <div className="mt-2 flex items-end gap-2">
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-medium text-ink-500">Monto</span>
+            <input type="number" className="input w-28 text-sm" value={monto} onChange={(e) => setMonto(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-medium text-ink-500">Método</span>
+            <select className="input text-sm" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)}>
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+              <option value="TARJETA">Tarjeta</option>
+            </select>
+          </label>
+          <button
+            onClick={handleRegistrar}
+            disabled={registrarAbono.isPending}
+            className="rounded-lg bg-ink-800 px-3 py-2 text-xs font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+          >
+            Confirmar
+          </button>
+        </div>
+      )}
+      {error && <p className="mt-1 text-xs text-danger-500">{error}</p>}
+    </div>
+  );
+}
+
+/** Anotaciones con fecha — la línea de tiempo del caso, para dejar constancia de cada
+ *  actuación (ideal para abogados y servicios profesionales con casos largos). */
+function AnotacionesCasoSeccion({ ordenId }: { ordenId: number }) {
+  const { data: notas } = useNotasOrden(ordenId);
+  const agregarNota = useAgregarNotaOrden();
+  const [texto, setTexto] = useState('');
+
+  async function handleAgregar() {
+    if (!texto.trim()) return;
+    await agregarNota.mutateAsync({ ordenId, texto: texto.trim() });
+    setTexto('');
+  }
+
+  return (
+    <div className="rounded-lg border border-ink-100 bg-ink-50 p-3">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Anotaciones del caso</p>
+      <div className="flex gap-2">
+        <input
+          className="input flex-1 text-sm"
+          placeholder="Ej: se presentó recurso de reposición..."
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAgregar()}
+        />
+        <button
+          onClick={handleAgregar}
+          disabled={agregarNota.isPending || !texto.trim()}
+          className="rounded-lg bg-ink-800 px-3 py-2 text-xs font-semibold text-white hover:bg-ink-700 disabled:opacity-50"
+        >
+          Agregar
+        </button>
+      </div>
+      <div className="mt-2 max-h-40 space-y-2 overflow-y-auto">
+        {notas && notas.length > 0 ? (
+          notas.map((n) => (
+            <div key={n.id} className="rounded-lg bg-white px-3 py-2 text-xs">
+              <p className="text-ink-700">{n.texto}</p>
+              <p className="mt-0.5 text-[10px] text-ink-400">
+                {n.usuarioNombre ?? 'Sistema'} · {new Date(n.creadoEn).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-ink-400">Sin anotaciones todavía.</p>
+        )}
+      </div>
+    </div>
   );
 }

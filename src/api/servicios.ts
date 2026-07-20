@@ -63,9 +63,30 @@ export interface OrdenTrabajo {
   fechaEntregaReal: string | null;
   costoEstimado: number | null;
   costoFinal: number | null;
+  cuentaPorCobrarId: number | null;
+  saldoPendiente: number | null;
+  totalAbonado: number | null;
   notas: string | null;
   creadoEn: string;
 }
+
+export interface OrdenTrabajoNota {
+  id: number;
+  texto: string;
+  usuarioNombre: string | null;
+  creadoEn: string;
+}
+
+export const listarNotasOrden = async (ordenId: number): Promise<OrdenTrabajoNota[]> =>
+  (await apiClient.get<OrdenTrabajoNota[]>(`/servicios/ordenes/${ordenId}/notas`)).data;
+
+export const agregarNotaOrden = async (ordenId: number, texto: string): Promise<OrdenTrabajoNota> =>
+  (await apiClient.post<OrdenTrabajoNota>(`/servicios/ordenes/${ordenId}/notas`, { texto })).data;
+
+export const registrarAbonoOrden = async (
+  ordenId: number,
+  data: { monto: number; metodoPago: string; cajaSesionId?: number }
+): Promise<OrdenTrabajo> => (await apiClient.post<OrdenTrabajo>(`/servicios/ordenes/${ordenId}/abonos`, data)).data;
 
 export interface OrdenTrabajoRequest {
   titulo: string;

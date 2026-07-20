@@ -22,7 +22,7 @@ import {
   Briefcase,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
+import { puedeVerRuta, incluidaEnPlan, puedeVerServiciosCitas, puedeVerServiciosOrdenes, incluidaEnPlanDirecta } from '@/lib/permisos';
 import { useMiPlan } from '@/hooks/usePlataforma';
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean };
@@ -81,6 +81,17 @@ export function Sidebar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () 
     ...grupo,
     items: grupo.items.filter((item) => {
       if (esSuperadmin) return true;
+      // "Servicios" son dos módulos independientes (Citas y Órdenes de trabajo/Casos) —
+      // el enlace se muestra si tiene al menos uno de los dos habilitados en su plan,
+      // y (salvo que sea administrador total) el permiso de rol correspondiente.
+      if (item.to === '/servicios') {
+        const enPlan =
+          incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, 'servicios-citas') ||
+          incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, 'servicios-ordenes');
+        const tienePermisoServicios =
+          esAdministradorTotal || puedeVerServiciosCitas(permisos, miPlan?.rutasHabilitadas) || puedeVerServiciosOrdenes(permisos, miPlan?.rutasHabilitadas);
+        return enPlan && tienePermisoServicios;
+      }
       // El administrador general de la empresa siempre ve todo lo que el PLAN permite,
       // sin depender de si el permiso puntual quedó bien sincronizado en su rol.
       const tienePermiso = esAdministradorTotal || puedeVerRuta(permisos, item.to);
