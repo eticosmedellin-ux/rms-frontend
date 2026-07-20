@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { useReporteVentas, useReporteUtilidad, useReporteValorInventario } from '@/hooks/useGestion';
 import {
   useReporteKardex, useReporteComprasDetalle, useReporteGastosDetalle,
-  useReporteClientesDetalle, useReporteProveedoresDetalle, useReporteArqueos, useReporteCuentasPorPagarDetalle,
+  useReporteClientesDetalle, useReporteProveedoresDetalle, useReporteArqueos, useAnalisisArqueos, useReporteCuentasPorPagarDetalle,
 } from '@/hooks/useReportesExtendidos';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { descargarArchivo } from '@/lib/descargarArchivo';
@@ -293,12 +293,59 @@ function ProveedoresReporteTab() {
 
 function ArqueosTab({ desde, hasta, consultar }: { desde: string; hasta: string; consultar: boolean }) {
   const { data, isLoading } = useReporteArqueos(desde, hasta, consultar);
+  const { data: analisis } = useAnalisisArqueos(desde, hasta, consultar);
   if (!consultar) return <p className="text-sm text-ink-400">Elige un rango de fechas y dale clic a "Consultar".</p>;
   if (isLoading) return <LoadingState />;
   if (!data || data.length === 0) return <EmptyState title="Sin cierres de caja en este período" />;
 
   return (
     <div>
+      {analisis && (
+        <div className="mb-6 space-y-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-ink-100 bg-white p-3 shadow-card">
+              <p className="text-xs text-ink-400">Cierres cuadrados</p>
+              <p className="mt-1 font-display text-lg font-bold text-success-600">{analisis.cierresCuadrados} / {analisis.totalCierres}</p>
+            </div>
+            <div className="rounded-xl border border-ink-100 bg-white p-3 shadow-card">
+              <p className="text-xs text-ink-400">Con diferencia</p>
+              <p className="mt-1 font-display text-lg font-bold text-amber-600">{analisis.cierresConDiferencia}</p>
+            </div>
+            <div className="rounded-xl border border-ink-100 bg-white p-3 shadow-card">
+              <p className="text-xs text-ink-400">Sobrantes / Faltantes</p>
+              <p className="mt-1 font-display text-sm font-bold">
+                <span className="text-success-600">{money(analisis.totalSobrantes)}</span>
+                {' / '}
+                <span className="text-danger-500">{money(analisis.totalFaltantes)}</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-ink-100 bg-white p-3 shadow-card">
+              <p className="text-xs text-ink-400">Diferencia neta</p>
+              <p className={`mt-1 font-display text-lg font-bold ${analisis.diferenciaNeta === 0 ? 'text-ink-700' : analisis.diferenciaNeta > 0 ? 'text-success-600' : 'text-danger-500'}`}>
+                {money(analisis.diferenciaNeta)}
+              </p>
+            </div>
+          </div>
+
+          {analisis.porUsuario.some((u) => u.cierresConDiferencia > 0) && (
+            <div className="rounded-xl border border-ink-100 bg-white p-3 shadow-card">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Diferencias por usuario</p>
+              <div className="space-y-1.5">
+                {analisis.porUsuario.filter((u) => u.cierresConDiferencia > 0).map((u) => (
+                  <div key={u.usuario} className="flex items-center justify-between text-sm">
+                    <span className="text-ink-600">{u.usuario}</span>
+                    <span className="text-ink-500">
+                      {u.cierresConDiferencia} de {u.cierres} cierres —{' '}
+                      <span className={u.diferenciaNeta >= 0 ? 'text-success-600' : 'text-danger-500'}>{money(u.diferenciaNeta)}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <Encabezado titulo={`${data.length} arqueo(s)`}>
         <BotonExportar url="/reportes/arqueos/exportar" params={{ desde, hasta }} nombre="arqueos.xlsx" />
       </Encabezado>

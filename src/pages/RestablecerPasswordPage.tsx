@@ -23,8 +23,8 @@ export default function RestablecerPasswordPage() {
       setError('Este enlace no es válido. Solicita uno nuevo.');
       return;
     }
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password)) {
+      setError('La contraseña debe tener mínimo 8 caracteres, con al menos una mayúscula, una minúscula y un número');
       return;
     }
     if (password !== confirmar) {

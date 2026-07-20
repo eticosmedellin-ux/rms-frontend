@@ -40,8 +40,8 @@ export default function RegistroEmpresaPage() {
       setError('Completa los campos obligatorios');
       return;
     }
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password)) {
+      setError('La contraseña debe tener mínimo 8 caracteres, con al menos una mayúscula, una minúscula y un número');
       return;
     }
     if (tiposNegocioIds.length === 0) {
@@ -204,6 +204,7 @@ export default function RegistroEmpresaPage() {
             <label className="mt-4 block">
               <span className="mb-1.5 block text-sm font-medium text-ink-700">Contraseña</span>
               <input type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <span className="mt-1 block text-xs text-ink-400">Mínimo 8 caracteres, con mayúscula, minúscula y número.</span>
             </label>
           </div>
 

@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/client';
 import type {
-  KardexLinea, CompraLinea, GastoLinea, ClienteReporte, ProveedorReporte, ArqueoReporte, CuentaPorPagarReporte,
+  KardexLinea, CompraLinea, GastoLinea, ClienteReporte, ProveedorReporte, ArqueoReporte, AnalisisArqueos, CuentaPorPagarReporte,
 } from '@/types/reportesExtendidos';
 
 export const reporteKardex = async (desde: string, hasta: string): Promise<KardexLinea[]> =>
@@ -20,6 +20,9 @@ export const reporteProveedores = async (): Promise<ProveedorReporte[]> =>
 
 export const reporteArqueos = async (desde: string, hasta: string): Promise<ArqueoReporte[]> =>
   (await apiClient.get<ArqueoReporte[]>('/reportes/arqueos', { params: { desde, hasta } })).data;
+
+export const reporteAnalisisArqueos = async (desde: string, hasta: string): Promise<AnalisisArqueos> =>
+  (await apiClient.get<AnalisisArqueos>('/reportes/arqueos/analisis', { params: { desde, hasta } })).data;
 
 export const reporteCuentasPorPagar = async (): Promise<CuentaPorPagarReporte[]> =>
   (await apiClient.get<CuentaPorPagarReporte[]>('/reportes/cuentas-por-pagar')).data;

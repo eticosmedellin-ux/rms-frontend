@@ -314,9 +314,21 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [cerrado, setCerrado] = useState(false);
+  const [pidiendoConfirmacion, setPidiendoConfirmacion] = useState(false);
+
+  const diferenciaActual =
+    resumen?.resumenCompleto && montoReal
+      ? Number(montoReal) - (resumen.montoCierreSistema ?? 0)
+      : 0;
 
   async function handleSubmit() {
     setError(null);
+    // Si hay diferencia y todavía no se confirmó explícitamente, se detiene aquí y se
+    // muestra la advertencia — el cierre real solo pasa cuando el usuario dice que sí.
+    if (resumen?.resumenCompleto && diferenciaActual !== 0 && !pidiendoConfirmacion) {
+      setPidiendoConfirmacion(true);
+      return;
+    }
     try {
       await cerrar.mutateAsync({ id: cajaId, montoCierreReal: Number(montoReal), observaciones: observaciones || undefined });
       setCerrado(true);
@@ -329,6 +341,7 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
     setMontoReal('');
     setObservaciones('');
     setCerrado(false);
+    setPidiendoConfirmacion(false);
     onClose();
   }
 
@@ -365,7 +378,15 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
 
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Efectivo contado físicamente</span>
-            <input type="number" className="input" value={montoReal} onChange={(e) => setMontoReal(e.target.value)} />
+            <input
+              type="number"
+              className="input"
+              value={montoReal}
+              onChange={(e) => {
+                setMontoReal(e.target.value);
+                setPidiendoConfirmacion(false);
+              }}
+            />
           </label>
 
           <label className="block">
@@ -381,17 +402,35 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
 
           {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
 
+          {pidiendoConfirmacion && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold">El efectivo contado no cuadra con lo esperado</p>
+                <p className="mt-0.5">
+                  Diferencia de {money(diferenciaActual)}. Puedes cerrar así de todas formas (queda registrada la
+                  diferencia y el administrador recibe una alerta), o cancelar y volver a contar.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={handleClose} className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50">
-              Cancelar
+            <button
+              onClick={() => (pidiendoConfirmacion ? setPidiendoConfirmacion(false) : handleClose())}
+              className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
+            >
+              {pidiendoConfirmacion ? 'No, volver a contar' : 'Cancelar'}
             </button>
             <button
               onClick={handleSubmit}
               disabled={cerrar.isPending || !montoReal}
-              className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 ${
+                pidiendoConfirmacion ? 'bg-amber-600 hover:bg-amber-700' : 'bg-ink-800 hover:bg-ink-700'
+              }`}
             >
               {cerrar.isPending && <Loader2 size={15} className="animate-spin" />}
-              Confirmar cierre
+              {pidiendoConfirmacion ? 'Sí, cerrar de todas formas' : 'Confirmar cierre'}
             </button>
           </div>
         </div>

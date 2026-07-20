@@ -41,6 +41,14 @@ export function useReporteArqueos(desde: string, hasta: string, habilitado: bool
   });
 }
 
+export function useAnalisisArqueos(desde: string, hasta: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: ['analisis-arqueos', desde, hasta],
+    queryFn: () => api.reporteAnalisisArqueos(desde, hasta),
+    enabled: habilitado,
+  });
+}
+
 export function useReporteCuentasPorPagarDetalle() {
   return useQuery({ queryKey: ['reporte-cuentas-por-pagar-detalle'], queryFn: api.reporteCuentasPorPagar });
 }

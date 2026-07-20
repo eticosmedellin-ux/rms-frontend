@@ -51,6 +51,17 @@ export interface ArqueoReporte {
   diferencia: number;
 }
 
+export interface AnalisisArqueos {
+  totalCierres: number;
+  cierresCuadrados: number;
+  cierresConDiferencia: number;
+  totalSobrantes: number;
+  totalFaltantes: number;
+  diferenciaNeta: number;
+  diferenciaPromedio: number;
+  porUsuario: { usuario: string; cierres: number; cierresConDiferencia: number; diferenciaNeta: number }[];
+}
+
 export interface CuentaPorPagarReporte {
   proveedor: string;
   numeroFactura: string;
