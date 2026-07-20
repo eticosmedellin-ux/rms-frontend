@@ -58,3 +58,19 @@ export function incluidaEnPlan(rutasHabilitadas: string[] | undefined, ruta: str
   if (!rutaPlan || !rutasHabilitadas) return true; // sin esa página en el catálogo, o plan aún sin cargar: no bloquear
   return rutasHabilitadas.includes(rutaPlan);
 }
+
+// Inverso de RUTA_A_MODULO — dado el módulo de un permiso (ej. "RESTAURANTE"), encuentra
+// una ruta representativa para poder consultar si el plan de la empresa la incluye.
+const MODULO_A_RUTA: Record<string, string> = Object.fromEntries(
+  Object.entries(RUTA_A_MODULO).map(([ruta, modulo]) => [modulo, ruta])
+);
+
+/** Al crear/editar un rol, un usuario no debería poder asignar permisos de un módulo que
+ *  el plan de su empresa ni siquiera tiene habilitado — evita configurar algo que después
+ *  el sistema va a bloquear igual. Los módulos "core" (sin ruta gestionada por planes,
+ *  como CAJA o CLIENTES) siempre se muestran. */
+export function permisoIncluidoEnPlan(rutasHabilitadas: string[] | undefined, moduloPermiso: string): boolean {
+  const ruta = MODULO_A_RUTA[moduloPermiso];
+  if (!ruta) return true;
+  return incluidaEnPlan(rutasHabilitadas, ruta);
+}

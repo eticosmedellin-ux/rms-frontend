@@ -4,14 +4,17 @@ import { Loader2, CheckCircle2 } from 'lucide-react';
 import { registrarEmpresa } from '@/api/registro';
 import { getApiErrorMessage } from '@/api/errors';
 import { useTiposNegocioActivos } from '@/hooks/usePlataforma';
+import { useCatalogoPlanesPublico } from '@/hooks/useCatalogoPlanes';
 
 export default function RegistroEmpresaPage() {
   const navigate = useNavigate();
   const { data: tiposNegocio } = useTiposNegocioActivos();
+  const { data: catalogoPlanes } = useCatalogoPlanesPublico();
   const [codigoInvitacion, setCodigoInvitacion] = useState('');
   const [nombreEmpresa, setNombreEmpresa] = useState('');
   const [nit, setNit] = useState('');
   const [tiposNegocioIds, setTiposNegocioIds] = useState<number[]>([]);
+  const [nivel, setNivel] = useState<'BASICO' | 'PROFESIONAL' | 'EMPRESARIAL'>('BASICO');
   const [nombreAdmin, setNombreAdmin] = useState('');
   const [apellidoAdmin, setApellidoAdmin] = useState('');
   const [username, setUsername] = useState('');
@@ -53,6 +56,7 @@ export default function RegistroEmpresaPage() {
         nombreEmpresa,
         nit: nit || undefined,
         tiposNegocioIds,
+        nivel,
         administrador: {
           nombre: nombreAdmin,
           apellido: apellidoAdmin || undefined,
@@ -141,6 +145,40 @@ export default function RegistroEmpresaPage() {
                 );
               })}
             </div>
+          </div>
+
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Plan</span>
+            <div className="grid grid-cols-3 gap-2">
+              {(['BASICO', 'PROFESIONAL', 'EMPRESARIAL'] as const).map((n) => {
+                const planCoincidente = catalogoPlanes?.find(
+                  (p) => p.nivel === n && (tiposNegocioIds.includes(p.tipoNegocioId ?? -1) || p.tipoNegocioId === null)
+                );
+                const seleccionado = nivel === n;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setNivel(n)}
+                    className={`rounded-lg border px-2 py-2.5 text-center transition-colors ${
+                      seleccionado
+                        ? 'border-sicom-green bg-sicom-green/10'
+                        : 'border-ink-200 hover:border-ink-300'
+                    }`}
+                  >
+                    <p className={`text-xs font-semibold ${seleccionado ? 'text-sicom-green' : 'text-ink-700'}`}>
+                      {n === 'BASICO' ? 'Básico' : n === 'PROFESIONAL' ? 'Profesional' : 'Empresarial'}
+                    </p>
+                    {planCoincidente && (
+                      <p className="mt-0.5 text-[11px] text-ink-500">
+                        {planCoincidente.precioMensual.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}/mes
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-xs text-ink-400">Podrás cambiar de plan más adelante contactando a tu proveedor.</p>
           </div>
 
           <div className="border-t border-ink-100 pt-4">

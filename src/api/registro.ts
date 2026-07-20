@@ -9,6 +9,7 @@ export interface RegistroEmpresaRequest {
   zonaHoraria?: string;
   nombreSucursal?: string;
   tiposNegocioIds: number[];
+  nivel: 'BASICO' | 'PROFESIONAL' | 'EMPRESARIAL';
   administrador: {
     nombre: string;
     apellido?: string;

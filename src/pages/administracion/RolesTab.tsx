@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, Loader2, Pencil } from 'lucide-react';
 import { useRoles, useCrearRol, useActualizarRol, usePermisos } from '@/hooks/useNucleo';
+import { useMiPlan } from '@/hooks/usePlataforma';
+import { permisoIncluidoEnPlan } from '@/lib/permisos';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
@@ -89,6 +91,7 @@ function RolFormModal({
   rolEditando: Rol | null;
 }) {
   const { data: permisos } = usePermisos();
+  const { data: miPlan } = useMiPlan();
   const crear = useCrearRol();
   const actualizar = useActualizarRol();
 
@@ -109,13 +112,18 @@ function RolFormModal({
     }
   }, [rolEditando, permisos]);
 
+  const permisosDelPlan = useMemo(
+    () => permisos?.filter((p) => permisoIncluidoEnPlan(miPlan?.rutasHabilitadas, p.modulo)),
+    [permisos, miPlan]
+  );
+
   const permisosPorModulo = useMemo(() => {
     const grupos: Record<string, typeof permisos> = {};
-    permisos?.forEach((p) => {
+    permisosDelPlan?.forEach((p) => {
       grupos[p.modulo] = grupos[p.modulo] ? [...grupos[p.modulo]!, p] : [p];
     });
     return grupos;
-  }, [permisos]);
+  }, [permisosDelPlan]);
 
   function togglePermiso(id: number) {
     setPermisoIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
@@ -165,6 +173,11 @@ function RolFormModal({
 
         <div>
           <p className="mb-2 text-sm font-medium text-ink-700">Permisos</p>
+          {permisos && permisosDelPlan && permisos.length > permisosDelPlan.length && (
+            <p className="mb-2 text-xs text-ink-400">
+              Solo se muestran los módulos que incluye tu plan actual — para agregar más, contacta a tu proveedor.
+            </p>
+          )}
           <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-ink-100 p-3">
             {Object.entries(permisosPorModulo).map(([modulo, lista]) => {
               const idsDelModulo = lista!.map((p) => p.id);
