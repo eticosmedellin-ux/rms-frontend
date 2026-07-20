@@ -5,6 +5,7 @@ import {
   useAnularAsiento, useLibroMayor, useBalanceDePrueba, useEstadoDeResultados, useBalanceGeneral,
   usePeriodosContables, useCerrarPeriodoContable, useReabrirPeriodoContable, useMapeoContable, useActualizarMapeoContable,
 } from '@/hooks/useContabilidad';
+import { useAccesosContables, useOtorgarAccesoContable, useRevocarAccesoContable } from '@/hooks/useAccesoContable';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
@@ -32,6 +33,7 @@ const TABS = [
   { id: 'balance-general', label: 'Balance General' },
   { id: 'periodos', label: 'Períodos' },
   { id: 'mapeo', label: 'Mapeo contable' },
+  { id: 'accesos-contables', label: 'Contadores externos' },
 ] as const;
 
 export default function ContabilidadPage() {
@@ -128,6 +130,7 @@ export default function ContabilidadPage() {
         {tab === 'balance-general' && <BalanceGeneralTab />}
         {tab === 'periodos' && <PeriodosTab />}
         {tab === 'mapeo' && <MapeoContableTab />}
+        {tab === 'accesos-contables' && <AccesosContablesTab />}
       </div>
     </div>
   );
@@ -729,6 +732,92 @@ function MapeoContableTab() {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+function AccesosContablesTab() {
+  const { data: accesos, isLoading } = useAccesosContables();
+  const otorgar = useOtorgarAccesoContable();
+  const revocar = useRevocarAccesoContable();
+
+  const [contadorUsername, setContadorUsername] = useState('');
+  const [nivel, setNivel] = useState<'LECTURA' | 'GESTION'>('LECTURA');
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleOtorgar() {
+    setError(null);
+    if (!contadorUsername.trim()) {
+      setError('Escribe el nombre de usuario del contador');
+      return;
+    }
+    try {
+      await otorgar.mutateAsync({ contadorUsername: contadorUsername.trim(), nivel });
+      setContadorUsername('');
+      setNivel('LECTURA');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo dar el acceso'));
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="text-sm text-ink-500">
+        Dale acceso a tu contador externo (con su propia cuenta y empresa en el sistema) para que vea o gestione tu
+        contabilidad, sin que tenga que pertenecer a tu empresa.
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-ink-100 bg-ink-50 p-4">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Usuario del contador</span>
+          <input
+            className="input"
+            placeholder="nombre.usuario"
+            value={contadorUsername}
+            onChange={(e) => setContadorUsername(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-600">Nivel de acceso</span>
+          <select className="input" value={nivel} onChange={(e) => setNivel(e.target.value as 'LECTURA' | 'GESTION')}>
+            <option value="LECTURA">Solo lectura (ver reportes)</option>
+            <option value="GESTION">Gestión (además puede registrar asientos)</option>
+          </select>
+        </label>
+        <button
+          onClick={handleOtorgar}
+          disabled={otorgar.isPending}
+          className="rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
+        >
+          Dar acceso
+        </button>
+      </div>
+      {error && <p className="mt-2 text-xs text-danger-500">{error}</p>}
+
+      <div className="mt-4">
+        {isLoading ? (
+          <p className="text-sm text-ink-400">Cargando…</p>
+        ) : accesos && accesos.length > 0 ? (
+          <div className="space-y-2">
+            {accesos.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-xl border border-ink-100 bg-white px-4 py-3 shadow-card">
+                <div>
+                  <p className="text-sm font-medium text-ink-800">{a.contadorNombre}</p>
+                  <p className="text-xs text-ink-400">@{a.contadorUsername} · {a.nivel === 'GESTION' ? 'Gestión' : 'Solo lectura'}</p>
+                </div>
+                <button
+                  onClick={() => revocar.mutate(a.id)}
+                  className="rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:border-danger-500 hover:text-danger-500"
+                >
+                  Revocar acceso
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-ink-400">Todavía no le has dado acceso a ningún contador externo.</p>
+        )}
       </div>
     </div>
   );

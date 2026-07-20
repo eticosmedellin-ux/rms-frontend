@@ -19,6 +19,7 @@ import {
   Landmark,
   Bike,
   X,
+  Briefcase,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
@@ -57,6 +58,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
       { to: '/reportes', label: 'Reportes', icon: BarChart3 },
       { to: '/alertas', label: 'Alertas', icon: Bell },
       { to: '/contabilidad', label: 'Contabilidad', icon: Calculator },
+      { to: '/mis-clientes-contables', label: 'Mis clientes contables', icon: Briefcase },
       { to: '/nomina', label: 'Nómina', icon: Users2 },
     ],
   },

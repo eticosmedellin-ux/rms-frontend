@@ -20,6 +20,7 @@ import PlataformaPage from '@/pages/plataforma/PlataformaPage';
 import DescuentosPage from '@/pages/descuentos/DescuentosPage';
 import DocumentosPage from '@/pages/documentos/DocumentosPage';
 import ContabilidadPage from '@/pages/contabilidad/ContabilidadPage';
+import MisClientesContablesPage from '@/pages/contabilidad/MisClientesContablesPage';
 import NominaPage from '@/pages/nomina/NominaPage';
 import RestaurantePage from '@/pages/restaurante/RestaurantePage';
 import ServiciosPage from '@/pages/servicios/ServiciosPage';
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/descuentos" element={<DescuentosPage />} />
           <Route path="/documentos" element={<DocumentosPage />} />
           <Route path="/contabilidad" element={<ContabilidadPage />} />
+          <Route path="/mis-clientes-contables" element={<MisClientesContablesPage />} />
           <Route path="/nomina" element={<NominaPage />} />
           <Route path="/restaurante" element={<RestaurantePage />} />
           <Route path="/servicios" element={<ServiciosPage />} />
