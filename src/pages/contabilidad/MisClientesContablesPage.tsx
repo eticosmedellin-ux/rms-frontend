@@ -80,8 +80,12 @@ function DetalleClienteContable({
 }) {
   const [desde, setDesde] = useState(primerDiaDelMes());
   const [hasta, setHasta] = useState(hoy());
-  const { data: resultados, isLoading: cargandoResultados } = useEstadoDeResultadosCliente(empresaId, desde, hasta, true);
-  const { data: balance, isLoading: cargandoBalance } = useBalanceGeneralCliente(empresaId, hasta, true);
+  const { data: resultados, isLoading: cargandoResultados, isError: errorResultados } = useEstadoDeResultadosCliente(
+    empresaId, `${desde}T00:00:00`, `${hasta}T23:59:59`, true
+  );
+  const { data: balance, isLoading: cargandoBalance, isError: errorBalance } = useBalanceGeneralCliente(
+    empresaId, `${hasta}T23:59:59`, true
+  );
 
   return (
     <div>
@@ -107,9 +111,14 @@ function DetalleClienteContable({
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
           <p className="mb-3 font-display text-base font-semibold text-ink-800">Estado de Resultados</p>
-          {cargandoResultados || !resultados ? (
+          {cargandoResultados ? (
             <LoadingState />
-          ) : (
+          ) : errorResultados ? (
+            <p className="text-sm text-danger-500">
+              No se pudo cargar el Estado de Resultados. Puede que tu propia cuenta no tenga el módulo de
+              Contabilidad habilitado, o que el acceso a esta empresa haya sido revocado.
+            </p>
+          ) : resultados ? (
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-ink-500">Ingresos</span><span className="font-medium">{money(resultados.ingresos)}</span></div>
               <div className="flex justify-between"><span className="text-ink-500">Costos</span><span className="font-medium">{money(resultados.costos)}</span></div>
@@ -119,14 +128,19 @@ function DetalleClienteContable({
                 <span>Utilidad neta</span><span>{money(resultados.utilidadNeta)}</span>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
           <p className="mb-3 font-display text-base font-semibold text-ink-800">Balance General</p>
-          {cargandoBalance || !balance ? (
+          {cargandoBalance ? (
             <LoadingState />
-          ) : (
+          ) : errorBalance ? (
+            <p className="text-sm text-danger-500">
+              No se pudo cargar el Balance General. Puede que tu propia cuenta no tenga el módulo de Contabilidad
+              habilitado, o que el acceso a esta empresa haya sido revocado.
+            </p>
+          ) : balance ? (
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-ink-500">Total activos</span><span className="font-medium">{money(balance.totalActivos)}</span></div>
               <div className="flex justify-between"><span className="text-ink-500">Total pasivos</span><span className="font-medium">{money(balance.totalPasivos)}</span></div>
@@ -136,7 +150,7 @@ function DetalleClienteContable({
                 {balance.cuadra ? '✓ El balance cuadra' : '⚠ El balance no cuadra'}
               </p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
