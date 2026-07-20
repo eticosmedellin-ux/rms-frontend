@@ -178,9 +178,10 @@ export function useCambiarEstadoReserva() {
 
 // --- Analítica (Fase 3) ---
 
-export function useAnaliticaRestaurante(desde: string, hasta: string) {
+export function useAnaliticaRestaurante(desde: string, hasta: string, habilitado = true) {
   return useQuery({
     queryKey: ['analitica-restaurante', desde, hasta],
     queryFn: () => restauranteApi.obtenerAnaliticaRestaurante(desde, hasta),
+    enabled: habilitado,
   });
 }

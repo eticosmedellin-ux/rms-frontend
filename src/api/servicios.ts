@@ -115,3 +115,21 @@ export const cambiarEstadoOrden = async (
   id: number,
   data: { estado: EstadoOrden; costoFinal?: number; fechaEntregaReal?: string }
 ): Promise<OrdenTrabajo> => (await apiClient.patch<OrdenTrabajo>(`/servicios/ordenes/${id}/estado`, data)).data;
+
+// --- Analítica ---
+
+export interface ServiciosAnalitica {
+  citasCompletadas: number;
+  citasCanceladas: number;
+  citasPendientes: number;
+  ordenesEntregadas: number;
+  ordenesEnProceso: number;
+  ingresosTotales: number;
+  ticketPromedio: number;
+  tiempoPromedioEntregaDias: number | null;
+  ingresosPorServicio: { nombre: string; valor: number }[];
+  citasPorEmpleado: { nombre: string; valor: number }[];
+}
+
+export const obtenerAnaliticaServicios = async (desde: string, hasta: string): Promise<ServiciosAnalitica> =>
+  (await apiClient.get<ServiciosAnalitica>('/servicios/analitica', { params: { desde, hasta } })).data;

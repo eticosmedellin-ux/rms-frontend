@@ -8,8 +8,8 @@ import { useDashboard } from '@/hooks/useDashboard';
 import { useAlertas } from '@/hooks/useGestion';
 import { useMiPlan } from '@/hooks/usePlataforma';
 import { puedeVerRuta, incluidaEnPlan } from '@/lib/permisos';
-import { useMesas } from '@/hooks/useRestaurante';
-import { useCitas } from '@/hooks/useServicios';
+import { useMesas, useAnaliticaRestaurante } from '@/hooks/useRestaurante';
+import { useCitas, useAnaliticaServicios } from '@/hooks/useServicios';
 import { useDashboardPrestamos } from '@/hooks/usePrestamos';
 import { useDomicilios } from '@/hooks/useDomicilios';
 import {
@@ -59,6 +59,8 @@ export default function DashboardPage() {
   const { data: citas } = useCitas();
   const { data: dashPrestamos } = useDashboardPrestamos();
   const { data: domicilios } = useDomicilios(true);
+  const { data: analiticaRestaurante } = useAnaliticaRestaurante(desde, hasta, mostrarRestaurante);
+  const { data: analiticaServicios } = useAnaliticaServicios(desde, hasta, mostrarServicios);
 
   return (
     <div>
@@ -203,8 +205,24 @@ export default function DashboardPage() {
           {/* Indicadores */}
           <Seccion titulo="Indicadores">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-              <Kpi label="Utilidad estimada" value={money(data.indicadores.utilidadEstimada)} icon={TrendingUp} tone="text-success-500" />
-              <Kpi label="Margen" value={`${data.indicadores.margenPorcentaje}%`} icon={Percent} tone="text-ink-600" />
+              <Kpi
+                label="Utilidad estimada"
+                value={money(data.indicadores.utilidadEstimada)}
+                icon={data.indicadores.utilidadEstimada >= 0 ? TrendingUp : TrendingDown}
+                tone={data.indicadores.utilidadEstimada >= 0 ? 'text-success-500' : 'text-danger-500'}
+              />
+              <Kpi
+                label="Margen"
+                value={`${data.indicadores.margenPorcentaje}%`}
+                icon={Percent}
+                tone={
+                  data.indicadores.margenPorcentaje >= 20
+                    ? 'text-success-600'
+                    : data.indicadores.margenPorcentaje >= 5
+                      ? 'text-amber-600'
+                      : 'text-danger-500'
+                }
+              />
               <Kpi label="Ticket promedio" value={money(data.indicadores.ticketPromedio)} icon={ShoppingCart} tone="text-ink-600" />
               <Kpi label="Número de ventas" value={String(data.indicadores.numeroVentas)} icon={ShoppingCart} tone="text-ink-600" />
               <Kpi label="Productos vendidos" value={String(data.indicadores.cantidadProductosVendidos)} icon={Package} tone="text-ink-600" />
@@ -252,6 +270,89 @@ export default function DashboardPage() {
                     etiqueta="pedidos activos"
                   />
                 )}
+              </div>
+            </Seccion>
+          )}
+
+          {/* Análisis por tipo de negocio — cada empresa ve solo las gráficas de lo que
+              realmente hace, en vez de un dashboard genérico igual para todos. */}
+          {mostrarRestaurante && analiticaRestaurante && (
+            <Seccion titulo="Análisis de Restaurante">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <Kpi label="Ventas del período" value={money(analiticaRestaurante.ventasTotales)} icon={Wallet} tone="text-success-600" />
+                <Kpi label="Ticket promedio" value={money(analiticaRestaurante.ticketPromedio)} icon={ShoppingCart} tone="text-ink-600" />
+                <Kpi label="Comandas cerradas" value={String(analiticaRestaurante.numeroComandas)} icon={UtensilsCrossed} tone="text-ink-600" />
+                <Kpi
+                  label="Tiempo promedio"
+                  value={analiticaRestaurante.tiempoPromedioAtencionMinutos != null ? `${Math.round(analiticaRestaurante.tiempoPromedioAtencionMinutos)} min` : '—'}
+                  icon={CalendarClock}
+                  tone="text-ink-600"
+                />
+              </div>
+              {analiticaRestaurante.ventasPorHora.length > 0 && (
+                <div className="mt-4 rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+                  <p className="mb-2 text-sm font-semibold text-ink-700">Ventas por hora</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={analiticaRestaurante.ventasPorHora.map((v) => ({ ...v, horaTexto: `${String(v.hora).padStart(2, '0')}:00` }))}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="horaTexto" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => money(v)} />
+                      <Bar dataKey="total" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </Seccion>
+          )}
+
+          {mostrarServicios && analiticaServicios && (
+            <Seccion titulo="Análisis de Servicios">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <Kpi label="Ingresos del período" value={money(analiticaServicios.ingresosTotales)} icon={Wallet} tone="text-success-600" />
+                <Kpi
+                  label="Citas completadas"
+                  value={`${analiticaServicios.citasCompletadas} / ${analiticaServicios.citasCompletadas + analiticaServicios.citasCanceladas + analiticaServicios.citasPendientes}`}
+                  icon={CalendarClock}
+                  tone={analiticaServicios.citasCanceladas === 0 ? 'text-success-600' : 'text-amber-600'}
+                />
+                <Kpi label="Órdenes entregadas" value={String(analiticaServicios.ordenesEntregadas)} icon={Package} tone="text-ink-600" />
+                <Kpi
+                  label="Tiempo promedio entrega"
+                  value={analiticaServicios.tiempoPromedioEntregaDias != null ? `${analiticaServicios.tiempoPromedioEntregaDias.toFixed(1)} días` : '—'}
+                  icon={CalendarClock}
+                  tone="text-ink-600"
+                />
+              </div>
+              {analiticaServicios.ingresosPorServicio.length > 0 && (
+                <div className="mt-4 rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+                  <p className="mb-2 text-sm font-semibold text-ink-700">Ingresos por tipo de servicio</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={analiticaServicios.ingresosPorServicio}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="nombre" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => money(v)} />
+                      <Bar dataKey="valor" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </Seccion>
+          )}
+
+          {mostrarPrestamos && dashPrestamos && (
+            <Seccion titulo="Análisis de Préstamos">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <Kpi label="Capital recuperado" value={money(dashPrestamos.capitalRecuperado)} icon={Wallet} tone="text-success-600" />
+                <Kpi label="Intereses generados" value={money(dashPrestamos.interesesGenerados)} icon={TrendingUp} tone="text-success-600" />
+                <Kpi
+                  label="En mora"
+                  value={String(dashPrestamos.clientesEnMora)}
+                  icon={AlertTriangle}
+                  tone={dashPrestamos.clientesEnMora === 0 ? 'text-success-600' : dashPrestamos.clientesEnMora <= 3 ? 'text-amber-600' : 'text-danger-500'}
+                />
+                <Kpi label="Tasa de renovación" value={`${dashPrestamos.tasaRenovacion.toFixed(0)}%`} icon={Percent} tone="text-ink-600" />
               </div>
             </Seccion>
           )}

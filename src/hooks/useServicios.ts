@@ -5,6 +5,14 @@ export function useTiposServicio() {
   return useQuery({ queryKey: ['tipos-servicio'], queryFn: serviciosApi.listarTiposServicio });
 }
 
+export function useAnaliticaServicios(desde: string, hasta: string, habilitado = true) {
+  return useQuery({
+    queryKey: ['analitica-servicios', desde, hasta],
+    queryFn: () => serviciosApi.obtenerAnaliticaServicios(desde, hasta),
+    enabled: habilitado,
+  });
+}
+
 export function useCrearTipoServicio() {
   const queryClient = useQueryClient();
   return useMutation({
