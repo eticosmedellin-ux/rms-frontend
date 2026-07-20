@@ -7,6 +7,9 @@ export interface Trabajador {
   documento: string | null;
   cargo: string | null;
   salario: number | null;
+  comisionPorcentaje: number | null;
+  usuarioAsociadoId: number | null;
+  usuarioAsociadoNombre: string | null;
   sucursalId: number | null;
   sucursalNombre: string | null;
   frecuenciaPago: 'MENSUAL' | 'QUINCENAL' | 'SEMANAL';
@@ -20,12 +23,26 @@ export interface Trabajador {
   ultimoPagoFecha: string | null;
 }
 
+export interface ComisionSugerida {
+  desde: string;
+  hasta: string;
+  totalVentas: number;
+  numeroVentas: number;
+  comisionPorcentaje: number | null;
+  comisionCalculada: number;
+}
+
+export const obtenerComisionSugerida = async (trabajadorId: number, desde: string, hasta: string): Promise<ComisionSugerida> =>
+  (await apiClient.get<ComisionSugerida>(`/trabajadores/${trabajadorId}/comision-sugerida`, { params: { desde, hasta } })).data;
+
 export interface TrabajadorRequest {
   nombre: string;
   apellido?: string;
   documento?: string;
   cargo?: string;
   salario?: number;
+  comisionPorcentaje?: number;
+  usuarioAsociadoId?: number;
   sucursalId: number;
   frecuenciaPago: 'MENSUAL' | 'QUINCENAL' | 'SEMANAL';
   diaPago1: number;

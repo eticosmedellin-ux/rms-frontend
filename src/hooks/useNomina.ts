@@ -30,6 +30,14 @@ export function usePagosTrabajador(trabajadorId: number | null) {
   });
 }
 
+export function useComisionSugerida(trabajadorId: number | null, desde: string, hasta: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: ['comision-sugerida', trabajadorId, desde, hasta],
+    queryFn: () => nominaApi.obtenerComisionSugerida(trabajadorId as number, desde, hasta),
+    enabled: habilitado && trabajadorId !== null && !!desde && !!hasta,
+  });
+}
+
 export function useConfirmarPagoNomina() {
   const queryClient = useQueryClient();
   return useMutation({

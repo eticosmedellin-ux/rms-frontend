@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useCrearTrabajador, useActualizarTrabajador } from '@/hooks/useNomina';
 import { useSucursales } from '@/hooks/useSucursales';
+import { useUsuarios } from '@/hooks/useNucleo';
 import { getApiErrorMessage } from '@/api/errors';
 import type { Trabajador } from '@/api/nomina';
 
@@ -16,6 +17,7 @@ export function TrabajadorFormModal({
   trabajador: Trabajador | null;
 }) {
   const { data: sucursales } = useSucursales();
+  const { data: usuarios } = useUsuarios();
   const crear = useCrearTrabajador();
   const actualizar = useActualizarTrabajador();
 
@@ -24,6 +26,8 @@ export function TrabajadorFormModal({
   const [documento, setDocumento] = useState('');
   const [cargo, setCargo] = useState('');
   const [salario, setSalario] = useState('');
+  const [comisionPorcentaje, setComisionPorcentaje] = useState('');
+  const [usuarioAsociadoId, setUsuarioAsociadoId] = useState('');
   const [sucursalId, setSucursalId] = useState('');
   const [frecuenciaPago, setFrecuenciaPago] = useState<'MENSUAL' | 'QUINCENAL' | 'SEMANAL'>('MENSUAL');
   const [diaPago1, setDiaPago1] = useState('30');
@@ -42,6 +46,8 @@ export function TrabajadorFormModal({
       setDocumento(trabajador.documento ?? '');
       setCargo(trabajador.cargo ?? '');
       setSalario(trabajador.salario?.toString() ?? '');
+      setComisionPorcentaje(trabajador.comisionPorcentaje?.toString() ?? '');
+      setUsuarioAsociadoId(trabajador.usuarioAsociadoId?.toString() ?? '');
       setSucursalId(trabajador.sucursalId?.toString() ?? '');
       setFrecuenciaPago(trabajador.frecuenciaPago);
       setDiaPago1(trabajador.diaPago1.toString());
@@ -56,6 +62,8 @@ export function TrabajadorFormModal({
       setDocumento('');
       setCargo('');
       setSalario('');
+      setComisionPorcentaje('');
+      setUsuarioAsociadoId('');
       setSucursalId(sucursales?.[0]?.id.toString() ?? '');
       setFrecuenciaPago('MENSUAL');
       setDiaPago1('30');
@@ -80,6 +88,8 @@ export function TrabajadorFormModal({
       documento: documento || undefined,
       cargo: cargo || undefined,
       salario: salario ? Number(salario) : undefined,
+      comisionPorcentaje: comisionPorcentaje ? Number(comisionPorcentaje) : undefined,
+      usuarioAsociadoId: usuarioAsociadoId ? Number(usuarioAsociadoId) : undefined,
       sucursalId: Number(sucursalId),
       frecuenciaPago,
       diaPago1: Number(diaPago1),
@@ -127,6 +137,31 @@ export function TrabajadorFormModal({
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Salario</span>
             <input type="number" className="input" value={salario} onChange={(e) => setSalario(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Comisión (% opcional)</span>
+            <input
+              type="number"
+              step="0.1"
+              className="input"
+              placeholder="Ej. 10"
+              value={comisionPorcentaje}
+              onChange={(e) => setComisionPorcentaje(e.target.value)}
+            />
+          </label>
+          <label className="block col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-ink-700">Usuario del sistema asociado (para calcular su comisión)</span>
+            <select className="input" value={usuarioAsociadoId} onChange={(e) => setUsuarioAsociadoId(e.target.value)}>
+              <option value="">Sin usuario asociado (no gana comisión)</option>
+              {usuarios?.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nombre} {u.apellido ?? ''}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-ink-400">
+              Se usa para sumar las ventas que este usuario registra y calcular su comisión al pagar la nómina.
+            </span>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-700">Sucursal</span>

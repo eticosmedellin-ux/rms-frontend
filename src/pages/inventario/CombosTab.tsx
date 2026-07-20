@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Loader2, Pencil, Package2, X, Camera } from 'lucide-react';
 import { useCombos, useCrearCombo, useActualizarCombo, useDesactivarCombo, useReactivarCombo } from '@/hooks/useCombos';
 import { useProductos } from '@/hooks/useInventario';
+import { useTiposServicio } from '@/hooks/useServicios';
 import { comprimirImagen } from '@/api/imagen';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { Modal } from '@/components/ui/Modal';
@@ -68,9 +69,10 @@ export function CombosTab() {
               <p className="mt-2 text-lg font-semibold text-ink-800">${c.precioVenta.toLocaleString('es-CO')}</p>
 
               <ul className="mt-2 space-y-0.5 text-xs text-ink-500">
-                {c.items.map((i) => (
-                  <li key={i.productoId}>
-                    {i.cantidad}× {i.productoNombre}
+                {c.items.map((i, idx) => (
+                  <li key={i.productoId ?? `s-${i.tipoServicioId}-${idx}`}>
+                    {i.cantidad}× {i.productoNombre ?? i.tipoServicioNombre}
+                    {i.tipoServicioId && <span className="ml-1 text-[10px] text-violet-500">(servicio)</span>}
                   </li>
                 ))}
               </ul>
@@ -109,12 +111,13 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
   const crear = useCrearCombo();
   const actualizar = useActualizarCombo();
   const { data: productos } = useProductos();
+  const { data: tiposServicio } = useTiposServicio();
 
   const [codigo, setCodigo] = useState('');
   const [nombre, setNombre] = useState('');
   const [precioVenta, setPrecioVenta] = useState('');
   const [imagen, setImagen] = useState<string | null>(null);
-  const [items, setItems] = useState<{ productoId: string; cantidad: string }[]>([{ productoId: '', cantidad: '1' }]);
+  const [items, setItems] = useState<{ seleccion: string; cantidad: string }[]>([{ seleccion: '', cantidad: '1' }]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -123,38 +126,43 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
       setNombre(editando.nombre);
       setPrecioVenta(String(editando.precioVenta));
       setImagen(editando.imagen);
-      setItems(editando.items.map((i) => ({ productoId: String(i.productoId), cantidad: String(i.cantidad) })));
+      setItems(
+        editando.items.map((i) => ({
+          seleccion: i.productoId != null ? `p-${i.productoId}` : `s-${i.tipoServicioId}`,
+          cantidad: String(i.cantidad),
+        }))
+      );
     } else {
       setCodigo('');
       setNombre('');
       setPrecioVenta('');
       setImagen(null);
-      setItems([{ productoId: '', cantidad: '1' }]);
+      setItems([{ seleccion: '', cantidad: '1' }]);
     }
     setError(null);
   }, [editando, isOpen]);
 
   function agregarItem() {
-    setItems((prev) => [...prev, { productoId: '', cantidad: '1' }]);
+    setItems((prev) => [...prev, { seleccion: '', cantidad: '1' }]);
   }
 
   function quitarItem(index: number) {
     setItems((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function actualizarItem(index: number, cambios: Partial<{ productoId: string; cantidad: string }>) {
+  function actualizarItem(index: number, cambios: Partial<{ seleccion: string; cantidad: string }>) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...cambios } : it)));
   }
 
   async function handleSubmit() {
     setError(null);
-    const itemsValidos = items.filter((i) => i.productoId && Number(i.cantidad) > 0);
+    const itemsValidos = items.filter((i) => i.seleccion && Number(i.cantidad) > 0);
     if (!codigo.trim() || !nombre.trim() || !Number(precioVenta) || Number(precioVenta) <= 0) {
       setError('Completa código, nombre y un precio de venta mayor a cero');
       return;
     }
     if (itemsValidos.length === 0) {
-      setError('Agrega al menos un producto al combo');
+      setError('Agrega al menos un producto o servicio al combo');
       return;
     }
 
@@ -163,7 +171,14 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
       nombre,
       precioVenta: Number(precioVenta),
       imagen,
-      items: itemsValidos.map((i) => ({ productoId: Number(i.productoId), cantidad: Number(i.cantidad) })),
+      items: itemsValidos.map((i) => {
+        const [tipo, idTexto] = i.seleccion.split('-');
+        return {
+          productoId: tipo === 'p' ? Number(idTexto) : undefined,
+          tipoServicioId: tipo === 's' ? Number(idTexto) : undefined,
+          cantidad: Number(i.cantidad),
+        };
+      }),
     };
 
     try {
@@ -253,15 +268,26 @@ function ComboFormModal({ isOpen, onClose, editando }: { isOpen: boolean; onClos
               <div key={i} className="flex items-center gap-2">
                 <select
                   className="input flex-1"
-                  value={item.productoId}
-                  onChange={(e) => actualizarItem(i, { productoId: e.target.value })}
+                  value={item.seleccion}
+                  onChange={(e) => actualizarItem(i, { seleccion: e.target.value })}
                 >
-                  <option value="">Selecciona un producto…</option>
-                  {productosConInventario.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}
-                    </option>
-                  ))}
+                  <option value="">Selecciona un producto o servicio…</option>
+                  {tiposServicio && tiposServicio.length > 0 && (
+                    <optgroup label="Servicios">
+                      {tiposServicio.filter((s) => s.activo).map((s) => (
+                        <option key={`s-${s.id}`} value={`s-${s.id}`}>
+                          {s.nombre}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Productos">
+                    {productosConInventario.map((p) => (
+                      <option key={`p-${p.id}`} value={`p-${p.id}`}>
+                        {p.nombre}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
                 <input
                   type="number"

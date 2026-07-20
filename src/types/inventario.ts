@@ -36,7 +36,7 @@ export interface Combo {
   precioVenta: number;
   estado: boolean;
   imagen: string | null;
-  items: { productoId: number; productoNombre: string; cantidad: number }[];
+  items: { productoId: number | null; productoNombre: string | null; tipoServicioId: number | null; tipoServicioNombre: string | null; cantidad: number }[];
 }
 
 export interface ComboRequest {
@@ -44,7 +44,7 @@ export interface ComboRequest {
   nombre: string;
   precioVenta: number;
   imagen?: string | null;
-  items: { productoId: number; cantidad: number }[];
+  items: { productoId?: number; tipoServicioId?: number; cantidad: number }[];
 }
 
 export interface ProductoRequest {

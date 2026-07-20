@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { Loader2, Camera, FileCheck } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
-import { usePagosTrabajador, useConfirmarPagoNomina } from '@/hooks/useNomina';
+import { usePagosTrabajador, useConfirmarPagoNomina, useComisionSugerida } from '@/hooks/useNomina';
 import { comprimirImagen } from '@/api/imagen';
 import { getApiErrorMessage } from '@/api/errors';
 import { LoadingState, EmptyState } from '@/components/ui/States';
@@ -29,6 +29,12 @@ export function HistorialPagoModal({
   const [comprobante, setComprobante] = useState<string | null>(null);
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [calcularComision, setCalcularComision] = useState(false);
+
+  const primerDiaMes = fechaPeriodo ? `${fechaPeriodo.slice(0, 7)}-01` : '';
+  const { data: comision, isFetching: calculandoComision } = useComisionSugerida(
+    trabajador?.id ?? null, primerDiaMes, fechaPeriodo, calcularComision
+  );
 
   if (!trabajador) return null;
 
@@ -83,13 +89,50 @@ export function HistorialPagoModal({
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-ink-600">Fecha del período</span>
-                <input type="date" className="input" value={fechaPeriodo} onChange={(e) => setFechaPeriodo(e.target.value)} />
+                <input
+                  type="date"
+                  className="input"
+                  value={fechaPeriodo}
+                  onChange={(e) => {
+                    setFechaPeriodo(e.target.value);
+                    setCalcularComision(false);
+                  }}
+                />
               </label>
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-ink-600">Monto pagado</span>
                 <input type="number" className="input" value={monto} onChange={(e) => setMonto(e.target.value)} />
               </label>
             </div>
+
+            {trabajador.usuarioAsociadoId && (
+              <div className="mt-3">
+                {!calcularComision ? (
+                  <button
+                    onClick={() => setCalcularComision(true)}
+                    disabled={!fechaPeriodo}
+                    className="text-xs font-medium text-ink-600 underline hover:text-ink-800 disabled:opacity-50"
+                  >
+                    Calcular comisión del período (del 1 al día elegido)
+                  </button>
+                ) : calculandoComision ? (
+                  <p className="text-xs text-ink-400">Calculando…</p>
+                ) : comision ? (
+                  <div className="rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-700">
+                    <p>
+                      {comision.numeroVentas} venta(s) por {formatoMoneda(comision.totalVentas)} · Comisión sugerida ({comision.comisionPorcentaje}%):{' '}
+                      <span className="font-semibold">{formatoMoneda(comision.comisionCalculada)}</span>
+                    </p>
+                    <button
+                      onClick={() => setMonto(String((Number(monto) || 0) + comision.comisionCalculada))}
+                      className="mt-1 font-medium underline hover:text-violet-900"
+                    >
+                      Agregar al monto
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             <label className="mt-3 block">
               <span className="mb-1 block text-xs font-medium text-ink-600">Observaciones (opcional)</span>
