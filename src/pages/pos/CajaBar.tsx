@@ -1,3 +1,4 @@
+import {useSicom,permitido} from '@/features/sicom/api';
 import { useState, useEffect } from 'react';
 import { Lock, Unlock, List, Plus, Loader2, AlertTriangle, Download } from 'lucide-react';
 import { useSucursales } from '@/hooks/useSucursales';
@@ -9,6 +10,7 @@ import { getApiErrorMessage } from '@/api/errors';
 import { descargarArchivo } from '@/lib/descargarArchivo';
 
 export function CajaBar() {
+  const {data:cfg}=useSicom();
   const { data: sucursales } = useSucursales();
   const { sucursalId, setSucursalId } = usePosStore();
   const [modalAbrir, setModalAbrir] = useState(false);
@@ -82,7 +84,7 @@ export function CajaBar() {
       </div>
 
       <div className="flex items-center gap-2">
-        {caja && (
+        {caja && !cfg?.facturador && (
           <button
             onClick={() => setModalMovimientos(true)}
             className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
@@ -91,14 +93,14 @@ export function CajaBar() {
             Movimientos
           </button>
         )}
-        {caja ? (
+        {caja ? (permitido(cfg,'CERRAR_CAJA') && (
           <button
             onClick={() => setModalCerrar(true)}
             className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
           >
             Cerrar caja
           </button>
-        ) : (
+        )) : (permitido(cfg,'ABRIR_CAJA') && (
           <button
             onClick={() => setModalAbrir(true)}
             disabled={!sucursalId}
@@ -106,7 +108,7 @@ export function CajaBar() {
           >
             Abrir caja
           </button>
-        )}
+        ))}
       </div>
       </div>
 

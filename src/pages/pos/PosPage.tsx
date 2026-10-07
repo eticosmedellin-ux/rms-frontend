@@ -1,3 +1,4 @@
+import TrasladosBanco from '@/features/sicom/TrasladosBanco';
 import { useState } from 'react';
 import { CajaBar } from '@/pages/pos/CajaBar';
 import { VenderTab } from '@/pages/pos/VenderTab';
@@ -8,6 +9,7 @@ import { CotizacionesTab } from '@/pages/pos/CotizacionesTab';
 import { DocumentosCajaTab } from '@/pages/pos/DocumentosCajaTab';
 
 const TABS = [
+  { id: 'banco', label: 'Traslados a banco' },
   { id: 'vender', label: 'Vender' },
   { id: 'ventas', label: 'Historial de ventas' },
   { id: 'cotizaciones', label: 'Cotizaciones' },
@@ -45,6 +47,7 @@ export default function PosPage() {
       </div>
 
       <div className="mt-5">
+        {tab === 'banco' && <TrasladosBanco />}
         {tab === 'vender' && <VenderTab />}
         {tab === 'ventas' && <VentasTab />}
         {tab === 'cotizaciones' && <CotizacionesTab />}

@@ -3,6 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Lock, User, Store, Package, FileText, TrendingUp, Users, Megaphone } from 'lucide-react';
+import {apiClient} from '@/api/client';
+import {useQueryClient} from '@tanstack/react-query';
 import { login } from '@/api/auth';
 import { getApiErrorMessage } from '@/api/errors';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,6 +25,7 @@ const ICONOS_FONDO = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const qc=useQueryClient();
   const location = useLocation();
   const setSession = useAuthStore((state) => state.setSession);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -38,7 +41,10 @@ export default function LoginPage() {
     setServerError(null);
     try {
       const response = await login(values);
+      qc.clear();
       setSession(response);
+      const cfg=(await apiClient.get<{facturador:boolean}>('/sicom/me')).data;
+      if(cfg.facturador){navigate('/app/facturacion',{replace:true});return;}
       const redirectTo = (location.state as { from?: Location })?.from?.pathname ?? '/';
       navigate(redirectTo, { replace: true });
     } catch (error) {

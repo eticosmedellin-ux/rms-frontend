@@ -11,6 +11,8 @@ export interface Cliente {
   fechaNacimiento: string | null;
   puntosFidelizacion: number;
   esVip: boolean;
+  ventasRegistradas: number;
+  totalCompras: number;
 }
 
 export interface ClienteRequest {
@@ -181,6 +183,8 @@ export interface VentaRequest {
   pagos: { metodoPago: MetodoPagoVenta; monto: number }[];
   tipoDescuentoFacturaId?: number | null;
   facturar?: boolean;
+  puntosCanjear?: number;
+  claveOperacion?: string;
 }
 
 export interface DevolucionVentaRequest {

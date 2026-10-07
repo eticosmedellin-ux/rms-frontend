@@ -1,37 +1,41 @@
+import {lazy,Suspense} from 'react';
+const AppFacturacion=lazy(()=>import('@/features/sicom/AppFacturacion'));
+const PerfilesLogin=lazy(()=>import('@/features/sicom/PerfilesLogin'));
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
-import LoginPage from '@/pages/LoginPage';
-import RegistroEmpresaPage from '@/pages/RegistroEmpresaPage';
-import OlvidePasswordPage from '@/pages/OlvidePasswordPage';
-import RestablecerPasswordPage from '@/pages/RestablecerPasswordPage';
-import MenuPublicoPage from '@/pages/MenuPublicoPage';
-import DashboardPage from '@/pages/DashboardPage';
-import NotFoundPage from '@/pages/NotFoundPage';
-import InventarioPage from '@/pages/inventario/InventarioPage';
-import ComprasPage from '@/pages/compras/ComprasPage';
-import PosPage from '@/pages/pos/PosPage';
-import GastosPage from '@/pages/gastos/GastosPage';
-import ReportesPage from '@/pages/reportes/ReportesPage';
-import AlertasPage from '@/pages/alertas/AlertasPage';
-import ConfiguracionPage from '@/pages/configuracion/ConfiguracionPage';
-import AdministracionPage from '@/pages/administracion/AdministracionPage';
-import PlataformaPage from '@/pages/plataforma/PlataformaPage';
-import DescuentosPage from '@/pages/descuentos/DescuentosPage';
-import DocumentosPage from '@/pages/documentos/DocumentosPage';
-import ContabilidadPage from '@/pages/contabilidad/ContabilidadPage';
-import MisClientesContablesPage from '@/pages/contabilidad/MisClientesContablesPage';
-import NominaPage from '@/pages/nomina/NominaPage';
-import RestaurantePage from '@/pages/restaurante/RestaurantePage';
-import ServiciosPage from '@/pages/servicios/ServiciosPage';
-import PrestamosPage from '@/pages/prestamos/PrestamosPage';
-import DomiciliosPage from '@/pages/domicilios/DomiciliosPage';
-import AppMeseroPage from '@/pages/restaurante/AppMeseroPage';
-import AppCocinaPage from '@/pages/restaurante/AppCocinaPage';
+const LoginPage=lazy(()=>import('@/pages/LoginPage'));
+const RegistroEmpresaPage=lazy(()=>import('@/pages/RegistroEmpresaPage'));
+const OlvidePasswordPage=lazy(()=>import('@/pages/OlvidePasswordPage'));
+const RestablecerPasswordPage=lazy(()=>import('@/pages/RestablecerPasswordPage'));
+const MenuPublicoPage=lazy(()=>import('@/pages/MenuPublicoPage'));
+const DashboardPage=lazy(()=>import('@/pages/DashboardPage'));
+const NotFoundPage=lazy(()=>import('@/pages/NotFoundPage'));
+const InventarioPage=lazy(()=>import('@/pages/inventario/InventarioPage'));
+const ComprasPage=lazy(()=>import('@/pages/compras/ComprasPage'));
+const PosPage=lazy(()=>import('@/pages/pos/PosPage'));
+const GastosPage=lazy(()=>import('@/pages/gastos/GastosPage'));
+const ReportesPage=lazy(()=>import('@/pages/reportes/ReportesPage'));
+const AlertasPage=lazy(()=>import('@/pages/alertas/AlertasPage'));
+const ConfiguracionPage=lazy(()=>import('@/pages/configuracion/ConfiguracionPage'));
+const AdministracionPage=lazy(()=>import('@/pages/administracion/AdministracionPage'));
+const PlataformaPage=lazy(()=>import('@/pages/plataforma/PlataformaPage'));
+const DescuentosPage=lazy(()=>import('@/pages/descuentos/DescuentosPage'));
+const DocumentosPage=lazy(()=>import('@/pages/documentos/DocumentosPage'));
+const ContabilidadPage=lazy(()=>import('@/pages/contabilidad/ContabilidadPage'));
+const MisClientesContablesPage=lazy(()=>import('@/pages/contabilidad/MisClientesContablesPage'));
+const NominaPage=lazy(()=>import('@/pages/nomina/NominaPage'));
+const RestaurantePage=lazy(()=>import('@/pages/restaurante/RestaurantePage'));
+const ServiciosPage=lazy(()=>import('@/pages/servicios/ServiciosPage'));
+const PrestamosPage=lazy(()=>import('@/pages/prestamos/PrestamosPage'));
+const DomiciliosPage=lazy(()=>import('@/pages/domicilios/DomiciliosPage'));
+const AppMeseroPage=lazy(()=>import('@/pages/restaurante/AppMeseroPage'));
+const AppCocinaPage=lazy(()=>import('@/pages/restaurante/AppCocinaPage'));
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<p className="p-6">Cargando módulo…</p>}><Routes>
+      <Route path="/empresa/:acceso" element={<PerfilesLogin />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegistroEmpresaPage />} />
       <Route path="/olvide-password" element={<OlvidePasswordPage />} />
@@ -64,12 +68,13 @@ export default function App() {
         {/* Apps simplificadas de pantalla completa — protegidas por sesión, pero SIN el
             layout administrativo (sidebar/topbar), para dejar montadas en la tablet de
             cocina o en el celular del mesero. */}
+        <Route path="/app/facturacion" element={<AppFacturacion />} />
         <Route path="/app/mesero" element={<AppMeseroPage />} />
         <Route path="/app/cocina" element={<AppCocinaPage />} />
       </Route>
 
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
-    </Routes>
+    </Routes></Suspense>
   );
 }

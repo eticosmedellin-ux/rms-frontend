@@ -64,7 +64,7 @@ export function ClientesTab() {
                 <th className="px-4 py-3 text-left font-medium">Documento</th>
                 <th className="px-4 py-3 text-left font-medium">Teléfono</th>
                 <th className="px-4 py-3 text-left font-medium">Correo</th>
-                <th className="px-4 py-3 text-right font-medium">Puntos</th>
+                <th className="px-4 py-3 text-right font-medium">Compras</th><th className="px-4 py-3 text-right font-medium">Total neto comprado</th><th className="px-4 py-3 text-right font-medium">Puntos</th>
                 <th className="px-4 py-3 text-right font-medium">Límite crédito</th>
                 <th className="px-4 py-3 text-right font-medium">Saldo pendiente</th>
                 <th className="px-4 py-3 text-right font-medium">Acciones</th>
@@ -84,7 +84,7 @@ export function ClientesTab() {
                   <td className="px-4 py-3 text-ink-500">{c.documento ?? '—'}</td>
                   <td className="px-4 py-3 text-ink-500">{c.telefono ?? '—'}</td>
                   <td className="px-4 py-3 text-ink-500">{c.email ?? <span className="text-ink-300">Sin correo</span>}</td>
-                  <td className="px-4 py-3 text-right text-ink-600">{c.puntosFidelizacion}</td>
+                  <td className="px-4 py-3 text-right">{c.ventasRegistradas??0}</td><td className="px-4 py-3 text-right">${Number(c.totalCompras??0).toLocaleString('es-CO')}</td><td className="px-4 py-3 text-right text-ink-600">{c.puntosFidelizacion}</td>
                   <td className="px-4 py-3 text-right text-ink-700">${c.limiteCredito.toLocaleString('es-CO')}</td>
                   <td className={`px-4 py-3 text-right font-medium ${c.saldoPendiente > 0 ? 'text-amber-600' : 'text-ink-700'}`}>
                     ${c.saldoPendiente.toLocaleString('es-CO')}

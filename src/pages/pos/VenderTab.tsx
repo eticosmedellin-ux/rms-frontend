@@ -1,3 +1,6 @@
+import {useAuthStore} from '@/stores/authStore';
+import {useSicom,permitido} from '@/features/sicom/api';
+import {useCrearCliente} from '@/hooks/usePos';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Search, Trash2, ShoppingCart, Loader2, Plus, ImageOff, Tag, FileText, Wrench, Package2, XCircle } from 'lucide-react';
 import { useProductos, useStockSucursal } from '@/hooks/useInventario';
@@ -51,7 +54,8 @@ interface VentaEnProceso {
 }
 
 function claveVentaEnProceso(sucursalId: number) {
-  return `pos-venta-en-proceso-${sucursalId}`;
+  const s=useAuthStore.getState();
+  return `pos-venta-en-proceso-${s.empresaId}-${s.usuarioId}-${sucursalId}`;
 }
 
 /** Solo para PREVISUALIZAR en pantalla — el backend siempre recalcula esto desde el
@@ -75,6 +79,18 @@ export function VenderTab() {
   const { data: tiposDescuento } = useTiposDescuento();
   const { data: empresa } = useEmpresa();
   const registrarVenta = useRegistrarVenta();
+  const {data:sicom}=useSicom();
+  const crearCliente=useCrearCliente();
+  const [registroRapido,setRegistroRapido]=useState(false);
+  const [nombreRapido,setNombreRapido]=useState('');
+  const [documentoRapido,setDocumentoRapido]=useState('');
+  const [telefonoRapido,setTelefonoRapido]=useState('');
+  const [puntosCanje,setPuntosCanje]=useState(0);
+  async function registrarClienteRapido(){
+    if(!nombreRapido.trim()||crearCliente.isPending)return;
+    try{const c=await crearCliente.mutateAsync({nombre:nombreRapido.trim(),documento:documentoRapido.trim()||undefined,telefono:telefonoRapido.trim()||undefined});setClienteId(String(c.id));setRegistroRapido(false);setNombreRapido('');setDocumentoRapido('');setTelefonoRapido('');setError(null);}
+    catch(e){setError(getApiErrorMessage(e,'No se pudo registrar el cliente'));}
+  }
 
   const [busqueda, setBusqueda] = useState('');
   const busquedaInputRef = useRef<HTMLInputElement>(null);
@@ -216,7 +232,8 @@ export function VenderTab() {
   }, [modoDescuento, tipoDescuentoFacturaId, catalogo, subtotal]);
 
   const descuentoTotal = modoDescuento === 'LINEA' ? descuentoLineasTotal : descuentoFacturaMonto;
-  const total = subtotal - descuentoTotal;
+  const valorCanje=sicom?.fidelizacion_activa && clienteId && modoDescuento==='NINGUNO'?puntosCanje*Number(sicom.valor_punto):0;
+  const total = subtotal - descuentoTotal - valorCanje;
 
   const totalPagos = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
   const totalNoEfectivo = pagos
@@ -279,6 +296,7 @@ export function VenderTab() {
   }
 
   function cambiarModoDescuento(modo: ModoDescuento) {
+    setPuntosCanje(0);
     setModoDescuento(modo);
     if (modo !== 'LINEA') {
       setCarrito((prev) => prev.map((l) => ({ ...l, tipoDescuentoId: null })));
@@ -291,7 +309,9 @@ export function VenderTab() {
   async function confirmarVenta() {
     setError(null);
     setVentaExitosa(null);
-    if (!caja || carrito.length === 0 || !sucursalId) return;
+    if (!caja || carrito.length === 0 || !sucursalId || registrarVenta.isPending) return;
+    if (!permitido(sicom,'VENDER')) {setError('El administrador no ha habilitado la venta');return;}
+    if(total<=0){setError('La venta debe tener un total positivo');return;}
 
     if (empresa?.confirmarAntesDeVenta) {
       const confirmado = window.confirm(`¿Confirmar esta venta por $${total.toLocaleString('es-CO')}?`);
@@ -314,7 +334,7 @@ export function VenderTab() {
     }
 
     try {
-      const venta = await registrarVenta.mutateAsync({
+      const payload = {
         sucursalId,
         cajaSesionId: caja.id,
         clienteId: clienteId ? Number(clienteId) : undefined,
@@ -328,12 +348,21 @@ export function VenderTab() {
         pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
         tipoDescuentoFacturaId: modoDescuento === 'FACTURA' ? tipoDescuentoFacturaId : undefined,
         facturar: facturarVenta,
-      });
+        puntosCanjear: valorCanje>0?puntosCanje:0,
+      };
+      const firma=JSON.stringify(payload);
+      const claveLocal=claveVentaEnProceso(sucursalId)+'-operacion';
+      const previa=JSON.parse(window.localStorage.getItem(claveLocal)||'null') as {firma:string;clave:string}|null;
+      const clave=previa?.firma===firma?previa.clave:crypto.randomUUID();
+      window.localStorage.setItem(claveLocal,JSON.stringify({firma,clave}));
+      const venta = await registrarVenta.mutateAsync({...payload,claveOperacion:clave});
+      window.localStorage.removeItem(claveLocal);
       const mensajeCambio = venta.cambio > 0 ? ` — vuelto: $${venta.cambio.toLocaleString('es-CO')}` : '';
       setVentaExitosa(`Venta ${venta.numero} registrada por $${venta.total.toLocaleString('es-CO')}${mensajeCambio}`);
       setUltimaVenta(venta);
       setCarrito([]);
       setClienteId('');
+      setPuntosCanje(0);
       setPagos([{ metodoPago: 'EFECTIVO', monto: '' }]);
       cambiarModoDescuento('NINGUNO');
       setRecuperada(false);
@@ -474,6 +503,7 @@ export function VenderTab() {
                   </p>
                   <p className="text-xs text-ink-400">
                     ${l.precioUnitario.toLocaleString('es-CO')} c/u
+                    {permitido(sicom,'MODIFICAR_PRECIO')&&<span className="block mt-1">Precio autorizado<input aria-label={`Precio de ${l.nombre}`} type="number" min="0.01" step="0.01" className="input w-28" value={l.precioUnitario} onChange={e=>setCarrito(prev=>prev.map(x=>x.tipo===l.tipo&&x.itemId===l.itemId?{...x,precioUnitario:Number(e.target.value)}:x))}/></span>}
                     {l.tipo === 'PRODUCTO' &&
                       stockPorProducto.has(l.itemId) &&
                       (() => {
@@ -527,7 +557,7 @@ export function VenderTab() {
         {/* Selector de modo de descuento — por producto o por factura, nunca ambos */}
         <div className="mt-4 border-t border-ink-100 pt-3">
           <div className="mb-2 flex gap-1 rounded-lg bg-ink-50 p-1 text-xs font-medium">
-            {(['NINGUNO', 'LINEA', 'FACTURA'] as ModoDescuento[]).map((modo) => (
+            {(['NINGUNO', 'LINEA', 'FACTURA'] as ModoDescuento[]).filter(m=>m==='NINGUNO'||permitido(sicom,'DESCUENTOS')).map((modo) => (
               <button
                 key={modo}
                 onClick={() => cambiarModoDescuento(modo)}
@@ -641,20 +671,17 @@ export function VenderTab() {
             </div>
           )}
 
-          {requiereCredito && (
-            <label className="block pt-1">
-              <span className="mb-1 block text-xs font-medium text-ink-600">Cliente (para el crédito)</span>
-              <select className="input" value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
-                <option value="">Selecciona…</option>
-                {clientes?.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre} (saldo: ${c.saldoPendiente.toLocaleString('es-CO')} / límite: $
-                    {c.limiteCredito.toLocaleString('es-CO')})
-                  </option>
-                ))}
+          <div className="space-y-2 pt-2">
+            <label className="block text-xs font-medium">Cliente {requiereCredito?'(obligatorio para crédito)':'(opcional)'}
+              <select className="input mt-1" value={clienteId} onChange={e=>{setClienteId(e.target.value);setPuntosCanje(0);}}>
+                <option value="">Consumidor final / sin cliente</option>
+                {clientes?.map(c=><option key={c.id} value={c.id}>{c.nombre}{sicom?.fidelizacion_activa?` · ${c.puntosFidelizacion??0} puntos`:''}</option>)}
               </select>
             </label>
-          )}
+            {permitido(sicom,'REGISTRAR_CLIENTE')&&<button className="text-sm text-blue-700" onClick={()=>setRegistroRapido(!registroRapido)}>+ Registrar cliente rápidamente</button>}
+            {registroRapido&&<div className="space-y-2 border rounded p-3"><label className="block text-xs">Nombre<input className="input" value={nombreRapido} onChange={e=>setNombreRapido(e.target.value)} maxLength={150}/></label><label className="block text-xs">Documento (opcional)<input className="input" value={documentoRapido} onChange={e=>setDocumentoRapido(e.target.value)} maxLength={30}/></label><label className="block text-xs">Teléfono (opcional)<input className="input" value={telefonoRapido} onChange={e=>setTelefonoRapido(e.target.value)} maxLength={30}/></label><button disabled={!nombreRapido.trim()||crearCliente.isPending} onClick={registrarClienteRapido} className="rounded bg-slate-800 text-white p-2">Guardar y seleccionar</button></div>}
+            {sicom?.fidelizacion_activa&&clienteId&&<div className="border rounded p-3 text-xs"><p>Puntos disponibles: {clientes?.find(c=>String(c.id)===clienteId)?.puntosFidelizacion??0}</p><p>Esta compra suma {Math.floor(total/Number(sicom.pesos_por_punto))+Number(sicom.puntos_por_compra)} puntos.</p>{Number(sicom.valor_punto)>0&&modoDescuento==='NINGUNO'&&<label className="block mt-2">Puntos a canjear (mínimo {sicom.minimo_canje})<input className="input" type="number" min={0} max={clientes?.find(c=>String(c.id)===clienteId)?.puntosFidelizacion??0} step={1} value={puntosCanje} onChange={e=>setPuntosCanje(Math.max(0,Math.floor(Number(e.target.value)||0)))}/></label>}{valorCanje>0&&<p>Descuento por puntos: ${valorCanje.toLocaleString('es-CO')}</p>}</div>}
+          </div>
 
           <label className="flex items-center gap-2 pt-1">
             <input
@@ -671,7 +698,7 @@ export function VenderTab() {
         {ventaExitosa && (
           <div className="mt-3 space-y-2 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">
             <p>{ventaExitosa}</p>
-            {ultimaVenta && empresa && (
+            {ultimaVenta && empresa && permitido(sicom,'REIMPRIMIR') && (
               <button
                 onClick={() => abrirFactura(ultimaVenta, empresa)}
                 className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-success-700 shadow-sm hover:bg-success-100"
