@@ -17,6 +17,7 @@ export function ProtectedRoute() {
   if(isLoading)return <p className="p-6">Verificando acceso…</p>;
   if(isError)return <p className="p-6">No se pudo verificar el acceso. Recarga la página.</p>;
   if(cfg?.facturador && location.pathname!=='/app/facturacion')return <Navigate to="/app/facturacion" replace/>;
+  if (location.pathname.startsWith('/mis-clientes-contables') && !useAuthStore.getState().accesoClientesContables) return <Navigate to="/" replace />;
   const rutaActual = '/' + location.pathname.split('/')[1];
   if (!esSuperadmin && !puedeVerRuta(permisos, rutaActual)) {
     return <Navigate to="/" replace />;

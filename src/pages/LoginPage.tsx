@@ -28,6 +28,7 @@ export default function LoginPage() {
   const qc=useQueryClient();
   const location = useLocation();
   const setSession = useAuthStore((state) => state.setSession);
+  const [codigoDobleFactor,setCodigoDobleFactor]=useState('');
   const [serverError, setServerError] = useState<string | null>(null);
   const { data: noticias } = useNoticiasLoginActivas();
 
@@ -40,7 +41,7 @@ export default function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setServerError(null);
     try {
-      const response = await login(values);
+      const response = await login({...values,codigoDobleFactor:codigoDobleFactor||undefined});
       qc.clear();
       setSession(response);
       const cfg=(await apiClient.get<{facturador:boolean}>('/sicom/me')).data;
@@ -164,6 +165,7 @@ export default function LoginPage() {
                 {...register('password')}
               />
             </div>
+            <label className="mt-3 block text-sm text-white/80">Código del autenticador (si lo activaste)<input className="input mt-1 text-ink-800" autoComplete="one-time-code" value={codigoDobleFactor} onChange={e=>setCodigoDobleFactor(e.target.value)} /></label>
             {errors.password && <p className="mt-1 text-xs text-red-300">{errors.password.message}</p>}
           </div>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { DetalleLineasEditor, type LineaDetalle } from '@/components/ui/DetalleLineasEditor';
 import { useRegistrarRecepcion } from '@/hooks/useCompras';
@@ -17,6 +17,14 @@ export function RecepcionFormModal({ isOpen, onClose, orden }: RecepcionFormModa
   const [lineas, setLineas] = useState<LineaDetalle[]>([{ productoId: '', cantidad: '', costoUnitario: '' }]);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (isOpen && orden) {
+      setLineas(orden.detalles.filter(d => d.cantidadPedida > d.cantidadRecibida).map(d => ({
+        productoId: d.productoId, cantidad: String(d.cantidadPedida - d.cantidadRecibida), costoUnitario: String(d.costoUnitarioEstimado)
+      })));
+      setError(null);
+    }
+  }, [isOpen, orden]);
   if (!orden) return null;
 
   async function handleSubmit() {

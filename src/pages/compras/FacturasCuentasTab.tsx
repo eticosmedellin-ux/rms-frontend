@@ -1,3 +1,4 @@
+import {HistorialProveedor} from '@/features/sicom/HistorialProveedor';
 import { useState } from 'react';
 import { Plus, Wallet } from 'lucide-react';
 import { useProveedores, useFacturasPorProveedor, useCuentasPorPagar } from '@/hooks/useCompras';
@@ -49,6 +50,7 @@ export function FacturasCuentasTab() {
         <EmptyState title="Selecciona un proveedor" description="Elige uno arriba para ver sus facturas y cuentas por pagar." />
       ) : (
         <div className="space-y-6">
+          <HistorialProveedor key={proveedorId} proveedorId={proveedorId} />
           <section>
             <h3 className="mb-2 text-sm font-semibold text-ink-700">Facturas</h3>
             {cargandoFacturas ? (

@@ -1,3 +1,5 @@
+import {DobleFactor} from '@/features/sicom/DobleFactor';
+import {ContadoresPlataforma} from '@/features/sicom/ContadoresPlataforma';
 import { useState } from 'react';
 import { Settings2, Trash2 } from 'lucide-react';
 import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa, useEliminarEmpresa } from '@/hooks/usePlataforma';
@@ -14,6 +16,8 @@ import { DashboardEjecutivoTab } from '@/pages/plataforma/DashboardEjecutivoTab'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'seguridad', label: 'Seguridad' },
+  { id: 'contadores', label: 'Contadores' },
   { id: 'empresas', label: 'Empresas' },
   { id: 'codigos', label: 'Códigos de invitación' },
   { id: 'backups', label: 'Copias de seguridad' },
@@ -35,7 +39,7 @@ export default function PlataformaPage() {
         Empresas que rentan el sistema y códigos de invitación. Este panel solo lo ves tú, como superadministrador.
       </p>
 
-      <div className="mt-5 flex gap-1 border-b border-ink-100">
+      <div className="mt-5 flex gap-1 overflow-x-auto border-b border-ink-100">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
@@ -51,6 +55,8 @@ export default function PlataformaPage() {
 
       <div className="mt-5">
         {tab === 'dashboard' && <DashboardEjecutivoTab />}
+        {tab === 'seguridad' && <DobleFactor />}
+        {tab === 'contadores' && <ContadoresPlataforma />}
         {tab === 'empresas' && <EmpresasTab />}
         {tab === 'codigos' && <CodigosInvitacionTab />}
         {tab === 'backups' && <BackupsTab />}

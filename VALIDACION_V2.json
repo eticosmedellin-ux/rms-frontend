@@ -1,0 +1,62 @@
+{
+  "version": "v2-base-ensayo",
+  "alcance": "Primera entrega parcial; NO completa las 46 mejoras ni está validada para producción",
+  "backend": "Java 21: mvn package aprobado",
+  "frontend": "TypeScript y Vite aprobados",
+  "pruebas": [
+    {
+      "name": "com.rms.security.FacturacionAuthorizationTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ControlesV2Test",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ContabilidadPagosTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.PerfilesEmpresaTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RespuestaMatiasTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "total_pruebas": 18,
+  "migracion": "Aplicada dos veces en PGlite sobre esquema exportado; no equivale a prueba PostgreSQL/JDBC/Hibernate nativa",
+  "npm_audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 4,
+    "high": 5,
+    "critical": 0,
+    "total": 9
+  },
+  "pendientes": [
+    "Resto del alcance según GUIA_V2.md",
+    "Integración PostgreSQL nativa",
+    "Pruebas visuales y móviles",
+    "Windows: ejecución de scripts y restauración",
+    "MATIAS Sandbox: sin cuenta de pruebas disponible",
+    "Pruebas de carga y concurrencia",
+    "Pruebas completas de activación TOTP y recuperación"
+  ]
+}

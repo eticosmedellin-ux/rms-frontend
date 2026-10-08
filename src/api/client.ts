@@ -10,7 +10,8 @@ export const apiClient = axios.create({
 // Adjunta el access token vigente a cada petición saliente.
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const { accessToken } = useAuthStore.getState();
-  if (accessToken) {
+  const publica = config.url?.startsWith('/auth/') || config.url === '/noticias-login/activas';
+  if (accessToken && !publica) {
     config.headers.set('Authorization', `Bearer ${accessToken}`);
   }
   return config;
@@ -40,7 +41,7 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest.url?.startsWith('/auth/') && originalRequest.url !== '/noticias-login/activas' && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         refreshPromise ??= refreshAccessToken().finally(() => {

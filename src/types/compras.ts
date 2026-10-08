@@ -33,12 +33,14 @@ export interface DetalleOrdenCompraResponse {
   producto: string;
   cantidadPedida: number;
   cantidadRecibida: number;
+  cantidadFacturada: number;
   costoUnitarioEstimado: number;
 }
 
 export interface OrdenCompra {
   id: number;
   numero: string;
+  proveedorId: number;
   proveedor: string;
   sucursalId: number;
   sucursal: string;
@@ -85,6 +87,10 @@ export interface FacturaCompraRequest {
   fechaVencimiento?: string | null;
   esCredito: boolean;
   impuestos?: number;
+  metodoPago?: string;
+  cajaSesionId?: number;
+  montoInicial?: number;
+  recibirEnSucursalId?: number;
   detalles: { productoId: number; cantidad: number; costoUnitario: number }[];
 }
 

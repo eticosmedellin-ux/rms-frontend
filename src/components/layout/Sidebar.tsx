@@ -80,6 +80,7 @@ export function Sidebar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () 
   const gruposVisibles = NAV_GROUPS_DEF.map((grupo) => ({
     ...grupo,
     items: grupo.items.filter((item) => {
+      if (item.to === "/mis-clientes-contables") return useAuthStore.getState().accesoClientesContables === true;
       if (esSuperadmin) return true;
       // "Servicios" son dos módulos independientes (Citas y Órdenes de trabajo/Casos) —
       // el enlace se muestra si tiene al menos uno de los dos habilitados en su plan,

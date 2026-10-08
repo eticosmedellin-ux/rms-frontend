@@ -65,6 +65,10 @@ export function useRegistrarFactura() {
   return useMutation({
     mutationFn: (data: FacturaCompraRequest) => comprasApi.registrarFactura(data),
     onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ordenes-compra'] });
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      queryClient.invalidateQueries({ queryKey: ['productos'] });
+      queryClient.invalidateQueries({ queryKey: ['compras-historial'] });
       queryClient.invalidateQueries({ queryKey: ['facturas-compra', variables.proveedorId] });
       queryClient.invalidateQueries({ queryKey: ['cuentas-por-pagar', variables.proveedorId] });
     },
@@ -94,6 +98,9 @@ export function useAbonarCuentaPorPagar() {
       comprasApi.abonarCuentaPorPagar(cuentaId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cuentas-por-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['facturas-compra'] });
+      queryClient.invalidateQueries({ queryKey: ['pagos-historial'] });
+      queryClient.invalidateQueries({ queryKey: ['compras-historial'] });
     },
   });
 }

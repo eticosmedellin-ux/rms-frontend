@@ -1,6 +1,7 @@
 export interface LoginRequest {
   username: string;
   password: string;
+  codigoDobleFactor?: string;
 }
 
 export interface LoginResponse {
@@ -15,6 +16,7 @@ export interface LoginResponse {
   permisos: string[];
   esSuperadmin: boolean;
   esAdministradorTotal: boolean;
+  accesoClientesContables?: boolean;
 }
 
 export interface ApiErrorBody {

@@ -1,8 +1,10 @@
+import {HistorialOrden} from '@/features/sicom/HistorialOrden';
 import { useState } from 'react';
 import { Plus, Send, PackageCheck, XCircle } from 'lucide-react';
 import { useOrdenesCompra, useEnviarOrdenCompra, useCancelarOrdenCompra } from '@/hooks/useCompras';
 import { LoadingState, EmptyState } from '@/components/ui/States';
 import { OrdenCompraFormModal } from '@/pages/compras/OrdenCompraFormModal';
+import { FacturaFormModal } from '@/pages/compras/FacturaFormModal';
 import { RecepcionFormModal } from '@/pages/compras/RecepcionFormModal';
 import type { OrdenCompra, EstadoOrdenCompra } from '@/types/compras';
 
@@ -19,9 +21,11 @@ export function OrdenesCompraTab() {
   const { data: ordenes, isLoading } = useOrdenesCompra();
   const enviar = useEnviarOrdenCompra();
   const cancelar = useCancelarOrdenCompra();
+  const [historialId,setHistorialId]=useState<number|null>(null);
   const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
   const [ordenRecibiendo, setOrdenRecibiendo] = useState<OrdenCompra | null>(null);
 
+  const [ordenFacturando, setOrdenFacturando] = useState<OrdenCompra | null>(null);
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -64,6 +68,7 @@ export function OrdenesCompraTab() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
+                      <button className="rounded border px-2 text-xs" onClick={()=>setHistorialId(o.id)}>Historial</button>
                       {o.estado === 'BORRADOR' && (
                         <button
                           onClick={() => enviar.mutate(o.id)}
@@ -82,7 +87,8 @@ export function OrdenesCompraTab() {
                           <PackageCheck size={16} />
                         </button>
                       )}
-                      {o.estado !== 'RECIBIDA' && o.estado !== 'CERRADA' && o.estado !== 'CANCELADA' && (
+                      {['RECIBIDA','PARCIALMENTE_RECIBIDA'].includes(o.estado) && <button className="rounded-lg border px-2 text-xs" onClick={()=>setOrdenFacturando(o)}>Registrar factura</button>}
+                      {o.estado !== 'PARCIALMENTE_RECIBIDA' && o.estado !== 'RECIBIDA' && o.estado !== 'CERRADA' && o.estado !== 'CANCELADA' && (
                         <button
                           onClick={() => cancelar.mutate(o.id)}
                           title="Cancelar orden"
@@ -102,6 +108,8 @@ export function OrdenesCompraTab() {
         <EmptyState title="Sin órdenes de compra" description="Crea la primera para empezar el ciclo de compras." />
       )}
 
+      {historialId!==null&&<HistorialOrden id={historialId} onClose={()=>setHistorialId(null)}/>}
+      {ordenFacturando && <FacturaFormModal isOpen={true} onClose={()=>setOrdenFacturando(null)} proveedorId={ordenFacturando.proveedorId} orden={ordenFacturando} />}
       <OrdenCompraFormModal isOpen={modalCrearAbierto} onClose={() => setModalCrearAbierto(false)} />
       <RecepcionFormModal
         isOpen={ordenRecibiendo !== null}
