@@ -1,3 +1,8 @@
+import {useQueryClient} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
+import {OperacionRestaurante} from '@/features/restaurante/OperacionRestaurante';
+import {CatalogoOperacion} from '@/features/restaurante/CatalogoOperacion';
+import {PedidosCapturados} from '@/features/restaurante/PedidosCapturados';
 import { useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Users, MapPin, History as HistoryIcon, QrCode, ChefHat, Sparkles, CalendarPlus, X, Loader2, BarChart3, Clock, Award, Bike, UtensilsCrossed } from 'lucide-react';
@@ -56,7 +61,7 @@ export default function RestaurantePage() {
   const [mesaEditar, setMesaEditar] = useState<Mesa | null>(null);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
   const [mesaQr, setMesaQr] = useState<Mesa | null>(null);
-  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'menu' | 'analitica' | 'historial'>('mesas');
+  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'menu' | 'analitica' | 'historial' | 'operacion'>('mesas');
 
   function manejarClicMesa(m: Mesa) {
     // Una mesa en Limpieza no tiene comanda que gestionar — clic rápido la libera.
@@ -113,7 +118,10 @@ export default function RestaurantePage() {
         </div>
       </div>
 
-      <div className="mt-4 flex gap-1 border-b border-ink-100">
+      <PedidosCapturados/>
+      <CatalogoOperacion/>
+      <div className="mt-4 flex flex-wrap gap-1 border-b border-ink-100">
+        <button className="border-b-2 px-4 py-2 text-sm font-medium" onClick={()=>setVista('operacion')}>Operación y liquidaciones</button>
         <button
           onClick={() => setVista('mesas')}
           className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
@@ -169,6 +177,7 @@ export default function RestaurantePage() {
         </button>
       </div>
 
+      {vista==='operacion'&&<OperacionRestaurante/>}
       {vista === 'mesas' && (
         <div className="mt-6">
           {isLoading ? (
@@ -273,7 +282,7 @@ function PantallaCocina() {
   const items = (comandas ?? [])
     .flatMap((c) =>
       c.items
-        .filter((i) => i.estado !== 'CANCELADO' && i.estado !== 'ENTREGADO')
+        .filter((i) => i.estado !== 'ENTREGADO')
         .map((i) => ({ ...i, mesaNumero: c.mesaNumero, comandaId: c.id }))
     )
     .sort((a, b) => a.id - b.id);
@@ -321,6 +330,7 @@ function PantallaCocina() {
 }
 
 const ESTADO_RESERVA_LABELS: Record<string, string> = {
+  EN_ESPERA: 'Lista de espera',
   PENDIENTE: 'Pendiente',
   CONFIRMADA: 'Confirmada',
   CUMPLIDA: 'Cumplida',
@@ -329,6 +339,7 @@ const ESTADO_RESERVA_LABELS: Record<string, string> = {
 };
 
 const ESTADO_RESERVA_TONOS: Record<string, string> = {
+  EN_ESPERA: 'bg-amber-100 text-amber-700',
   PENDIENTE: 'bg-ink-100 text-ink-600',
   CONFIRMADA: 'bg-blue-100 text-blue-700',
   CUMPLIDA: 'bg-success-50 text-success-600',
@@ -337,6 +348,10 @@ const ESTADO_RESERVA_TONOS: Record<string, string> = {
 };
 
 function ReservasTab() {
+  const {data:mesas}=useMesas();
+  const client=useQueryClient();
+  const [errorOperacion,setErrorOperacion]=useState('');
+  async function operacionReserva(id:number,accion:string,mesaId?:number){try{setErrorOperacion('');await apiClient.post(`/restaurante/reservas/${id}/${accion}`,mesaId?{mesaId}:{});await Promise.all([client.invalidateQueries({queryKey:['reservas']}),client.invalidateQueries({queryKey:['mesas']}),client.invalidateQueries({queryKey:['comandas-activas']})]);}catch(e){setErrorOperacion(getApiErrorMessage(e,'No se pudo atender la reserva'));}}
   const { data: reservas, isLoading } = useReservas();
   const { data: sucursales } = useSucursales();
   const { data: clientes } = useClientes();
@@ -350,6 +365,7 @@ function ReservasTab() {
   const [telefonoContacto, setTelefonoContacto] = useState('');
   const [fechaHora, setFechaHora] = useState('');
   const [numeroPersonas, setNumeroPersonas] = useState('2');
+  const [enEspera,setEnEspera]=useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleCrear() {
@@ -366,6 +382,7 @@ function ReservasTab() {
         telefonoContacto: telefonoContacto || undefined,
         fechaHora: new Date(fechaHora).toISOString(),
         numeroPersonas: Number(numeroPersonas) || 1,
+        enEspera,
       });
       setMostrarForm(false);
       setClienteId('');
@@ -373,6 +390,7 @@ function ReservasTab() {
       setTelefonoContacto('');
       setFechaHora('');
       setNumeroPersonas('2');
+      setEnEspera(false);
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo crear la reserva'));
     }
@@ -380,6 +398,7 @@ function ReservasTab() {
 
   return (
     <div className="mt-6">
+      {errorOperacion&&<p role="alert" className="text-danger-600">{errorOperacion}</p>}
       <div className="flex justify-end">
         <button
           onClick={() => {
@@ -434,6 +453,7 @@ function ReservasTab() {
               <input type="number" min={1} className="input text-sm" value={numeroPersonas} onChange={(e) => setNumeroPersonas(e.target.value)} />
             </label>
           </div>
+          <label className="block text-sm"><input type="checkbox" checked={enEspera} onChange={e=>setEnEspera(e.target.checked)}/> Ingresar a la lista de espera</label>
           {error && <p className="mt-2 text-xs text-danger-500">{error}</p>}
           <div className="mt-3 flex justify-end gap-2">
             <button onClick={() => setMostrarForm(false)} className="rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-white">
@@ -468,7 +488,8 @@ function ReservasTab() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {r.estado === 'PENDIENTE' && (
+                  {['EN_ESPERA','PENDIENTE','CONFIRMADA'].includes(r.estado)&&<div className="flex flex-wrap gap-2"><select className="input" aria-label="Asignar mesa" value={r.mesaId??''} onChange={e=>{if(e.target.value)operacionReserva(r.id,'asignar',Number(e.target.value));}}><option value="">Asignar mesa</option>{mesas?.filter(m=>m.sucursalId===r.sucursalId).map(m=><option key={m.id} value={m.id}>Mesa {m.numero}</option>)}</select>{r.mesaId&&<button className="text-success-600" onClick={()=>operacionReserva(r.id,'atender')}>Sentar y abrir cuenta</button>}</div>}
+                  {(r.estado === 'PENDIENTE'||r.estado==='EN_ESPERA') && (
                     <button
                       onClick={() => cambiarEstado.mutate({ id: r.id, estado: 'CONFIRMADA' })}
                       className="rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
@@ -476,7 +497,7 @@ function ReservasTab() {
                       Confirmar
                     </button>
                   )}
-                  {(r.estado === 'PENDIENTE' || r.estado === 'CONFIRMADA') && (
+                  {(r.estado === 'PENDIENTE' || r.estado === 'EN_ESPERA' || r.estado === 'CONFIRMADA') && (
                     <>
                       <button
                         onClick={() => cambiarEstado.mutate({ id: r.id, estado: 'CUMPLIDA' })}

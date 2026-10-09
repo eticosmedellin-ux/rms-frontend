@@ -1,0 +1,19 @@
+{
+  "entrega": "restaurante-2-3",
+  "fecha": "2026-10-09",
+  "backend": {
+    "pruebas": 70,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "integracion": 13,
+    "motor": "PostgreSQL/PGlite 18.3, esquema aislado generado por Hibernate"
+  },
+  "frontend": "TypeScript y Vite: compilacion aprobada",
+  "sql": "aplicacion repetida y restricciones aprobadas",
+  "no_verificado": [
+    "despliegue en Render",
+    "pruebas completas de navegador",
+    "migracion sobre copia de neondb"
+  ]
+}

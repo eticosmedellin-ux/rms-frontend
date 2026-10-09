@@ -63,7 +63,7 @@ export function useComanda(id: number | null) {
 export function useAgregarItemComanda() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ comandaId, data }: { comandaId: number; data: { productoId?: number; comboId?: number; cantidad: number; notas?: string } }) =>
+    mutationFn: ({ comandaId, data }: { comandaId: number; data: { productoId?: number; comboId?: number; cantidad: number; notas?: string; clave?: string } }) =>
       restauranteApi.agregarItemComanda(comandaId, data),
     onSuccess: (_data, { comandaId }) => {
       queryClient.invalidateQueries({ queryKey: ['comanda', comandaId] });
@@ -75,8 +75,8 @@ export function useAgregarItemComanda() {
 export function useCambiarEstadoItem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ comandaId, itemId, estado }: { comandaId: number; itemId: number; estado: EstadoItemComanda }) =>
-      restauranteApi.cambiarEstadoItem(comandaId, itemId, estado),
+    mutationFn: ({ comandaId, itemId, estado, motivo }: { comandaId: number; itemId: number; estado: EstadoItemComanda; motivo?: string }) =>
+      restauranteApi.cambiarEstadoItem(comandaId, itemId, estado, motivo),
     onSuccess: (_data, { comandaId }) => {
       queryClient.invalidateQueries({ queryKey: ['comanda', comandaId] });
       queryClient.invalidateQueries({ queryKey: ['comandas-activas'] });
@@ -101,7 +101,7 @@ export function useCerrarComanda() {
 export function useCancelarComanda() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (comandaId: number) => restauranteApi.cancelarComanda(comandaId),
+    mutationFn: ({comandaId, motivo}: {comandaId: number; motivo: string}) => restauranteApi.cancelarComanda(comandaId, motivo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mesas'] });
       queryClient.invalidateQueries({ queryKey: ['comandas-activas'] });

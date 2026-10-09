@@ -33,6 +33,11 @@ export interface ComandaItem {
   precioUnitario: number;
   notas: string | null;
   estado: EstadoItemComanda;
+  motivoCancelacion?: string;
+  estacion?: string;
+  creadoEn?: string;
+  preparandoEn?: string;
+  listoEn?: string;
 }
 
 export interface Comanda {
@@ -60,6 +65,8 @@ export interface CerrarComandaRequest {
   tipoDescuentoFacturaId?: number;
   facturar?: boolean;
   propina?: number;
+  propinaAceptada?: boolean;
+  motivoDescuento?: string;
 }
 
 export const listarMesas = async (): Promise<Mesa[]> => (await apiClient.get<Mesa[]>('/restaurante/mesas')).data;
@@ -89,20 +96,21 @@ export const obtenerComanda = async (id: number): Promise<Comanda> =>
 
 export const agregarItemComanda = async (
   comandaId: number,
-  data: { productoId?: number; comboId?: number; cantidad: number; notas?: string }
+  data: { productoId?: number; comboId?: number; cantidad: number; notas?: string; clave?: string }
 ): Promise<Comanda> => (await apiClient.post<Comanda>(`/restaurante/comandas/${comandaId}/items`, data)).data;
 
 export const cambiarEstadoItem = async (
   comandaId: number,
   itemId: number,
-  estado: EstadoItemComanda
-): Promise<Comanda> => (await apiClient.patch<Comanda>(`/restaurante/comandas/${comandaId}/items/${itemId}`, { estado })).data;
+  estado: EstadoItemComanda,
+  motivo?: string
+): Promise<Comanda> => (await apiClient.patch<Comanda>(`/restaurante/comandas/${comandaId}/items/${itemId}`, { estado, motivo })).data;
 
 export const cerrarComanda = async (comandaId: number, data: CerrarComandaRequest): Promise<Venta> =>
   (await apiClient.post<Venta>(`/restaurante/comandas/${comandaId}/cerrar`, data)).data;
 
-export const cancelarComanda = async (comandaId: number): Promise<void> => {
-  await apiClient.post(`/restaurante/comandas/${comandaId}/cancelar`);
+export const cancelarComanda = async (comandaId: number, motivo: string): Promise<void> => {
+  await apiClient.post(`/restaurante/comandas/${comandaId}/cancelar`, {motivo});
 };
 
 export const cambiarMesaComanda = async (comandaId: number, nuevaMesaId: number): Promise<Comanda> =>
@@ -116,7 +124,7 @@ export const asignarMesero = async (comandaId: number, meseroUsuarioId: number):
 
 // --- Reservas (Fase 2) ---
 
-export type EstadoReserva = 'PENDIENTE' | 'CONFIRMADA' | 'CUMPLIDA' | 'CANCELADA' | 'NO_ASISTIO';
+export type EstadoReserva = 'EN_ESPERA' | 'PENDIENTE' | 'CONFIRMADA' | 'CUMPLIDA' | 'CANCELADA' | 'NO_ASISTIO';
 
 export interface Reserva {
   id: number;
@@ -135,6 +143,7 @@ export interface Reserva {
 }
 
 export interface ReservaRequest {
+  enEspera?: boolean;
   sucursalId: number;
   mesaId?: number;
   clienteId?: number;

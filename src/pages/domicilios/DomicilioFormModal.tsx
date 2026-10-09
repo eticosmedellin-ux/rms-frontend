@@ -1,3 +1,4 @@
+import {useProductos} from '@/hooks/useInventario';
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, X, Package2, ImageOff } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -8,12 +9,13 @@ import { useUsuarios } from '@/hooks/useNucleo';
 import { SelectorProductoOCombo, type ItemSeleccionable } from '@/components/SelectorProductoOCombo';
 import { getApiErrorMessage } from '@/api/errors';
 
-const CANALES = ['TELEFONO', 'WHATSAPP', 'PAGINA_WEB', 'RAPPI', 'OTRO'];
+const CANALES = ['TELEFONO', 'WHATSAPP', 'PAGINA_WEB', 'RAPPI', 'RECOGIDA', 'OTRO'];
 const CANAL_LABELS: Record<string, string> = {
   TELEFONO: 'Teléfono',
   WHATSAPP: 'WhatsApp',
   PAGINA_WEB: 'Página web',
   RAPPI: 'Rappi',
+  RECOGIDA: 'Recoger en el local',
   OTRO: 'Otro',
 };
 
@@ -27,6 +29,8 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const { data: clientes } = useClientes();
   const { data: usuarios } = useUsuarios();
   const crear = useCrearDomicilio();
+  const {data:productos}=useProductos();
+  const [costoEnvio,setCostoEnvio]=useState('0'),[productoEnvioId,setProductoEnvioId]=useState(''),[plataforma,setPlataforma]=useState(''),[comisionPlataforma,setComisionPlataforma]=useState('0');
 
   const [sucursalId, setSucursalId] = useState('');
   const [clienteId, setClienteId] = useState('');
@@ -46,7 +50,7 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
       setDireccionEntrega('');
       setTelefonoContacto('');
       setRepartidorId('');
-      setNotas('');
+      setNotas('');setCostoEnvio('0');setProductoEnvioId('');setPlataforma('');setComisionPlataforma('0');
       setItems([{ item: null, cantidad: '1' }]);
       setError(null);
     }
@@ -59,7 +63,7 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
   async function handleCrear() {
     setError(null);
     const itemsValidos = items.filter((it) => it.item && Number(it.cantidad) > 0);
-    if (!sucursalId || !direccionEntrega.trim() || itemsValidos.length === 0) {
+    if (!sucursalId || (canal!=='RECOGIDA'&&!direccionEntrega.trim()) || itemsValidos.length === 0) {
       setError('Sucursal, dirección de entrega y al menos un producto son obligatorios');
       return;
     }
@@ -68,7 +72,8 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
         sucursalId: Number(sucursalId),
         clienteId: clienteId ? Number(clienteId) : undefined,
         canal,
-        direccionEntrega,
+        costoEnvio:Number(costoEnvio),productoEnvioId:productoEnvioId?Number(productoEnvioId):undefined,plataforma:plataforma||undefined,comisionPlataforma:Number(comisionPlataforma),
+        direccionEntrega: canal==='RECOGIDA'?'RECOGER EN EL LOCAL':direccionEntrega,
         telefonoContacto: telefonoContacto || undefined,
         repartidorUsuarioId: repartidorId ? Number(repartidorId) : undefined,
         notas: notas || undefined,
@@ -140,6 +145,7 @@ export function DomicilioFormModal({ isOpen, onClose }: { isOpen: boolean; onClo
           </label>
         </div>
 
+        <div className="grid gap-3 sm:grid-cols-2"><label>Servicio de envío<select className="input" value={productoEnvioId} onChange={e=>{setProductoEnvioId(e.target.value);setCostoEnvio(String(productos?.find(p=>p.id===Number(e.target.value))?.precioVenta??0));}}><option value="">Sin envío adicional</option>{productos?.filter(p=>!p.manejaInventario&&p.estado).map(p=><option value={p.id} key={p.id}>{p.nombre}</option>)}</select></label><label>Costo de envío<input className="input" type="number" min="0" step="0.01" value={costoEnvio} onChange={e=>setCostoEnvio(e.target.value)}/></label><label>Plataforma (vacío para cobro directo)<input className="input" maxLength={100} value={plataforma} onChange={e=>setPlataforma(e.target.value)}/></label><label>Comisión de plataforma<input className="input" type="number" min="0" step="0.01" value={comisionPlataforma} onChange={e=>setComisionPlataforma(e.target.value)}/></label><p className="text-xs sm:col-span-2">Para plataforma, selecciona como cliente su cuenta contable y configura su límite de crédito. El servicio de envío debe tener su impuesto configurado.</p></div>
         <div className="border-t border-ink-100 pt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Productos</p>
           <div className="space-y-3">

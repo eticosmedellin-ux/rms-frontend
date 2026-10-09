@@ -19,12 +19,14 @@ const METODOS_PAGO: { valor: MetodoPagoVenta; etiqueta: string }[] = [
 
 const SIGUIENTE: Partial<Record<EstadoDomicilio, EstadoDomicilio>> = {
   RECIBIDO: 'EN_PREPARACION',
-  EN_PREPARACION: 'EN_CAMINO',
+  EN_PREPARACION: 'LISTO_RECOGER',
+  LISTO_RECOGER: 'EN_CAMINO',
 };
 
 const ESTADO_LABELS: Record<EstadoDomicilio, string> = {
   RECIBIDO: 'Recibido',
   EN_PREPARACION: 'En preparación',
+  LISTO_RECOGER: 'Listo para recoger',
   EN_CAMINO: 'En camino',
   ENTREGADO: 'Entregado',
   CANCELADO: 'Cancelado',
@@ -58,9 +60,9 @@ export function DomicilioDetalleModal({
     if (isOpen) {
       setMostrarEntrega(false);
       setError(null);
-      setMetodoPago('EFECTIVO');
+      setMetodoPago(domicilio?.plataforma?'CREDITO':'EFECTIVO');
     }
-  }, [isOpen, domicilioId]);
+  }, [isOpen, domicilioId,domicilio?.plataforma]);
 
   const calculo=useCalculoVenta({detalles:agruparLineas((domicilio?.items??[]).map(i=>({productoId:i.productoId,comboId:i.comboId,cantidad:i.cantidad,precioUnitario:i.precioUnitario})))},isOpen&&mostrarEntrega,'domicilios');
   if (!isOpen) return null;
@@ -170,14 +172,14 @@ export function DomicilioDetalleModal({
             <p className="text-sm font-semibold text-ink-700">Total: {formatoMoneda(domicilio.total)}</p>
             <div className="flex gap-2">
               <button
-                onClick={() => cancelar.mutate(domicilio.id)}
+                onClick={async()=>{const motivo=window.prompt("Motivo de cancelación");if(!motivo?.trim())return;try{await cancelar.mutateAsync({id:domicilio.id,motivo:motivo.trim()});onClose();}catch(e){setError(getApiErrorMessage(e,"No se pudo cancelar el pedido"));}}}
                 disabled={cancelar.isPending}
                 className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-2 text-xs font-medium text-ink-500 hover:bg-ink-50"
               >
                 <Ban size={14} />
                 Cancelar
               </button>
-              {SIGUIENTE[domicilio.estado] && (
+              {SIGUIENTE[domicilio.estado] && !(domicilio.canal==='RECOGIDA'&&domicilio.estado==='LISTO_RECOGER') && (
                 <button
                   onClick={() => cambiarEstado.mutate({ id: domicilio.id, estado: SIGUIENTE[domicilio.estado]! })}
                   className="rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
@@ -185,7 +187,7 @@ export function DomicilioDetalleModal({
                   Marcar {ESTADO_LABELS[SIGUIENTE[domicilio.estado]!]}
                 </button>
               )}
-              {domicilio.estado === 'EN_CAMINO' && (
+              {(domicilio.estado === 'EN_CAMINO'||domicilio.estado==='LISTO_RECOGER') && (
                 <button
                   onClick={() => setMostrarEntrega(true)}
                   className="flex items-center gap-1.5 rounded-lg bg-success-600 px-4 py-2 text-sm font-semibold text-white hover:bg-success-700"

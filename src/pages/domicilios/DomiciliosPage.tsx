@@ -9,6 +9,7 @@ import type { Domicilio, EstadoDomicilio } from '@/api/domicilios';
 const ESTADO_LABELS: Record<EstadoDomicilio, string> = {
   RECIBIDO: 'Recibido',
   EN_PREPARACION: 'En preparación',
+  LISTO_RECOGER: 'Listo para recoger',
   EN_CAMINO: 'En camino',
   ENTREGADO: 'Entregado',
   CANCELADO: 'Cancelado',
@@ -17,6 +18,7 @@ const ESTADO_LABELS: Record<EstadoDomicilio, string> = {
 const ESTADO_TONOS: Record<EstadoDomicilio, string> = {
   RECIBIDO: 'bg-ink-100 text-ink-600',
   EN_PREPARACION: 'bg-amber-100 text-amber-700',
+  LISTO_RECOGER: 'bg-success-50 text-success-600',
   EN_CAMINO: 'bg-blue-100 text-blue-700',
   ENTREGADO: 'bg-success-50 text-success-600',
   CANCELADO: 'bg-danger-50 text-danger-500',

@@ -1,7 +1,7 @@
 import { apiClient } from '@/api/client';
 import type { Venta } from '@/types/pos';
 
-export type EstadoDomicilio = 'RECIBIDO' | 'EN_PREPARACION' | 'EN_CAMINO' | 'ENTREGADO' | 'CANCELADO';
+export type EstadoDomicilio = 'RECIBIDO' | 'EN_PREPARACION' | 'LISTO_RECOGER' | 'EN_CAMINO' | 'ENTREGADO' | 'CANCELADO';
 
 export interface DomicilioItem {
   id: number;
@@ -31,6 +31,11 @@ export interface Domicilio {
   ventaId: number | null;
   total: number;
   items: DomicilioItem[];
+  costoEnvio?:number;
+  productoEnvioId?:number;
+  plataforma?:string;
+  comisionPlataforma?:number;
+  cuentaPlataforma?:string;
 }
 
 export interface DomicilioRequest {
@@ -41,6 +46,11 @@ export interface DomicilioRequest {
   telefonoContacto?: string;
   repartidorUsuarioId?: number;
   notas?: string;
+  costoEnvio?:number;
+  productoEnvioId?:number;
+  plataforma?:string;
+  comisionPlataforma?:number;
+  cuentaPlataforma?:string;
   items: { productoId?: number; comboId?: number; cantidad: number }[];
 }
 
@@ -70,6 +80,6 @@ export const cambiarEstadoDomicilio = async (
 export const confirmarEntregaDomicilio = async (id: number, data: ConfirmarEntregaRequest): Promise<Venta> =>
   (await apiClient.post<Venta>(`/domicilios/${id}/confirmar-entrega`, data)).data;
 
-export const cancelarDomicilio = async (id: number): Promise<void> => {
-  await apiClient.post(`/domicilios/${id}/cancelar`);
+export const cancelarDomicilio = async (id: number,motivo:string): Promise<void> => {
+  await apiClient.post(`/domicilios/${id}/cancelar`,{motivo});
 };

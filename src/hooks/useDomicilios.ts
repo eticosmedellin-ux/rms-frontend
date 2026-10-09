@@ -53,7 +53,7 @@ export function useConfirmarEntregaDomicilio() {
 export function useCancelarDomicilio() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => domiciliosApi.cancelarDomicilio(id),
+    mutationFn: ({id,motivo}:{id:number;motivo:string}) => domiciliosApi.cancelarDomicilio(id,motivo),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['domicilios'] }),
   });
 }

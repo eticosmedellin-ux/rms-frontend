@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { getApiErrorMessage } from '@/api/errors';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ChefHat } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -22,6 +24,8 @@ const SIGUIENTE: Partial<Record<EstadoItemComanda, EstadoItemComanda>> = {
 /** App simplificada de Cocina/Bar — pantalla completa, sin el menú administrativo, para
  *  dejar montada en una tablet de cocina o el celular del ayudante de cocina. */
 export default function AppCocinaPage() {
+  const [estacion,setEstacion]=useState('TODAS');
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const { data: comandas, isLoading } = useComandasActivas();
@@ -30,7 +34,7 @@ export default function AppCocinaPage() {
   const items = (comandas ?? [])
     .flatMap((c) =>
       c.items
-        .filter((i) => i.estado !== 'CANCELADO' && i.estado !== 'ENTREGADO')
+        .filter((i) => i.estado !== 'ENTREGADO' && (estacion==='TODAS'||(i.estacion||'COCINA')===estacion))
         .map((i) => ({ ...i, mesaNumero: c.mesaNumero, comandaId: c.id }))
     )
     .sort((a, b) => a.id - b.id);
@@ -55,6 +59,8 @@ export default function AppCocinaPage() {
       </header>
 
       <div className="p-4 sm:p-6">
+        <select className="mb-3 rounded bg-ink-800 p-2" value={estacion} onChange={e=>setEstacion(e.target.value)}><option value="TODAS">Todas las estaciones</option>{[...new Set((comandas||[]).flatMap(c=>c.items.map(i=>i.estacion||'COCINA')))].sort().map(s=><option key={s} value={s}>{s}</option>)}</select>
+        {error && <p role="alert" className="mb-3 text-red-300">{error}</p>}
         {isLoading ? (
           <LoadingState />
         ) : items.length > 0 ? (
@@ -74,10 +80,12 @@ export default function AppCocinaPage() {
                 <p className="mt-3 font-display text-xl font-bold">
                   {item.cantidad}× {item.comboNombre ?? item.productoNombre}
                 </p>
+                {item.motivoCancelacion && <p className="mt-1 text-sm text-red-300">Cancelación: {item.motivoCancelacion}</p>}
+                {item.creadoEn && <p className="text-xs text-ink-300">Recibido: {new Date(item.creadoEn).toLocaleTimeString('es-CO')}</p>}
                 {item.notas && <p className="mt-1 text-sm text-amber-300">{item.notas}</p>}
                 {SIGUIENTE[item.estado] && (
                   <button
-                    onClick={() => cambiarEstadoItem.mutate({ comandaId: item.comandaId, itemId: item.id, estado: SIGUIENTE[item.estado]! })}
+                    onClick={() => cambiarEstadoItem.mutate({ comandaId: item.comandaId, itemId: item.id, estado: SIGUIENTE[item.estado]! }, {onError: err => setError(getApiErrorMessage(err, 'No se pudo actualizar el pedido'))})}
                     className="mt-4 w-full rounded-xl bg-success-600 py-3 text-base font-bold text-white hover:bg-success-500 active:scale-[0.98]"
                   >
                     Marcar {ESTADO_LABELS[SIGUIENTE[item.estado]!]}

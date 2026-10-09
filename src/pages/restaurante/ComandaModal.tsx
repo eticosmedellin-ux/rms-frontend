@@ -1,3 +1,7 @@
+import {AbonosCuenta,useAbonosCuenta} from '@/features/restaurante/AbonosCuenta';
+import {capturar,pendientes} from '@/features/restaurante/outbox';
+import {PedidosCapturados} from '@/features/restaurante/PedidosCapturados';
+import axios from 'axios';
 import {useCalculoVenta,agruparLineas} from '@/features/sicom/useCalculoVenta';
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, X, Receipt, Ban, ArrowRightLeft, Merge, UserCog, Package2, ImageOff } from 'lucide-react';
@@ -75,6 +79,10 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   const [notasItem, setNotasItem] = useState('');
   const [vista, setVista] = useState<'comanda' | 'cierre' | 'cambiarMesa' | 'unir'>('comanda');
   const [pagos, setPagos] = useState<LineaPago[]>([{ metodoPago: 'EFECTIVO', monto: '' }]);
+  const abonos=useAbonosCuenta(comanda?.id??null);
+  const abonado=(abonos.data??[]).filter(a=>!a.revertido_en).reduce((n,a)=>n+Number(a.monto),0);
+  const [propinaAceptada,setPropinaAceptada]=useState(false);
+  const [motivoDescuento,setMotivoDescuento]=useState('');
   const [propina, setPropina] = useState('');
   const [tipoDescuentoFacturaId, setTipoDescuentoFacturaId] = useState('');
   const [mesaDestinoId, setMesaDestinoId] = useState('');
@@ -86,6 +94,8 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
       setVista('comanda');
       setError(null);
       setPropina('');
+      setPropinaAceptada(false);
+      setMotivoDescuento('');
       setTipoDescuentoFacturaId('');
       setMesaDestinoId('');
       setComandaAUnirId('');
@@ -94,12 +104,12 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   }, [isOpen, mesa]);
 
   const calculo=useCalculoVenta({detalles:agruparLineas((comanda?.items??[]).filter(i=>i.estado!=='CANCELADO').map(i=>({productoId:i.productoId,comboId:i.comboId,cantidad:i.cantidad,precioUnitario:i.precioUnitario}))),tipoDescuentoFacturaId:tipoDescuentoFacturaId?Number(tipoDescuentoFacturaId):null},isOpen&&vista==='cierre','restaurante');
-  useEffect(()=>{if(vista==='cierre'&&calculo.data)setPagos([{metodoPago:'EFECTIVO',monto:String(calculo.data.total)}]);},[vista,calculo.data]);
+  useEffect(()=>{if(vista==='cierre'&&calculo.data)setPagos([{metodoPago:'EFECTIVO',monto:String(Math.max(0,calculo.data.total-abonado))}]);},[vista,calculo.data,abonado]);
   if(!mesa)return null;
   const totalPagos=pagos.reduce((acc,p)=>acc+(Number(p.monto)||0),0);
   const montoDescuento=calculo.data?.descuento??0;
   const totalConDescuento=calculo.data?.total??0;
-  const diferenciaPago = comanda ? Math.round((totalPagos - totalConDescuento) * 100) / 100 : 0;
+  const diferenciaPago = comanda ? Math.round((totalPagos + abonado - totalConDescuento) * 100) / 100 : 0;
 
   function actualizarLineaPago(i: number, campo: keyof LineaPago, valor: string) {
     setPagos((prev) => prev.map((p, idx) => (idx === i ? { ...p, [campo]: valor } : p)));
@@ -117,16 +127,13 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   async function handleAgregarItem() {
     setError(null);
     if (!comanda || !itemElegido) return;
+    const data = {productoId:itemElegido.tipo==='PRODUCTO'?itemElegido.id:undefined,comboId:itemElegido.tipo==='COMBO'?itemElegido.id:undefined,cantidad:Number(cantidad)||1,notas:notasItem||undefined,clave:crypto.randomUUID()};
     try {
-      await agregarItem.mutateAsync({
-        comandaId: comanda.id,
-        data: {
-          productoId: itemElegido.tipo === 'PRODUCTO' ? itemElegido.id : undefined,
-          comboId: itemElegido.tipo === 'COMBO' ? itemElegido.id : undefined,
-          cantidad: Number(cantidad) || 1,
-          notas: notasItem || undefined,
-        },
-      });
+      try {await agregarItem.mutateAsync({comandaId:comanda.id,data});}
+      catch(e) {
+        if(axios.isAxiosError(e)&&!e.response){await capturar({comandaId:comanda.id,data,nombre:itemElegido.nombre,fecha:new Date().toISOString()});}
+        else throw e;
+      }
       setItemElegido(null);
       setCantidad('1');
       setNotasItem('');
@@ -136,6 +143,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   }
 
   async function handleCerrarCuenta() {
+    if(comanda && pendientes().some(p=>p.comandaId===comanda.id)){setError('Sincroniza o descarta las capturas pendientes antes de cobrar');return;}
     setError(null);
     if (!comanda) return;
     if(!calculo.data||calculo.isFetching||calculo.isError){setError(getApiErrorMessage(calculo.error,'Espera el cálculo del cobro'));return;}
@@ -143,7 +151,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
       setError('No hay una caja abierta en esta sucursal — ábrela primero desde el POS');
       return;
     }
-    if (Math.abs(diferenciaPago) > 0.5) {
+    if (Math.abs(diferenciaPago) > 0.005) {
       setError(`Los pagos suman ${formatoMoneda(totalPagos)}, pero el total es ${formatoMoneda(totalConDescuento)} — ajusta los montos.`);
       return;
     }
@@ -153,8 +161,10 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
         data: {
           cajaSesionId: cajaAbierta.id,
           totalEsperado:calculo.data.total,
-          pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
+          pagos: pagos.filter(p=>Number(p.monto)>0).map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
           propina: propina ? Number(propina) : undefined,
+          propinaAceptada,
+          motivoDescuento:motivoDescuento||undefined,
           tipoDescuentoFacturaId: tipoDescuentoFacturaId ? Number(tipoDescuentoFacturaId) : undefined,
         },
       });
@@ -168,7 +178,9 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
     if (!comanda) return;
     setError(null);
     try {
-      await cancelar.mutateAsync(comanda.id);
+      const motivo = window.prompt('Motivo de cancelación (requiere autorización de tu rol):');
+      if (!motivo?.trim()) return;
+      await cancelar.mutateAsync({comandaId: comanda.id, motivo: motivo.trim()});
       onClose();
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo cancelar la comanda'));
@@ -203,6 +215,8 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Mesa ${mesa.numero}`} size="lg">
       <div className="space-y-4">
+        <PedidosCapturados/>
+        {comanda&&comanda.estado==='ABIERTA'&&<AbonosCuenta comanda={comanda} cajaId={cajaAbierta?.id??null}/>}
         {mesa.estado === 'LIBRE' && !mesa.comandaActivaId ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <p className="text-sm text-ink-500">Esta mesa está libre.</p>
@@ -219,6 +233,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
           <LoadingState />
         ) : vista === 'cierre' ? (
           <div className="space-y-4">
+            <p className="rounded bg-success-50 p-3">Abonos registrados: {formatoMoneda(abonado)} · saldo para este cierre: {formatoMoneda(totalConDescuento-abonado)}</p>
             {calculo.isError&&<p role="alert" className="text-danger-600">{getApiErrorMessage(calculo.error,'No se pudo calcular el cobro')}</p>}
             <div className="rounded-lg bg-ink-50 p-3 text-sm">
               <div className="flex justify-between text-ink-500">
@@ -240,6 +255,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-ink-600">Descuento (opcional)</span>
+              <input className="input mb-2" placeholder="Motivo del descuento o cortesía" maxLength={500} value={motivoDescuento} onChange={e=>setMotivoDescuento(e.target.value)}/>
               <select className="input" value={tipoDescuentoFacturaId} onChange={(e) => setTipoDescuentoFacturaId(e.target.value)}>
                 <option value="">Sin descuento</option>
                 {tiposDescuento
@@ -307,6 +323,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-ink-600">Propina (opcional)</span>
               <input type="number" className="input" value={propina} onChange={(e) => setPropina(e.target.value)} placeholder="0" />
+              <label className="mt-2 block text-sm"><input type="checkbox" checked={propinaAceptada} onChange={e=>setPropinaAceptada(e.target.checked)}/> El cliente aceptó voluntariamente esta propina en efectivo</label>
             </label>
 
             {!cajaAbierta && (
@@ -485,7 +502,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
                     )}
                     {item.estado !== 'CANCELADO' && (
                       <button
-                        onClick={() => cambiarEstado.mutate({ comandaId: comanda.id, itemId: item.id, estado: 'CANCELADO' })}
+                        onClick={() => {const motivo = window.prompt('Motivo de cancelación:'); if (motivo?.trim()) cambiarEstado.mutate({ comandaId: comanda.id, itemId: item.id, estado: 'CANCELADO', motivo: motivo.trim() }, {onError: err => setError(getApiErrorMessage(err, 'No se pudo cancelar'))});}}
                         className="rounded p-1 text-ink-300 hover:text-danger-500"
                       >
                         <X size={14} />
