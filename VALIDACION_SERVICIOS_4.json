@@ -1,0 +1,25 @@
+{
+  "entrega": "servicios-4",
+  "fecha": "2026-10-09",
+  "backend": {
+    "pruebas": 83,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "integracion_servicios": 13,
+    "integracion_restaurante": 13
+  },
+  "frontend": "TypeScript/Vite aprobado",
+  "sql": "repetición y restricciones aprobadas en PostgreSQL/PGlite 18.3",
+  "no_verificado": [
+    "Render",
+    "navegador completo",
+    "copia de neondb"
+  ],
+  "limites": [
+    "Recordatorios manuales",
+    "Comisión porcentaje general sobre total con impuesto",
+    "Formulario de una línea; API hasta 100",
+    "Materiales cancelados no se devuelven automáticamente"
+  ]
+}

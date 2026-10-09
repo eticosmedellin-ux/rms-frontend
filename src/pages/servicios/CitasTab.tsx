@@ -1,3 +1,5 @@
+import { useUsuarios } from '@/hooks/useNucleo';
+import { getApiErrorMessage } from '@/api/errors';
 import { useState } from 'react';
 import { Plus, Clock, User as UserIcon } from 'lucide-react';
 import { useCitas, useCambiarEstadoCita } from '@/hooks/useServicios';
@@ -36,6 +38,9 @@ function formatoFechaHora(iso: string) {
 export function CitasTab() {
   const { data: citas, isLoading } = useCitas();
   const cambiarEstado = useCambiarEstadoCita();
+  const {data:usuarios}=useUsuarios();
+  const [empleado,setEmpleado]=useState(''),[dia,setDia]=useState('');
+  const visibles=(citas??[]).filter(c=>(!empleado||String(c.asignadoAId)===empleado)&&(!dia||c.fechaHora.slice(0,10)===dia));
   const [formAbierto, setFormAbierto] = useState(false);
   const [citaEditar, setCitaEditar] = useState<Cita | null>(null);
 
@@ -54,12 +59,14 @@ export function CitasTab() {
         </button>
       </div>
 
+      <div className="mt-4 flex gap-3"><label>Empleado<select className="ml-2 rounded border p-2" value={empleado} onChange={e=>setEmpleado(e.target.value)}><option value="">Todos</option>{usuarios?.map(u=><option key={u.id} value={u.id}>{u.nombre}</option>)}</select></label><label>Día<input className="ml-2 rounded border p-2" type="date" value={dia} onChange={e=>setDia(e.target.value)}/></label></div>
+      {cambiarEstado.error&&<p role="alert" className="mt-3 text-red-700">{getApiErrorMessage(cambiarEstado.error,'No se pudo cambiar el estado')}</p>}
       <div className="mt-4">
         {isLoading ? (
           <LoadingState />
-        ) : citas && citas.length > 0 ? (
+        ) : visibles.length > 0 ? (
           <div className="space-y-2">
-            {citas.map((c) => (
+            {visibles.map((c) => (
               <div
                 key={c.id}
                 onClick={() => {

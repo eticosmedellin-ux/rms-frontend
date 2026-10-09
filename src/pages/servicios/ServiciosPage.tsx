@@ -1,3 +1,4 @@
+import { OperacionServicios } from '@/pages/servicios/OperacionServicios';
 import { useState } from 'react';
 import { CitasTab } from '@/pages/servicios/CitasTab';
 import { OrdenesTrabajoTab } from '@/pages/servicios/OrdenesTrabajoTab';
@@ -12,6 +13,7 @@ const TODOS_LOS_TABS = [
   { id: 'ordenes', label: 'Órdenes de trabajo' },
   { id: 'tipos', label: 'Tipos de servicio' },
   { id: 'historial', label: 'Historial' },
+  { id: 'operacion', label: 'Operación completa' },
 ] as const;
 
 export default function ServiciosPage() {
@@ -36,6 +38,7 @@ export default function ServiciosPage() {
     if (t.id === 'citas') return puedeCitas;
     if (t.id === 'ordenes') return puedeOrdenes;
     if (t.id === 'tipos') return puedeCitas || puedeOrdenes; // tipos de servicio alimenta a Citas
+    if (t.id === 'operacion') return puedeCitas || puedeOrdenes;
     return true; // historial sirve para cualquiera de los dos
   });
 
@@ -65,6 +68,7 @@ export default function ServiciosPage() {
         {tab === 'ordenes' && puedeOrdenes && <OrdenesTrabajoTab />}
         {tab === 'tipos' && <TiposServicioTab />}
         {tab === 'historial' && <HistorialTab />}
+        {tab === 'operacion' && (puedeOrdenes || puedeCitas) && <OperacionServicios base={puedeOrdenes?'ordenes':'citas'} />}
       </div>
     </div>
   );
