@@ -1,3 +1,5 @@
+import Comercio from '@/features/sicom/Comercio';
+import Drogueria from '@/features/sicom/Drogueria';
 import { useState } from 'react';
 import { ProductosTab } from '@/pages/inventario/ProductosTab';
 import { CategoriasMarcasTab } from '@/pages/inventario/CategoriasMarcasTab';
@@ -7,6 +9,8 @@ import { ConteosTab } from '@/pages/inventario/ConteosTab';
 import { CombosTab } from '@/pages/inventario/CombosTab';
 
 const TABS = [
+  { id: 'comercio', label: 'Variantes y reservas' },
+  { id: 'drogueria', label: 'Droguería y lotes' },
   { id: 'productos', label: 'Productos' },
   { id: 'combos', label: 'Combos' },
   { id: 'categorias', label: 'Categorías y marcas' },
@@ -44,6 +48,8 @@ export default function InventarioPage() {
       </div>
 
       <div className="mt-5">
+        {tab === 'comercio' && <Comercio />}
+        {tab === 'drogueria' && <Drogueria />}
         {tab === 'productos' && <ProductosTab />}
         {tab === 'combos' && <CombosTab />}
         {tab === 'categorias' && <CategoriasMarcasTab />}

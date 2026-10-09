@@ -1,3 +1,5 @@
+import {useQuery} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
 import {useCalculoVenta} from '@/features/sicom/useCalculoVenta';
 import {useAuthStore} from '@/stores/authStore';
 import {useSicom,permitido} from '@/features/sicom/api';
@@ -25,6 +27,7 @@ interface ItemVendible {
   imagen: string | null;
   manejaInventario: boolean;
   codigoInterno: string;
+  codigoBarras?:string|null;
   stock: number | null; // null = no aplica (servicio o combo)
   stockBajo: boolean;
 }
@@ -80,6 +83,9 @@ export function VenderTab() {
   const { data: tiposDescuento } = useTiposDescuento();
   const { data: empresa } = useEmpresa();
   const registrarVenta = useRegistrarVenta();
+  const [formulaBase64,setFormulaBase64]=useState<string>();
+  const [reservaId,setReservaId]=useState('');
+  const {data:reservasComercio=[]}=useQuery({queryKey:['comercio-reservas'],queryFn:async()=>(await apiClient.get<{id:number;cliente_id:number;sucursal_id:number;estado_actual:string}[]>('/ventas/reservas')).data});
   const {data:sicom}=useSicom();
   const crearCliente=useCrearCliente();
   const [registroRapido,setRegistroRapido]=useState(false);
@@ -189,6 +195,7 @@ export function VenderTab() {
           imagen: p.imagen,
           manejaInventario: p.manejaInventario,
           codigoInterno: p.codigoInterno,
+          codigoBarras:p.codigoBarras,
           stock: stockInfo ? stockInfo.stock : null,
           stockBajo: stockInfo?.bajo ?? false,
         };
@@ -213,7 +220,7 @@ export function VenderTab() {
     if (!busqueda.trim()) return itemsVendibles;
     const term = busqueda.toLowerCase();
     return itemsVendibles.filter(
-      (i) => i.nombre.toLowerCase().includes(term) || i.codigoInterno.toLowerCase().includes(term)
+      (i) => i.nombre.toLowerCase().includes(term) || i.codigoInterno.toLowerCase().includes(term) || (i.codigoBarras?.toLowerCase().includes(term)??false) || (i.tipo==='PRODUCTO'&&(productos?.find(p=>p.id===i.id)?.presentaciones?.some(p=>p.codigo_barras?.toLowerCase().includes(term))??false))
     );
   }, [itemsVendibles, busqueda]);
 
@@ -234,17 +241,17 @@ export function VenderTab() {
   const cambio = Math.max(0, totalPagos - total);
   const requiereCredito = pagos.some((p) => p.metodoPago === 'CREDITO');
 
-  function agregarItem(item: ItemVendible) {
+  function agregarItem(item: ItemVendible,cantidadAgregar=1) {
     setCarrito((prev) => {
       const existente = prev.find((l) => l.tipo === item.tipo && l.itemId === item.id);
       if (existente) {
         return prev.map((l) =>
-          l.tipo === item.tipo && l.itemId === item.id ? { ...l, cantidad: l.cantidad + 1 } : l
+          l.tipo === item.tipo && l.itemId === item.id ? { ...l, cantidad: l.cantidad + cantidadAgregar } : l
         );
       }
       return [
         ...prev,
-        { tipo: item.tipo, itemId: item.id, nombre: item.nombre, cantidad: 1, precioUnitario: item.precioVenta, tipoDescuentoId: null },
+        { tipo: item.tipo, itemId: item.id, nombre: item.nombre, cantidad: cantidadAgregar, precioUnitario: item.precioVenta, tipoDescuentoId: null },
       ];
     });
   }
@@ -253,7 +260,9 @@ export function VenderTab() {
    *  la búsqueda deja un solo artículo visible, se agrega directo sin soltar el teclado. */
   function manejarEnterBusqueda(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key !== 'Enter' || itemsVisibles.length !== 1) return;
-    agregarItem(itemsVisibles[0]);
+    const item=itemsVisibles[0];
+    const presentacion=item.tipo==='PRODUCTO'?productos?.find(p=>p.id===item.id)?.presentaciones?.find(p=>p.codigo_barras===busqueda.trim()):undefined;
+    agregarItem(item,presentacion?.unidades??1);
     setBusqueda('');
     busquedaInputRef.current?.focus();
   }
@@ -342,15 +351,20 @@ export function VenderTab() {
         tipoDescuentoFacturaId: modoDescuento === 'FACTURA' ? tipoDescuentoFacturaId : undefined,
         facturar: facturarVenta,
         totalEsperado:total,
+        formulaBase64,
+        reservaId:reservaId?Number(reservaId):undefined,
         puntosCanjear: valorCanje>0?puntosCanje:0,
       };
-      const firma=JSON.stringify(payload);
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(payload)));
+      const firma=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
       const claveLocal=claveVentaEnProceso(sucursalId)+'-operacion';
       const previa=JSON.parse(window.localStorage.getItem(claveLocal)||'null') as {firma:string;clave:string}|null;
       const clave=previa?.firma===firma?previa.clave:crypto.randomUUID();
       window.localStorage.setItem(claveLocal,JSON.stringify({firma,clave}));
       const venta = await registrarVenta.mutateAsync({...payload,claveOperacion:clave});
       window.localStorage.removeItem(claveLocal);
+      setFormulaBase64(undefined);
+      setReservaId('');
       const mensajeCambio = venta.cambio > 0 ? ` — vuelto: $${venta.cambio.toLocaleString('es-CO')}` : '';
       setVentaExitosa(`Venta ${venta.numero} registrada por $${venta.total.toLocaleString('es-CO')}${mensajeCambio}`);
       setUltimaVenta(venta);
@@ -526,6 +540,7 @@ export function VenderTab() {
                 </button>
               </div>
 
+              {l.tipo==='PRODUCTO'&&(productos?.find(p=>p.id===l.itemId)?.presentaciones?.length??0)>0&&<label className="text-xs">Añadir una presentación<select className="input" value="" onChange={e=>{const p=productos?.find(p=>p.id===l.itemId)?.presentaciones?.find(x=>x.id===Number(e.target.value));if(p)actualizarCantidad(l.tipo,l.itemId,l.cantidad+p.unidades);}}><option value="">Selecciona presentación (cantidad en unidades base)</option>{productos?.find(p=>p.id===l.itemId)?.presentaciones?.map(p=><option key={p.id} value={p.id}>{p.nombre} · {p.unidades} unidades · ${(p.unidades*l.precioUnitario).toLocaleString('es-CO')}</option>)}</select></label>}
               {modoDescuento === 'LINEA' && (
                 <div className="flex items-center gap-2 pl-1">
                   <Tag size={12} className="text-ink-300 shrink-0" />
@@ -677,6 +692,8 @@ export function VenderTab() {
               </select>
             </label>
             {permitido(sicom,'REGISTRAR_CLIENTE')&&<button className="text-sm text-blue-700" onClick={()=>setRegistroRapido(!registroRapido)}>+ Registrar cliente rápidamente</button>}
+            <label className="block text-sm">Reserva del cliente<select className="input" value={reservaId} onChange={e=>setReservaId(e.target.value)}><option value="">Sin reserva</option>{reservasComercio.filter(r=>r.cliente_id===Number(clienteId)&&r.sucursal_id===sucursalId&&r.estado_actual==='ACTIVA').map(r=><option key={r.id} value={r.id}>Reserva #{r.id}</option>)}</select></label>
+            <label className="block text-sm my-3">Soporte de fórmula (solo si el producto lo requiere)<input type="file" accept="application/pdf,image/png,image/jpeg" onChange={e=>{const f=e.target.files?.[0];if(!f){setFormulaBase64(undefined);return;}if(f.size>5*1024*1024){setError('El soporte admite hasta 5 MB');e.target.value='';return;}const lector=new FileReader();lector.onload=()=>setFormulaBase64(String(lector.result));lector.readAsDataURL(f);}}/><span className="text-xs text-slate-500">El soporte se guarda con acceso restringido. Verifica la fórmula antes de entregar.</span></label>
             {registroRapido&&<div className="space-y-2 border rounded p-3"><label className="block text-xs">Nombre<input className="input" value={nombreRapido} onChange={e=>setNombreRapido(e.target.value)} maxLength={150}/></label><label className="block text-xs">Documento (opcional)<input className="input" value={documentoRapido} onChange={e=>setDocumentoRapido(e.target.value)} maxLength={30}/></label><label className="block text-xs">Teléfono (opcional)<input className="input" value={telefonoRapido} onChange={e=>setTelefonoRapido(e.target.value)} maxLength={30}/></label><button disabled={!nombreRapido.trim()||crearCliente.isPending} onClick={registrarClienteRapido} className="rounded bg-slate-800 text-white p-2">Guardar y seleccionar</button></div>}
             {sicom?.fidelizacion_activa&&clienteId&&<div className="border rounded p-3 text-xs"><p>Puntos disponibles: {clientes?.find(c=>String(c.id)===clienteId)?.puntosFidelizacion??0}</p><p>Esta compra suma {Math.floor(total/Number(sicom.pesos_por_punto))+Number(sicom.puntos_por_compra)} puntos.</p>{Number(sicom.valor_punto)>0&&modoDescuento==='NINGUNO'&&<label className="block mt-2">Puntos a canjear (mínimo {sicom.minimo_canje})<input className="input" type="number" min={0} max={clientes?.find(c=>String(c.id)===clienteId)?.puntosFidelizacion??0} step={1} value={puntosCanje} onChange={e=>setPuntosCanje(Math.max(0,Math.floor(Number(e.target.value)||0)))}/></label>}{valorCanje>0&&<p>Descuento por puntos: ${valorCanje.toLocaleString('es-CO')}</p>}</div>}
           </div>

@@ -63,7 +63,7 @@ export interface RecepcionCompraRequest {
   ordenId?: number | null;
   sucursalId: number;
   observaciones?: string | null;
-  detalles: { productoId: number; cantidadRecibida: number; costoUnitario: number }[];
+  detalles: { productoId: number; cantidadRecibida: number; costoUnitario: number; lote?:string; vencimiento?:string; condicionesRecepcion?:string; cantidadRechazada?:number; motivoRechazo?:string }[];
 }
 
 export interface FacturaCompra {
@@ -91,7 +91,7 @@ export interface FacturaCompraRequest {
   cajaSesionId?: number;
   montoInicial?: number;
   recibirEnSucursalId?: number;
-  detalles: { productoId: number; cantidad: number; costoUnitario: number }[];
+  detalles: { productoId: number; cantidad: number; costoUnitario: number; lote?:string; vencimiento?:string; condicionesRecepcion?:string; cantidadRechazada?:number; motivoRechazo?:string }[];
 }
 
 export interface CuentaPorPagar {

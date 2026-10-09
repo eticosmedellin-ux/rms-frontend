@@ -13,6 +13,7 @@ export interface Marca {
 }
 
 export interface Producto {
+  presentaciones?:{id:number;nombre:string;unidades:number;codigo_barras:string}[];
   id: number;
   codigoInterno: string;
   codigoBarras: string | null;

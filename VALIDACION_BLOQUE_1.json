@@ -1,0 +1,18 @@
+{
+  "backend": {
+    "tests": 49,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": "TypeScript y Vite aprobados",
+  "sql": "Migración transaccional repetida sobre PostgreSQL embebido; lotes vencidos y cuarentena excluidos; excepciones preservadas",
+  "render_produccion": "Pendiente de instalación y comprobación del usuario",
+  "limites": [
+    "No control especial ni atención clínica",
+    "Listas publican precios de catálogo, no tarifa por cliente",
+    "Cambio integrado de contado con diferencia en efectivo",
+    "No reconstruye lotes de ventas históricas anteriores a la activación",
+    "Ajuste positivo general sin lote bloqueado para artículos controlados"
+  ]
+}

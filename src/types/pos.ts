@@ -182,6 +182,8 @@ export interface TipoDescuentoRequest {
 }
 
 export interface VentaRequest {
+  formulaBase64?: string;
+  reservaId?: number;
   totalEsperado?:number;
   sucursalId: number;
   cajaSesionId: number;
