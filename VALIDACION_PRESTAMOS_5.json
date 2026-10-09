@@ -1,0 +1,28 @@
+{
+  "entrega": "prestamos-5",
+  "fecha": "2026-10-09",
+  "backend": {
+    "pruebas": 103,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "integracion_prestamos": 15,
+    "calculo_financiero": 5,
+    "integracion_servicios": 13,
+    "integracion_restaurante": 13
+  },
+  "frontend": "TypeScript/Vite aprobado",
+  "sql": "repetición, prerrequisito, desglose, capital pagado y claves aprobados",
+  "pdf": "comprobante y estado de cuenta renderizados para revisión visual",
+  "no_verificado": [
+    "Render",
+    "navegador completo",
+    "copia de neondb"
+  ],
+  "limites": [
+    "Tasas nominales, sin tasa legal automática",
+    "Cancelación anticipada total; abonos a cuotas sin reamortización automática",
+    "Registro bancario manual",
+    "Reversiones y cobranza: parte 6"
+  ]
+}
