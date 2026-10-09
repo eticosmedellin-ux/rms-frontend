@@ -23,6 +23,8 @@ export interface Producto {
   marca: string | null;
   precioCompra: number;
   precioVenta: number;
+  impuestoTipo?:string;
+  impuestoTarifa?:number;
   costoPromedio: number;
   manejaInventario: boolean;
   estado: boolean;
@@ -34,6 +36,8 @@ export interface Combo {
   codigo: string;
   nombre: string;
   precioVenta: number;
+  impuestoTipo?:string;
+  impuestoTarifa?:number;
   estado: boolean;
   imagen: string | null;
   items: { productoId: number | null; productoNombre: string | null; tipoServicioId: number | null; tipoServicioNombre: string | null; cantidad: number }[];
@@ -43,6 +47,8 @@ export interface ComboRequest {
   codigo: string;
   nombre: string;
   precioVenta: number;
+  impuestoTipo?:string;
+  impuestoTarifa?:number;
   imagen?: string | null;
   items: { productoId?: number; tipoServicioId?: number; cantidad: number }[];
 }
@@ -57,6 +63,8 @@ export interface ProductoRequest {
   unidadMedida: string;
   precioCompra: number;
   precioVenta: number;
+  impuestoTipo?:string;
+  impuestoTarifa?:number;
   manejaInventario: boolean;
 }
 

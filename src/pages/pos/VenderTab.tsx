@@ -1,3 +1,4 @@
+import {useCalculoVenta} from '@/features/sicom/useCalculoVenta';
 import {useAuthStore} from '@/stores/authStore';
 import {useSicom,permitido} from '@/features/sicom/api';
 import {useCrearCliente} from '@/hooks/usePos';
@@ -216,24 +217,15 @@ export function VenderTab() {
     );
   }, [itemsVendibles, busqueda]);
 
-  const subtotal = carrito.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0);
-
-  const descuentoLineasTotal = useMemo(
-    () => (modoDescuento === 'LINEA' ? carrito.reduce((acc, l) => acc + calcularDescuentoLinea(l, catalogo), 0) : 0),
-    [carrito, modoDescuento, catalogo]
-  );
-
-  const descuentoFacturaMonto = useMemo(() => {
-    if (modoDescuento !== 'FACTURA' || !tipoDescuentoFacturaId) return 0;
-    const td = catalogo.find((c) => c.id === tipoDescuentoFacturaId);
-    if (!td) return 0;
-    const monto = td.tipo === 'PORCENTAJE' ? (subtotal * td.valor) / 100 : td.valor;
-    return Math.min(monto, subtotal);
-  }, [modoDescuento, tipoDescuentoFacturaId, catalogo, subtotal]);
-
-  const descuentoTotal = modoDescuento === 'LINEA' ? descuentoLineasTotal : descuentoFacturaMonto;
   const valorCanje=sicom?.fidelizacion_activa && clienteId && modoDescuento==='NINGUNO'?puntosCanje*Number(sicom.valor_punto):0;
-  const total = subtotal - descuentoTotal - valorCanje;
+  const calculo=useCalculoVenta({
+    detalles:carrito.map(l=>({productoId:l.tipo==='PRODUCTO'?l.itemId:null,comboId:l.tipo==='COMBO'?l.itemId:null,cantidad:l.cantidad,precioUnitario:l.precioUnitario,tipoDescuentoId:modoDescuento==='LINEA'?l.tipoDescuentoId:null})),
+    tipoDescuentoFacturaId:modoDescuento==='FACTURA'?tipoDescuentoFacturaId:null,
+    clienteId:clienteId?Number(clienteId):null,puntosCanjear:valorCanje>0?puntosCanje:0
+  },!!sicom);
+  const subtotal=calculo.data?.subtotal??0;
+  const descuentoTotal=calculo.data?.descuento??0;
+  const total=calculo.data?.total??0;
 
   const totalPagos = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
   const totalNoEfectivo = pagos
@@ -311,6 +303,7 @@ export function VenderTab() {
     setVentaExitosa(null);
     if (!caja || carrito.length === 0 || !sucursalId || registrarVenta.isPending) return;
     if (!permitido(sicom,'VENDER')) {setError('El administrador no ha habilitado la venta');return;}
+    if(!calculo.data||calculo.isFetching||calculo.isError){setError('Espera a que termine el cálculo de la venta');return;}
     if(total<=0){setError('La venta debe tener un total positivo');return;}
 
     if (empresa?.confirmarAntesDeVenta) {
@@ -348,6 +341,7 @@ export function VenderTab() {
         pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
         tipoDescuentoFacturaId: modoDescuento === 'FACTURA' ? tipoDescuentoFacturaId : undefined,
         facturar: facturarVenta,
+        totalEsperado:total,
         puntosCanjear: valorCanje>0?puntosCanje:0,
       };
       const firma=JSON.stringify(payload);
@@ -493,7 +487,7 @@ export function VenderTab() {
         )}
 
         <div className="max-h-64 space-y-3 overflow-y-auto">
-          {carrito.map((l) => (
+          {carrito.map((l,indice) => (
             <div key={`${l.tipo}-${l.itemId}`} className="space-y-1.5">
               <div className="flex items-center gap-2 text-sm">
                 <div className="flex-1">
@@ -502,6 +496,7 @@ export function VenderTab() {
                     {l.tipo === 'COMBO' && <span className="ml-1 text-[10px] text-violet-600">(combo)</span>}
                   </p>
                   <p className="text-xs text-ink-400">
+                    {calculo.data?.detalles[indice]&&calculo.data.modoImpuesto!=='DESACTIVADO'&&<span className="block">{calculo.data.detalles[indice].tipo} {calculo.data.detalles[indice].tarifa}% · Impuesto ${calculo.data.detalles[indice].impuesto.toLocaleString('es-CO')}</span>}
                     ${l.precioUnitario.toLocaleString('es-CO')} c/u
                     {permitido(sicom,'MODIFICAR_PRECIO')&&<span className="block mt-1">Precio autorizado<input aria-label={`Precio de ${l.nombre}`} type="number" min="0.01" step="0.01" className="input w-28" value={l.precioUnitario} onChange={e=>setCarrito(prev=>prev.map(x=>x.tipo===l.tipo&&x.itemId===l.itemId?{...x,precioUnitario:Number(e.target.value)}:x))}/></span>}
                     {l.tipo === 'PRODUCTO' &&
@@ -524,7 +519,7 @@ export function VenderTab() {
                   className="w-16 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
                 />
                 <span className="w-20 text-right font-medium text-ink-700">
-                  ${(l.cantidad * l.precioUnitario - calcularDescuentoLinea(l, catalogo)).toLocaleString('es-CO')}
+                  ${(calculo.data?.detalles[indice]?.total??0).toLocaleString('es-CO')}
                 </span>
                 <button onClick={() => quitarLinea(l.tipo, l.itemId)} className="text-ink-300 hover:text-danger-500">
                   <Trash2 size={16} />
@@ -596,6 +591,8 @@ export function VenderTab() {
               </p>
             )}
 
+          {calculo.isFetching&&<p role="status" className="text-sm">Calculando total…</p>}
+          {calculo.isError&&<p role="alert" className="text-sm text-danger-600">{getApiErrorMessage(calculo.error,'No se pudo calcular la venta')}</p>}
           <div className="space-y-1 text-sm">
             <div className="flex items-center justify-between text-ink-500">
               <span>Subtotal</span>
@@ -607,6 +604,7 @@ export function VenderTab() {
                 <span>-${descuentoTotal.toLocaleString('es-CO')}</span>
               </div>
             )}
+            {calculo.data&&calculo.data.modoImpuesto!=='DESACTIVADO'&&<><div className="flex justify-between"><span>Base neta</span><span>${calculo.data.baseImponible.toLocaleString('es-CO')}</span></div><div className="flex justify-between"><span>Impuestos {calculo.data.modoImpuesto==='INCLUIDO'?'incluidos':'adicionales'}</span><span>${calculo.data.impuestos.toLocaleString('es-CO')}</span></div></>}
             <div className="flex items-center justify-between text-base font-semibold text-ink-800">
               <span>Total</span>
               <span>${total.toLocaleString('es-CO')}</span>

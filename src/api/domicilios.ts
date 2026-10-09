@@ -45,6 +45,7 @@ export interface DomicilioRequest {
 }
 
 export interface ConfirmarEntregaRequest {
+  totalEsperado?:number;
   cajaSesionId: number;
   pagos: { metodoPago: string; monto: number }[];
   tipoDescuentoFacturaId?: number;

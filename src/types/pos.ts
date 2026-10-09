@@ -123,6 +123,10 @@ export interface VentaDetalleResponse {
   descuentoLinea: number;
   tipoDescuentoNombre: string | null;
   subtotalLinea: number;
+  impuestoTipo?:string|null;
+  impuestoTarifa?:number|null;
+  baseImponible?:number|null;
+  impuestoMonto?:number|null;
 }
 
 export interface PaginaResponse<T> {
@@ -145,6 +149,8 @@ export interface Venta {
   descuentoPorcentaje: number | null;
   tipoDescuentoNombre: string | null;
   impuestos: number;
+  baseImponible?:number|null;
+  modoImpuesto?:string|null;
   total: number;
   cambio: number;
   facturar: boolean;
@@ -176,6 +182,7 @@ export interface TipoDescuentoRequest {
 }
 
 export interface VentaRequest {
+  totalEsperado?:number;
   sucursalId: number;
   cajaSesionId: number;
   clienteId?: number | null;
@@ -276,6 +283,7 @@ export interface CotizacionRequest {
 }
 
 export interface ConvertirCotizacionRequest {
+  totalEsperado?:number;
   cajaSesionId: number;
   pagos: { metodoPago: MetodoPagoVenta; monto: number }[];
 }

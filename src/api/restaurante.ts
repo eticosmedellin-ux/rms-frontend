@@ -53,6 +53,7 @@ export interface Comanda {
 }
 
 export interface CerrarComandaRequest {
+  totalEsperado?:number;
   cajaSesionId: number;
   clienteId?: number;
   pagos: { metodoPago: string; monto: number }[];

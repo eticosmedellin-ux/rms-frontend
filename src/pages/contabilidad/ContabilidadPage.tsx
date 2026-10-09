@@ -683,6 +683,7 @@ const ETIQUETAS_CONCEPTO: Record<string, string> = {
   VENTAS: 'Ingresos por ventas',
   COSTO_VENTAS: 'Costo de ventas',
   IVA_VENTAS: 'IVA generado en ventas',
+  INC_VENTAS: 'Impuesto al consumo generado en ventas',
   IVA_COMPRAS: 'IVA descontable en compras',
   COMPRAS: 'Compras de mercancía',
   GASTOS_GENERALES: 'Gastos generales',
@@ -712,6 +713,7 @@ function MapeoContableTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-ink-50">
+            {mapeo&&!mapeo.some(m=>m.concepto==='INC_VENTAS')&&<tr><td className="px-4 py-3">Impuesto al consumo generado en ventas</td><td className="px-4 py-3"><select aria-label="Cuenta del impuesto al consumo" className="input" defaultValue="" onChange={e=>{if(e.target.value)actualizar.mutate({concepto:'INC_VENTAS',cuentaContableId:Number(e.target.value)});}}><option value="">Seleccionar cuenta…</option>{cuentasQuePermiten.map(c=><option key={c.id} value={c.id}>{c.codigo} — {c.nombre}</option>)}</select></td></tr>}
             {mapeo?.map((m) => (
               <tr key={m.concepto} className="hover:bg-ink-50/60">
                 <td className="px-4 py-3 text-ink-700">{ETIQUETAS_CONCEPTO[m.concepto] ?? m.concepto}</td>

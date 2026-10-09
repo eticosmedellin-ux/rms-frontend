@@ -1,3 +1,4 @@
+import {useCalculoVenta,agruparLineas} from '@/features/sicom/useCalculoVenta';
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, X, Receipt, Ban, ArrowRightLeft, Merge, UserCog, Package2, ImageOff } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -50,7 +51,7 @@ interface LineaPago {
 }
 
 function formatoMoneda(v: number) {
-  return v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  return v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClose: () => void; mesa: Mesa | null }) {
@@ -92,29 +93,12 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
     }
   }, [isOpen, mesa]);
 
-  useEffect(() => {
-    if (vista === 'cierre' && comanda) {
-      const descuento = tiposDescuento?.find((t) => String(t.id) === tipoDescuentoFacturaId);
-      const monto = descuento
-        ? descuento.tipo === 'PORCENTAJE'
-          ? (comanda.total * descuento.valor) / 100
-          : descuento.valor
-        : 0;
-      setPagos([{ metodoPago: 'EFECTIVO', monto: String(Math.max(0, comanda.total - monto)) }]);
-    }
-  }, [vista, comanda, tipoDescuentoFacturaId]);
-
-  if (!mesa) return null;
-
-  const totalPagos = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
-  const descuentoSeleccionado = tiposDescuento?.find((t) => String(t.id) === tipoDescuentoFacturaId);
-  const montoDescuento =
-    comanda && descuentoSeleccionado
-      ? descuentoSeleccionado.tipo === 'PORCENTAJE'
-        ? (comanda.total * descuentoSeleccionado.valor) / 100
-        : descuentoSeleccionado.valor
-      : 0;
-  const totalConDescuento = comanda ? Math.max(0, comanda.total - montoDescuento) : 0;
+  const calculo=useCalculoVenta({detalles:agruparLineas((comanda?.items??[]).filter(i=>i.estado!=='CANCELADO').map(i=>({productoId:i.productoId,comboId:i.comboId,cantidad:i.cantidad,precioUnitario:i.precioUnitario}))),tipoDescuentoFacturaId:tipoDescuentoFacturaId?Number(tipoDescuentoFacturaId):null},isOpen&&vista==='cierre','restaurante');
+  useEffect(()=>{if(vista==='cierre'&&calculo.data)setPagos([{metodoPago:'EFECTIVO',monto:String(calculo.data.total)}]);},[vista,calculo.data]);
+  if(!mesa)return null;
+  const totalPagos=pagos.reduce((acc,p)=>acc+(Number(p.monto)||0),0);
+  const montoDescuento=calculo.data?.descuento??0;
+  const totalConDescuento=calculo.data?.total??0;
   const diferenciaPago = comanda ? Math.round((totalPagos - totalConDescuento) * 100) / 100 : 0;
 
   function actualizarLineaPago(i: number, campo: keyof LineaPago, valor: string) {
@@ -154,6 +138,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
   async function handleCerrarCuenta() {
     setError(null);
     if (!comanda) return;
+    if(!calculo.data||calculo.isFetching||calculo.isError){setError(getApiErrorMessage(calculo.error,'Espera el cálculo del cobro'));return;}
     if (!cajaAbierta) {
       setError('No hay una caja abierta en esta sucursal — ábrela primero desde el POS');
       return;
@@ -167,6 +152,7 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
         comandaId: comanda.id,
         data: {
           cajaSesionId: cajaAbierta.id,
+          totalEsperado:calculo.data.total,
           pagos: pagos.map((p) => ({ metodoPago: p.metodoPago, monto: Number(p.monto) || 0 })),
           propina: propina ? Number(propina) : undefined,
           tipoDescuentoFacturaId: tipoDescuentoFacturaId ? Number(tipoDescuentoFacturaId) : undefined,
@@ -233,10 +219,11 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
           <LoadingState />
         ) : vista === 'cierre' ? (
           <div className="space-y-4">
+            {calculo.isError&&<p role="alert" className="text-danger-600">{getApiErrorMessage(calculo.error,'No se pudo calcular el cobro')}</p>}
             <div className="rounded-lg bg-ink-50 p-3 text-sm">
               <div className="flex justify-between text-ink-500">
                 <span>Subtotal</span>
-                <span>{formatoMoneda(comanda.total)}</span>
+                <span>{formatoMoneda(calculo.data?.subtotal??comanda.total)}</span>
               </div>
               {montoDescuento > 0 && (
                 <div className="flex justify-between text-success-600">
@@ -244,8 +231,9 @@ export function ComandaModal({ isOpen, onClose, mesa }: { isOpen: boolean; onClo
                   <span>- {formatoMoneda(montoDescuento)}</span>
                 </div>
               )}
+              {calculo.data&&calculo.data.modoImpuesto!=='DESACTIVADO'&&<div className="flex justify-between"><span>Impuestos {calculo.data.modoImpuesto==='INCLUIDO'?'incluidos':'adicionales'}</span><span>{formatoMoneda(calculo.data.impuestos)}</span></div>}
               <div className="mt-1 flex justify-between border-t border-ink-200 pt-1 font-semibold text-ink-800">
-                <span>Total a cobrar</span>
+                <span>Total a cobrar {calculo.isFetching?'(calculando…)':''}</span>
                 <span>{formatoMoneda(totalConDescuento)}</span>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import {useCalculoVenta,agruparLineas} from '@/features/sicom/useCalculoVenta';
 import { useEffect, useState } from 'react';
 import { Loader2, Ban, Truck } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -30,7 +31,7 @@ const ESTADO_LABELS: Record<EstadoDomicilio, string> = {
 };
 
 function formatoMoneda(v: number) {
-  return v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  return v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function DomicilioDetalleModal({
@@ -61,11 +62,13 @@ export function DomicilioDetalleModal({
     }
   }, [isOpen, domicilioId]);
 
+  const calculo=useCalculoVenta({detalles:agruparLineas((domicilio?.items??[]).map(i=>({productoId:i.productoId,comboId:i.comboId,cantidad:i.cantidad,precioUnitario:i.precioUnitario})))},isOpen&&mostrarEntrega,'domicilios');
   if (!isOpen) return null;
 
   async function handleConfirmarEntrega() {
     setError(null);
     if (!domicilio) return;
+    if(!calculo.data||calculo.isFetching||calculo.isError){setError(getApiErrorMessage(calculo.error,"Espera el cálculo del pedido"));return;}
     if (!cajaAbierta) {
       setError('No hay una caja abierta en esta sucursal — ábrela primero desde el POS');
       return;
@@ -73,7 +76,7 @@ export function DomicilioDetalleModal({
     try {
       await confirmarEntrega.mutateAsync({
         id: domicilio.id,
-        data: { cajaSesionId: cajaAbierta.id, pagos: [{ metodoPago, monto: domicilio.total }] },
+        data: { cajaSesionId: cajaAbierta.id, totalEsperado:calculo.data.total, pagos: [{ metodoPago, monto: calculo.data.total }] },
       });
       onClose();
     } catch (err) {
@@ -88,8 +91,11 @@ export function DomicilioDetalleModal({
       ) : mostrarEntrega ? (
         <div className="space-y-4">
           <p className="text-sm text-ink-600">
-            Total a cobrar: <span className="font-semibold text-ink-800">{formatoMoneda(domicilio.total)}</span>
+            Total a cobrar: <span className="font-semibold text-ink-800">{calculo.isFetching?"Calculando…":formatoMoneda(calculo.data?.total??0)}</span>
           </p>
+        {calculo.isFetching&&<p role="status">Calculando…</p>}
+        {calculo.isError&&<p role="alert" className="text-danger-600">{getApiErrorMessage(calculo.error,'No se pudo calcular el cobro')}</p>}
+        {calculo.data&&calculo.data.modoImpuesto!=='DESACTIVADO'&&<p className="text-sm">Base neta: ${calculo.data.baseImponible.toLocaleString('es-CO')} · Impuestos: ${calculo.data.impuestos.toLocaleString('es-CO')}</p>}
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-ink-600">Método de pago</span>
             <select className="input" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as MetodoPagoVenta)}>

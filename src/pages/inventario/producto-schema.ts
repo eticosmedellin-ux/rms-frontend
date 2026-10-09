@@ -10,6 +10,8 @@ export const productoSchema = z.object({
   marcaId: z.string().optional(),
   precioCompra: z.coerce.number().min(0, 'No puede ser negativo'),
   precioVenta: z.coerce.number().min(0, 'No puede ser negativo'),
+  impuestoTipo:z.string().optional(),
+  impuestoTarifa:z.coerce.number().min(0).max(100).optional(),
   esServicio: z.boolean().optional(),
 });
 

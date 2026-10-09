@@ -1,3 +1,4 @@
+import {useCalculoVenta,agruparLineas} from '@/features/sicom/useCalculoVenta';
 import { useState } from 'react';
 import { Plus, ArrowRightCircle, Loader2, FileText } from 'lucide-react';
 import { useCotizaciones, useCrearCotizacion, useConvertirCotizacion } from '@/hooks/usePos';
@@ -196,13 +197,14 @@ function ConvertirCotizacionModal({
   const [metodoPago, setMetodoPago] = useState<MetodoPagoVenta>('EFECTIVO');
   const [error, setError] = useState<string | null>(null);
 
+  const calculo=useCalculoVenta({detalles:agruparLineas((cotizacion?.detalles??[]).map(d=>({productoId:d.productoId,cantidad:d.cantidad,precioUnitario:d.precioUnitario})))},isOpen);
   if (!cotizacion) return null;
-
-  const total = cotizacion.detalles.reduce((acc, d) => acc + d.cantidad * d.precioUnitario, 0);
+  const total=calculo.data?.total??0;
 
   async function handleSubmit() {
     setError(null);
     if (!cotizacion) return;
+    if(!calculo.data||calculo.isFetching||calculo.isError){setError(getApiErrorMessage(calculo.error,"Espera el cálculo de la venta"));return;}
     if (!caja) {
       setError('No hay una caja abierta en la sucursal seleccionada del POS');
       return;
@@ -211,7 +213,7 @@ function ConvertirCotizacionModal({
     try {
       await convertir.mutateAsync({
         id: cotizacion.id,
-        data: { cajaSesionId: caja.id, pagos: [{ metodoPago, monto: total }] },
+        data: { cajaSesionId: caja.id, totalEsperado:total, pagos: [{ metodoPago, monto: total }] },
       });
       onClose();
     } catch (err) {
@@ -226,6 +228,9 @@ function ConvertirCotizacionModal({
           Total: <span className="font-semibold text-ink-800">${total.toLocaleString('es-CO')}</span>
         </p>
 
+        {calculo.isFetching&&<p role="status">Calculando…</p>}
+        {calculo.isError&&<p role="alert" className="text-danger-600">{getApiErrorMessage(calculo.error,'No se pudo calcular el cobro')}</p>}
+        {calculo.data&&calculo.data.modoImpuesto!=='DESACTIVADO'&&<p className="text-sm">Base neta: ${calculo.data.baseImponible.toLocaleString('es-CO')} · Impuestos: ${calculo.data.impuestos.toLocaleString('es-CO')}</p>}
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-ink-700">Método de pago</span>
           <select className="input" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as MetodoPagoVenta)}>

@@ -1,0 +1,14 @@
+{
+  "bloque": "impuestos-pdf-compras",
+  "base": "V2",
+  "publicacion": "produccion_directa_por_solicitud",
+  "java_tests": 32,
+  "failures": 0,
+  "errors": 0,
+  "frontend": "TypeScript y Vite compilados",
+  "sql": "migracion aplicada repetidamente en PGlite; configuracion por empresa conservada",
+  "pdf": "renderizado y revisado; paginado; autentica y verifica empresa",
+  "native_production_test": false,
+  "electronica_dian_validada": false,
+  "impuestos_activos_por_defecto": false
+}

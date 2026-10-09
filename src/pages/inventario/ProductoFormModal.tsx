@@ -46,6 +46,8 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
           precioCompra: productoEditando.precioCompra,
           precioVenta: productoEditando.precioVenta,
           esServicio: !productoEditando.manejaInventario,
+          impuestoTipo:productoEditando.impuestoTipo??"SIN_CONFIGURAR",
+          impuestoTarifa:productoEditando.impuestoTarifa??0,
         }
       : {
           codigoInterno: '',
@@ -58,6 +60,8 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
           precioCompra: 0,
           precioVenta: 0,
           esServicio: false,
+          impuestoTipo:"SIN_CONFIGURAR",
+          impuestoTarifa:0,
         },
   });
 
@@ -76,6 +80,8 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
       precioCompra: values.precioCompra,
       precioVenta: values.precioVenta,
       manejaInventario: !values.esServicio,
+      impuestoTipo:values.impuestoTipo,
+      impuestoTarifa:["IVA","INC"].includes(values.impuestoTipo??"")?values.impuestoTarifa??0:0,
     };
 
     try {
@@ -176,6 +182,7 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
           </Field>
         </div>
 
+        <div className="grid grid-cols-2 gap-4"><Field label="Tratamiento del impuesto"><select className="input" {...register('impuestoTipo')}>{(['SIN_CONFIGURAR','IVA','INC','EXENTO','EXCLUIDO','NO_APLICA'] as const).map(t=><option key={t} value={t}>{{SIN_CONFIGURAR:"Sin configurar",IVA:"IVA",INC:"Impuesto al consumo (INC)",EXENTO:"Exento",EXCLUIDO:"Excluido",NO_APLICA:"No aplica"}[t]}</option>)}</select></Field><Field label="Tarifa (%)" error={errors.impuestoTarifa?.message}><input type="number" min="0" max="100" step="0.01" className="input" disabled={!['IVA','INC'].includes(watch('impuestoTipo')??'')} {...register('impuestoTarifa')}/></Field></div>
         {serverError && (
           <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{serverError}</div>
         )}

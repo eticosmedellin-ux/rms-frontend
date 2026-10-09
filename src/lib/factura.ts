@@ -259,6 +259,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
           ? `<tr><td class="label">Descuento${venta.descuentoPorcentaje ? ` (${venta.descuentoPorcentaje}%)` : ''}${venta.tipoDescuentoNombre ? ` — ${escapeHtml(venta.tipoDescuentoNombre)}` : ''}</td><td class="valor">-${formatearMoneda(venta.descuento)}</td></tr>`
           : ''
       }
+      ${venta.baseImponible!=null&&venta.modoImpuesto!=='DESACTIVADO'?`<tr><td class="label">Base neta</td><td class="valor">${formatearMoneda(venta.baseImponible)}</td></tr><tr><td class="label">Impuestos ${venta.modoImpuesto==='INCLUIDO'?'incluidos':'adicionales'}</td><td class="valor">${formatearMoneda(venta.impuestos)}</td></tr>`:''}
       <tr class="total"><td>Total</td><td class="valor">${formatearMoneda(venta.total)}</td></tr>
       ${venta.cambio > 0 ? `<tr class="cambio"><td>Cambio</td><td class="valor">${formatearMoneda(venta.cambio)}</td></tr>` : ''}
     </table>
@@ -295,7 +296,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
 }
 
 function formatearMoneda(valor: number): string {
-  return `$${valor.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`;
+  return `$${valor.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatearNumero(valor: number): string {
