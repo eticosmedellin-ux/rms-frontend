@@ -1,0 +1,65 @@
+{
+  "entrega": "contabilidad-5",
+  "fecha": "2026-10-10",
+  "backend": {
+    "pruebas": 178,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "base": "PostgreSQL PGlite 18.3 aislado",
+    "migracion": "Aplicada dos veces sin error",
+    "verificado": [
+      "Resumen contable por tipo de cuenta y resultado",
+      "Conciliación bancaria idempotente y auditoría",
+      "Importe distinto rechazado sin guardar conciliación",
+      "Cierre rechazado con bancos pendientes y ruta antigua bloqueada",
+      "Mes en curso no puede cerrarse",
+      "Permisos de lectura no conceden cierre ni conciliación",
+      "Período ajeno rechazado",
+      "Trigger de base de datos bloquea modificar líneas de período cerrado",
+      "Diferencia de caja exige revisión y conserva importe",
+      "Desembolso previo sin contabilidad aparece pendiente",
+      "Vínculo de asiento no duplica dinero",
+      "Anular el asiento devuelve el documento a pendientes y permite vincular su corrección",
+      "Pruebas anteriores conservadas"
+    ]
+  },
+  "frontend": {
+    "typescript": "aprobado",
+    "vite": "compilación de producción aprobada",
+    "interaccion": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM, API simulada",
+      "comprobaciones": [
+        "Mes completo y filtro por empresa",
+        "Separadores y centavos",
+        "Resumen explicado",
+        "Vínculo explícito de asiento",
+        "Importe externo no rellenado automáticamente",
+        "Conciliación con datos introducidos",
+        "CSV de sección consultada",
+        "Cierre bloqueado con pendientes",
+        "Permisos de lectura separados de acciones",
+        "Sin permiso no solicita información financiera"
+      ],
+      "erroresReact": []
+    }
+  },
+  "pendientes_entorno": [
+    "Windows: scripts PS1 no ejecutados aquí",
+    "SQL en neondb de producción",
+    "Despliegue y comprobación en Render",
+    "Inspección gráfica en navegador real"
+  ],
+  "limites": [
+    "Revisión mensual para toda la empresa",
+    "Pendientes cubre fuentes enumeradas en guía; no todos los eventos especializados o históricos importados",
+    "Conciliación manual por línea de la cuenta actualmente mapeada a BANCOS; sin conexión, importación o comparación automática de saldo externo",
+    "Revisión de diferencia no ajusta efectivo ni genera asiento",
+    "Vínculo exige revisión contable humana de importe y cuentas",
+    "Protección de períodos en asientos/líneas y ventas/gastos; no todas las tablas operativas tienen un bloqueo propio",
+    "CSV compatible con Excel, no XLSX",
+    "Historial muestra las últimas 500 acciones de la empresa",
+    "Flujo guiado para empresa propia; contadores externos conservan lectura anterior"
+  ]
+}

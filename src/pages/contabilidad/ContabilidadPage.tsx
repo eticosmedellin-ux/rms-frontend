@@ -1,9 +1,10 @@
+import RevisionCierre from './RevisionCierre';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Plus, ShieldCheck, ShieldAlert, Lock, Unlock, XCircle } from 'lucide-react';
+import { Plus, ShieldCheck, ShieldAlert, Lock, XCircle } from 'lucide-react';
 import {
   useContabilidadActiva, useActivarContabilidad, useCuentasContables, useLibroDiario, useCrearAsientoManual,
   useAnularAsiento, useLibroMayor, useBalanceDePrueba, useEstadoDeResultados, useBalanceGeneral,
-  usePeriodosContables, useCerrarPeriodoContable, useReabrirPeriodoContable, useMapeoContable, useActualizarMapeoContable,
+  usePeriodosContables, useMapeoContable, useActualizarMapeoContable,
 } from '@/hooks/useContabilidad';
 import { useAccesosContables, useOtorgarAccesoContable, useRevocarAccesoContable } from '@/hooks/useAccesoContable';
 import { LoadingState, EmptyState } from '@/components/ui/States';
@@ -25,6 +26,7 @@ function nombreMes(mes: number) {
 }
 
 const TABS = [
+  { id: 'revision', label: 'Revisión y cierre' },
   { id: 'diario', label: 'Libro Diario' },
   { id: 'cuentas', label: 'Plan de Cuentas' },
   { id: 'mayor', label: 'Libro Mayor' },
@@ -40,7 +42,8 @@ export default function ContabilidadPage() {
   const { data: activa, isLoading: cargandoActiva } = useContabilidadActiva();
   const activar = useActivarContabilidad();
   const [errorActivar, setErrorActivar] = useState<string | null>(null);
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('diario');
+  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('revision');
+  const [mesRevision,setMesRevision]=useState<string>();
   const [desde, setDesde] = useState(primerDiaDelMes());
   const [hasta, setHasta] = useState(hoy());
 
@@ -122,13 +125,14 @@ export default function ContabilidadPage() {
       )}
 
       <div className="mt-6">
+        {tab === 'revision' && <RevisionCierre initialMes={mesRevision} />}
         {tab === 'diario' && <LibroDiarioTab desde={desde} hasta={hasta} />}
         {tab === 'cuentas' && <PlanDeCuentasTab />}
         {tab === 'mayor' && <LibroMayorTab />}
         {tab === 'balance-prueba' && <BalanceDePruebaTab />}
         {tab === 'resultados' && <EstadoResultadosTab desde={desde} hasta={hasta} />}
         {tab === 'balance-general' && <BalanceGeneralTab />}
-        {tab === 'periodos' && <PeriodosTab />}
+        {tab === 'periodos' && <PeriodosTab onRevisar={(anio,mes)=>{setMesRevision(`${anio}-${String(mes).padStart(2,'0')}`);setTab('revision');}} />}
         {tab === 'mapeo' && <MapeoContableTab />}
         {tab === 'accesos-contables' && <AccesosContablesTab />}
       </div>
@@ -610,10 +614,8 @@ function KpiCard({ label, value, tone }: { label: string; value: string; tone?: 
   );
 }
 
-function PeriodosTab() {
+function PeriodosTab({onRevisar}:{onRevisar:(anio:number,mes:number)=>void}) {
   const { data: periodos, isLoading } = usePeriodosContables();
-  const cerrar = useCerrarPeriodoContable();
-  const reabrir = useReabrirPeriodoContable();
 
   if (isLoading) return <LoadingState />;
   if (!periodos || periodos.length === 0) return <EmptyState title="Sin períodos todavía" />;
@@ -648,23 +650,7 @@ function PeriodosTab() {
                 {p.fechaCierre ? new Date(p.fechaCierre).toLocaleString('es-CO') : '—'}
               </td>
               <td className="px-4 py-3 text-right">
-                {p.estado === 'ABIERTO' ? (
-                  <button
-                    onClick={() => cerrar.mutate(p.id)}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-800"
-                  >
-                    <Lock size={13} />
-                    Cerrar período
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => reabrir.mutate(p.id)}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700"
-                  >
-                    <Unlock size={13} />
-                    Reabrir
-                  </button>
-                )}
+                <button onClick={()=>onRevisar(p.anio,p.mes)} className="inline-flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-800"><Lock size={13}/>Revisar cierre o reapertura</button>
               </td>
             </tr>
           ))}
