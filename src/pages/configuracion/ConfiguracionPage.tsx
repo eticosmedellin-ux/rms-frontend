@@ -1,3 +1,4 @@
+import AccesoEmpresaConfig from '@/features/sicom/AccesoEmpresaConfig';
 import ConfiguracionSicom from '@/features/sicom/ConfiguracionSicom';
 import { useState, useEffect, type ChangeEvent } from 'react';
 import { Plus, Loader2, FileSignature, Printer } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function ConfiguracionPage() {
       <p className="mt-1 text-sm text-ink-400">Datos de tu empresa, métodos de pago e impuestos.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <AccesoEmpresaConfig />
         <ConfiguracionSicom />
         <MiEmpresaCard />
         <MetodosPagoCard />

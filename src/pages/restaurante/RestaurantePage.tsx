@@ -1,3 +1,4 @@
+import {usePermisosOperacion} from '@/hooks/usePermisosOperacion';
 import {useQueryClient} from '@tanstack/react-query';
 import {apiClient} from '@/api/client';
 import {OperacionRestaurante} from '@/features/restaurante/OperacionRestaurante';
@@ -54,7 +55,9 @@ function formatoMoneda(v: number) {
   return v.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 }
 
-export default function RestaurantePage() {
+export default function RestaurantePage(){const p=usePermisosOperacion('RESTAURANTE');return p.consultar?<RestauranteContenido/>:<p>Tu administrador debe habilitar la consulta de restaurante y su alcance en tu rol.</p>;}
+function RestauranteContenido() {
+ const permisos=usePermisosOperacion('RESTAURANTE');
   const { data: mesas, isLoading } = useMesas();
   const cambiarEstadoMesa = useCambiarEstadoMesa();
   const [formAbierto, setFormAbierto] = useState(false);
@@ -118,8 +121,8 @@ export default function RestaurantePage() {
         </div>
       </div>
 
-      <PedidosCapturados/>
-      <CatalogoOperacion/>
+      {permisos.operar&&<PedidosCapturados/>}
+      {permisos.administrar&&permisos.empresa&&<CatalogoOperacion/>}
       <div className="mt-4 flex flex-wrap gap-1 border-b border-ink-100">
         <button className="border-b-2 px-4 py-2 text-sm font-medium" onClick={()=>setVista('operacion')}>Operación y liquidaciones</button>
         <button
@@ -148,7 +151,7 @@ export default function RestaurantePage() {
           <CalendarPlus size={14} />
           Reservas
         </button>
-        <button
+        {permisos.empresa&&<button
           onClick={() => setVista('menu')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'menu' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
@@ -156,8 +159,8 @@ export default function RestaurantePage() {
         >
           <QrCode size={14} />
           Menú digital
-        </button>
-        <button
+        </button>}
+        {permisos.reportes&&<button
           onClick={() => setVista('analitica')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'analitica' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
@@ -165,7 +168,7 @@ export default function RestaurantePage() {
         >
           <BarChart3 size={14} />
           Analítica
-        </button>
+        </button>}
         <button
           onClick={() => setVista('historial')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${

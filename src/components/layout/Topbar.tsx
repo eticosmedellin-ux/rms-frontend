@@ -1,16 +1,17 @@
+import {useQueryClient} from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Menu } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
-  const navigate = useNavigate();
+  const navigate = useNavigate();const qc=useQueryClient();
   const nombreCompleto = useAuthStore((state) => state.nombreCompleto);
   const nombreEmpresa = useAuthStore((state) => state.nombreEmpresa);
   const roles = useAuthStore((state) => state.roles);
   const logout = useAuthStore((state) => state.logout);
 
   function handleLogout() {
-    logout();
+    qc.clear();logout();
     navigate('/login', { replace: true });
   }
 
@@ -33,7 +34,7 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
           className="flex items-center gap-1.5 rounded-lg border border-ink-100 px-2.5 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:border-danger-500 hover:text-danger-500 sm:px-3"
         >
           <LogOut size={16} />
-          <span className="hidden sm:inline">Salir</span>
+          <span className="hidden sm:inline">Cambiar perfil / salir</span>
         </button>
       </div>
     </header>

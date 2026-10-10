@@ -1,0 +1,42 @@
+{
+  "entrega": "acceso-1",
+  "fecha": "2026-10-10",
+  "backend": {
+    "pruebas": 138,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "base": "PostgreSQL PGlite 18.3 aislado",
+    "casos_nuevos": [
+      "Credenciales de administrador inicializan la cuenta de empresa",
+      "Contraseña personal validada al entrar al perfil",
+      "Perfil de otra empresa rechazado",
+      "Perfiles requieren sesión válida",
+      "Token guardado solo como SHA256",
+      "Cierre y cambio de contraseña invalidan sesión recordada",
+      "Bloqueo después de cinco intentos",
+      "Propiedad del contrato y sucursal asignada",
+      "Empresa no concede configuración",
+      "Filtrado de listas y eliminación de costos anidados",
+      "Cuenta y abonos usan el alcance de la comanda"
+    ],
+    "migracion": "Aplicada dos veces sin error en las pruebas de integración"
+  },
+  "frontend": {
+    "typescript": "aprobado",
+    "vite": "compilación de producción aprobada",
+    "navegador_real": "No ejecutado en esta sesión"
+  },
+  "produccion": {
+    "windows_powershell": "No ejecutado en el equipo del usuario",
+    "render": "No verificado",
+    "neondb": "No modificado"
+  },
+  "alcance": "Acceso por empresa y perfiles; permisos finos con restricciones de consulta, escritura y datos sensibles en Restaurante, Servicios y Préstamos",
+  "restricciones": [
+    "Los agregados globales requieren Ver empresa; no se ofrecen como reportes parciales",
+    "Se mantienen permisos específicos de las entregas anteriores además de los nuevos",
+    "Cambios de roles requieren volver a ingresar para actualizar la interfaz",
+    "Cambiar credencial de empresa invalida sesiones de empresa; no cierra sesiones personales ya activas"
+  ]
+}

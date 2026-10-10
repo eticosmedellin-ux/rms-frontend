@@ -1,5 +1,6 @@
 import {lazy,Suspense} from 'react';
 const AppFacturacion=lazy(()=>import('@/features/sicom/AppFacturacion'));
+const LoginGeneralPage=lazy(()=>import('@/pages/LoginGeneralPage'));
 const PerfilesLogin=lazy(()=>import('@/features/sicom/PerfilesLogin'));
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -36,7 +37,7 @@ export default function App() {
   return (
     <Suspense fallback={<p className="p-6">Cargando módulo…</p>}><Routes>
       <Route path="/empresa/:acceso" element={<PerfilesLogin />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<LoginPage />} /><Route path="/acceso-general" element={<LoginGeneralPage />} />
       <Route path="/registro" element={<RegistroEmpresaPage />} />
       <Route path="/olvide-password" element={<OlvidePasswordPage />} />
       <Route path="/restablecer" element={<RestablecerPasswordPage />} />

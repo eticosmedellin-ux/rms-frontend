@@ -6,7 +6,7 @@ import { TiposServicioTab } from '@/pages/servicios/TiposServicioTab';
 import { HistorialTab } from '@/pages/servicios/HistorialTab';
 import { useAuthStore } from '@/stores/authStore';
 import { useMiPlan } from '@/hooks/usePlataforma';
-import { incluidaEnPlanDirecta, puedeVerModulo, MODULO_SERVICIOS_CITAS, MODULO_SERVICIOS_ORDENES, PLAN_SERVICIOS_CITAS, PLAN_SERVICIOS_ORDENES } from '@/lib/permisos';
+import { incluidaEnPlanDirecta, MODULO_SERVICIOS_CITAS, MODULO_SERVICIOS_ORDENES, PLAN_SERVICIOS_CITAS, PLAN_SERVICIOS_ORDENES } from '@/lib/permisos';
 
 const TODOS_LOS_TABS = [
   { id: 'citas', label: 'Citas' },
@@ -28,18 +28,18 @@ export default function ServiciosPage() {
   const puedeCitas =
     esSuperadmin ||
     (incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, PLAN_SERVICIOS_CITAS) &&
-      (esAdministradorTotal || puedeVerModulo(permisos, MODULO_SERVICIOS_CITAS)));
+      (esAdministradorTotal || permisos.includes(MODULO_SERVICIOS_CITAS+'_CONSULTAR')));
   const puedeOrdenes =
     esSuperadmin ||
     (incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, PLAN_SERVICIOS_ORDENES) &&
-      (esAdministradorTotal || puedeVerModulo(permisos, MODULO_SERVICIOS_ORDENES)));
+      (esAdministradorTotal || permisos.includes(MODULO_SERVICIOS_ORDENES+'_CONSULTAR')));
 
   const TABS = TODOS_LOS_TABS.filter((t) => {
     if (t.id === 'citas') return puedeCitas;
     if (t.id === 'ordenes') return puedeOrdenes;
     if (t.id === 'tipos') return puedeCitas || puedeOrdenes; // tipos de servicio alimenta a Citas
     if (t.id === 'operacion') return puedeCitas || puedeOrdenes;
-    return true; // historial sirve para cualquiera de los dos
+    return puedeCitas || puedeOrdenes; // historial respeta los módulos habilitados
   });
 
   const [tab, setTab] = useState<(typeof TODOS_LOS_TABS)[number]['id']>(TABS[0]?.id ?? 'historial');
