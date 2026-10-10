@@ -1,0 +1,830 @@
+{
+  "entrega": "prestamos-6",
+  "componente": "frontend",
+  "archivos": [
+    {
+      "ruta": "GUIA_PRESTAMOS_6.md",
+      "sha256": "0735dc153bbb07c7f3eadacb755c4e5861b376292b8f10737c551d6c9c0edae1"
+    },
+    {
+      "ruta": "PUBLICAR_FRONTEND_PRESTAMOS_6.ps1",
+      "sha256": "6c9f31efa0f8d42533f993dca04a0692e6ba5aaf52a8a5a79e61e904fcf354c9"
+    },
+    {
+      "ruta": "VALIDACION_PRESTAMOS_6.json",
+      "sha256": "02c5f3d9d93624d34fa5bc7112cf981d2af8adaeb2407e6101fe91ceaa302c73"
+    },
+    {
+      "ruta": "src/App.tsx",
+      "sha256": "76882b601016985a78580ba1fa5517803570df2a4c2eaba48f6cf9d2c93ac372"
+    },
+    {
+      "ruta": "src/api/accesoContable.ts",
+      "sha256": "542632e5c681807665185d9e125d3eac32c7cc30fe3101231449655a37ecbfa2"
+    },
+    {
+      "ruta": "src/api/auth.ts",
+      "sha256": "36de5b0b23de12913a534da416717ab5f343d0d3e3f56d32f5359b14466a18e5"
+    },
+    {
+      "ruta": "src/api/ayuda.ts",
+      "sha256": "0980386441bf4551ea9d60ca43f2f135c592c2c538db61cc307457c4839bae7b"
+    },
+    {
+      "ruta": "src/api/backup.ts",
+      "sha256": "c1467f12ce3d19dfcd0263d5d27a6f21479a2ae6d44a065bdd47054307fe725d"
+    },
+    {
+      "ruta": "src/api/catalogoPlanes.ts",
+      "sha256": "8e83553455c9c10969ff35f43383c743260f7ab8a21097a8d9f43f3a05f27cfd"
+    },
+    {
+      "ruta": "src/api/client.ts",
+      "sha256": "3b563d3d351a215d33dc4e660c26003e114526eb378abd0666dc4e97e85c58fd"
+    },
+    {
+      "ruta": "src/api/combos.ts",
+      "sha256": "bccf850c71f61b47898bc14e54e2789eab26feb6712fd86efcc1b415c1749c82"
+    },
+    {
+      "ruta": "src/api/compras.ts",
+      "sha256": "fd4c0dfc7d17c5d9cb356dc653269acd7f575e52f8d36f1a71107ec74e862116"
+    },
+    {
+      "ruta": "src/api/contabilidad.ts",
+      "sha256": "76fc93fb9739025dcb89165fbb74b6c4dc7f6040071735bbbea52fab6b26d25a"
+    },
+    {
+      "ruta": "src/api/dashboard.ts",
+      "sha256": "0697e86984e2e13d3c69014dd22dbc11aa84ca97108fb365101c3b3555ae831d"
+    },
+    {
+      "ruta": "src/api/descuentos.ts",
+      "sha256": "29a55375fb7a06d12d837388de164b7f471c3768c749b6ed2e276ef6dfb4cb8a"
+    },
+    {
+      "ruta": "src/api/documentosCaja.ts",
+      "sha256": "f8721b8b97bd33e745cfef355707419a18aa5ce0d998cce97034b77aafcf60f4"
+    },
+    {
+      "ruta": "src/api/domicilios.ts",
+      "sha256": "358b484e2bcf8491caf94a57e8e713509e240080423a52072d69c8cc8346644e"
+    },
+    {
+      "ruta": "src/api/errors.ts",
+      "sha256": "f1e9ce16fa88ebb1b59519ef2ac148bd6294dbe183edf78a4e7e93019a5a7ac6"
+    },
+    {
+      "ruta": "src/api/gestion.ts",
+      "sha256": "9fa290ef7b96fad9ca678dc86b95decd5631743f5880f176f64439077db8bb93"
+    },
+    {
+      "ruta": "src/api/imagen.ts",
+      "sha256": "8fc8687588c3425244cbd55569cad12eb0ee9d28f25f0492ee4e66f28edc8bda"
+    },
+    {
+      "ruta": "src/api/inventario.ts",
+      "sha256": "f9234159bb9a3276a47719e32c42eac7efb0e5f08de834b1d61d68b614aec41c"
+    },
+    {
+      "ruta": "src/api/menu.ts",
+      "sha256": "0a707e36c08263d5778ee42c0180733b1d22b7ee2da67613b01a5163ff6024c6"
+    },
+    {
+      "ruta": "src/api/nomina.ts",
+      "sha256": "b3b2b8cc380e8a6adb75c78a4cfce0675b8c836391497fb65720df19e30c5cbb"
+    },
+    {
+      "ruta": "src/api/nucleo.ts",
+      "sha256": "4875b5f64b8819b1adecd9ae384dfefd965af75f1a66ea6c67e54a5efe063c0a"
+    },
+    {
+      "ruta": "src/api/passwordReset.ts",
+      "sha256": "9a59454bf26b1ce7e3213f0f28f9374910425ff5423b30f9a51263e4898cd482"
+    },
+    {
+      "ruta": "src/api/plataforma.ts",
+      "sha256": "bf4568cd344749fdddb1633baf41e8560f5060f2d4e7644cc165a733f7c2701a"
+    },
+    {
+      "ruta": "src/api/pos.ts",
+      "sha256": "2f41e8fbd5c460fc535873d2132257fe9e7cc2e2ab804775838432e5cd78b2b9"
+    },
+    {
+      "ruta": "src/api/prestamos.ts",
+      "sha256": "7318915ff76c4ae9c6ee84f6be35801eb0e7150ba3178e56c80ceb90ddba419f"
+    },
+    {
+      "ruta": "src/api/registro.ts",
+      "sha256": "3afaae53ad84e6f9cb85eaa27f48fd2e660d3cf338bf8651964af6a8a1f864ef"
+    },
+    {
+      "ruta": "src/api/reportesExtendidos.ts",
+      "sha256": "07cd4ea731557f8e3aaf10d73057c58977ae5bed1886b857c82697f3c1646332"
+    },
+    {
+      "ruta": "src/api/restaurante.ts",
+      "sha256": "c8a4a139cd65820fe59a9fb16f18f7361f899262e1814e967e1b1f8d59d693fe"
+    },
+    {
+      "ruta": "src/api/servicios.ts",
+      "sha256": "7711f0ed692512f88c85c675fef59e00a1639a0731c1ec002bc751434381a117"
+    },
+    {
+      "ruta": "src/api/sucursales.ts",
+      "sha256": "c0407ee2f8e5eaa0e1dd58c3584ea4107436d33bd18879ff09fba10db99afc20"
+    },
+    {
+      "ruta": "src/api/suscripcion.ts",
+      "sha256": "709d3e4cdabaf5692935e3cef5502eebca763b7bc35b6926ed25981a2c74f3c2"
+    },
+    {
+      "ruta": "src/components/ErrorBoundary.tsx",
+      "sha256": "a504ed0e4c3b03389e9009a2974e77d1dca3e295d2572f18f3486173f0ee1d6c"
+    },
+    {
+      "ruta": "src/components/ProtectedRoute.tsx",
+      "sha256": "d2f4091028b08ad6e9266cac701037737c4e344326e1d08ba854cb4352952604"
+    },
+    {
+      "ruta": "src/components/SelectorProductoOCombo.tsx",
+      "sha256": "283b1b3a8c9352628aa3c66f3e4881ffa46af149d3101fc05ebaa0aa99bcf82d"
+    },
+    {
+      "ruta": "src/components/ayuda/AsistenteAyuda.tsx",
+      "sha256": "5fe1ce09876b5a3395dd01be04e3be30cb8826a07399eec39afed9aacce19a30"
+    },
+    {
+      "ruta": "src/components/layout/AppLayout.tsx",
+      "sha256": "6ce005a25997b71b1dfbf728445f26ccd2f589b824973a3242959194cb44b307"
+    },
+    {
+      "ruta": "src/components/layout/Sidebar.tsx",
+      "sha256": "02ed10e13078f1b125b156f5c5a308387a7f01f2724c9c0276a96724a84d74f0"
+    },
+    {
+      "ruta": "src/components/layout/Topbar.tsx",
+      "sha256": "cc074024bd503cfacd8a0d750a8ebc5e43f95386462a9eef0ea1b17fe4777024"
+    },
+    {
+      "ruta": "src/components/ui/DetalleLineasEditor.tsx",
+      "sha256": "8c3c3204840fb9363bc92de75473ecd955390b4e01ea5f98acbf441071549fd5"
+    },
+    {
+      "ruta": "src/components/ui/FormularioOperacion.tsx",
+      "sha256": "c5c24087322d26929728547525550a2c13227a77783c944a5038f8d6f140cc45"
+    },
+    {
+      "ruta": "src/components/ui/Modal.tsx",
+      "sha256": "67eb1f592bededcb2dcc313a7ede0c7c0060bbd325fa66085bd0630ec28346d7"
+    },
+    {
+      "ruta": "src/components/ui/States.tsx",
+      "sha256": "8da08583bb3068a0f7c62e0e71bfe50be1bd9f7c91772b49c9b6d1569d40ba8a"
+    },
+    {
+      "ruta": "src/features/restaurante/AbonosCuenta.tsx",
+      "sha256": "3eba69642a6cb110de8d274b5581ec4636afe751c20c56ee5a21d19b530affb2"
+    },
+    {
+      "ruta": "src/features/restaurante/CatalogoOperacion.tsx",
+      "sha256": "5d8f0b84533f1c48ec47698e03116931f5a560af45404ec13d9336e4c28668ef"
+    },
+    {
+      "ruta": "src/features/restaurante/OperacionRestaurante.tsx",
+      "sha256": "13925f6ce46e3af958d81d3487c194f33c521db9bcd295537605a451619058cc"
+    },
+    {
+      "ruta": "src/features/restaurante/PedidosCapturados.tsx",
+      "sha256": "85ea1931fadcd56de6660e445e9f8f7e85a5d38eabeed5c79b821cc321a446c5"
+    },
+    {
+      "ruta": "src/features/restaurante/outbox.ts",
+      "sha256": "2403deb0e54418bbd9b3a8ebf20a7cdb6fd655bc2c5bdbcf3d355874871334e7"
+    },
+    {
+      "ruta": "src/features/sicom/AppFacturacion.tsx",
+      "sha256": "2b99ab38180d982ce09690bbbc9be99e5ec3fe87ac213538876921428deb2b7a"
+    },
+    {
+      "ruta": "src/features/sicom/CambioMercancia.tsx",
+      "sha256": "e710a88f764fdc1aa94936dff916224cebd4466b7884a95dd14c9dccd0d7ed54"
+    },
+    {
+      "ruta": "src/features/sicom/Comercio.tsx",
+      "sha256": "8120c396be78215297228ff194ac31ef87ab5c6132c074fef4f2801792a944d8"
+    },
+    {
+      "ruta": "src/features/sicom/ConfiguracionSicom.tsx",
+      "sha256": "546d97c9183b112a6a6e134cc568a41d539ca2329fcedd677e8ec21294202f1a"
+    },
+    {
+      "ruta": "src/features/sicom/ContadoresPlataforma.tsx",
+      "sha256": "caf6cc57b17ce1a4588da52210f9335e8fbdf949365a3e75654bbb3aedec5467"
+    },
+    {
+      "ruta": "src/features/sicom/DobleFactor.tsx",
+      "sha256": "67ada0a2ac666db20942a40de8c744fd826b85032ebd8ecaa9a387f068493d10"
+    },
+    {
+      "ruta": "src/features/sicom/Drogueria.tsx",
+      "sha256": "4c32a35a16536527fac84c94b49e6629a0071cac06de58fa1ac44fac0fbb717c"
+    },
+    {
+      "ruta": "src/features/sicom/HistorialOrden.tsx",
+      "sha256": "1951974990f105e3068778262ae3b9d45c5413fbc3eb0bee661f87a169e56f43"
+    },
+    {
+      "ruta": "src/features/sicom/HistorialProveedor.tsx",
+      "sha256": "4dbc831c990b6fefff6c045ab8a21d32c8d7edbee24d23da0f7722195f0d25dc"
+    },
+    {
+      "ruta": "src/features/sicom/ImpuestosConfiguracion.tsx",
+      "sha256": "2f781baf57f325c1457026f078e3e6ea52f0ecdaa688646973ccea99f243e0dd"
+    },
+    {
+      "ruta": "src/features/sicom/ImpuestosMasivos.tsx",
+      "sha256": "0c79322b7a533d26235ce2cf949d3be7df396078464df7a22b5c5d6c48fe4eda"
+    },
+    {
+      "ruta": "src/features/sicom/PerfilesLogin.tsx",
+      "sha256": "9266d36001645e0bceec2086182956086b42a58800bc992d5d36e8d5ab67dab8"
+    },
+    {
+      "ruta": "src/features/sicom/SoportesDispensacion.tsx",
+      "sha256": "3a33c0e8a9ea605e122a277442f55484a115d7414548ff513de56f3c2f692ebb"
+    },
+    {
+      "ruta": "src/features/sicom/TrasladosBanco.tsx",
+      "sha256": "c2dc36245261fbb6ef18df87b1442e210cfa8f2b2f513015d72ad3ff94f72f1d"
+    },
+    {
+      "ruta": "src/features/sicom/api.ts",
+      "sha256": "8840b31843a05a265d26ec8dbdfa055c27b8e84343f90dcaff630d1ef01b669e"
+    },
+    {
+      "ruta": "src/features/sicom/useCalculoVenta.ts",
+      "sha256": "6373235a3e2e2b0156c2dd8bf8856edc973c6f166a8cf7413c9f6ef33d4edb42"
+    },
+    {
+      "ruta": "src/hooks/useAccesoContable.ts",
+      "sha256": "8c1eff662d012b5a9b15244092b891c2ed4aab7c52d19fb3ab72b3238d75c1b9"
+    },
+    {
+      "ruta": "src/hooks/useAplicarTema.ts",
+      "sha256": "1f96f3450a82a1ae6c8c3f995467e59fd34abe473b29e60d5d62533de243fa42"
+    },
+    {
+      "ruta": "src/hooks/useAyuda.ts",
+      "sha256": "eadd13dd5d9629a47bd5f100e5c1e04730a27a7b08e4a34852825fc233d5d566"
+    },
+    {
+      "ruta": "src/hooks/useBackup.ts",
+      "sha256": "b494ad87a5d05b88259b26576e26e76c2fc5a4742f3075f327343c0a42018b6d"
+    },
+    {
+      "ruta": "src/hooks/useCatalogoPlanes.ts",
+      "sha256": "e705e881ab3db78ad5ddace4f3327d45263920e591625a4e58f195fad8061388"
+    },
+    {
+      "ruta": "src/hooks/useCombos.ts",
+      "sha256": "77bf8d36e2b79b33b5a872dbf3b048cda45806beb542ca434ef9d41fc64a264d"
+    },
+    {
+      "ruta": "src/hooks/useCompras.ts",
+      "sha256": "7576e4f0d923d0935bd0c44fcef745268bd7ec801e24d48ee793092c5e02f0b2"
+    },
+    {
+      "ruta": "src/hooks/useContabilidad.ts",
+      "sha256": "3cb94339d2b42a87f0dd0c39c14174ce4ea48aa2edc88e90949615e02577f6f1"
+    },
+    {
+      "ruta": "src/hooks/useDashboard.ts",
+      "sha256": "342d392f1b8038a392ff8fbc6c42485dec5f292048dac33142655c4e5610fbf6"
+    },
+    {
+      "ruta": "src/hooks/useDescuentos.ts",
+      "sha256": "edd130f0d0c20c305ca40db0df538f72a4ffb98372ef5123d5bf87a7abaeced1"
+    },
+    {
+      "ruta": "src/hooks/useDocumentosCaja.ts",
+      "sha256": "7b3b96c0826a87443ea6853f38e81dd5e9e8c2c02043a2219d242241d144b64c"
+    },
+    {
+      "ruta": "src/hooks/useDomicilios.ts",
+      "sha256": "9fabf81b335593df741a33362870de1d072d0b9423ae55e80cd0d847535b32cc"
+    },
+    {
+      "ruta": "src/hooks/useGestion.ts",
+      "sha256": "d9724063f5adcaa026f9b02dbe826c065a9dcd9fc38b5903d3051bae4a95c67e"
+    },
+    {
+      "ruta": "src/hooks/useInventario.ts",
+      "sha256": "7215ded62a0f99e2f5568d86548824b2b4bc6a95e06c91c2379d2a0dc1e5e3b0"
+    },
+    {
+      "ruta": "src/hooks/useMenu.ts",
+      "sha256": "55ddcc86cf5252fe3f1d8cc98a61c1f05d9453a41a219d6eb0ade7f0bb1fe12d"
+    },
+    {
+      "ruta": "src/hooks/useNomina.ts",
+      "sha256": "13920294144867b9b645d946c3d2d19a152ebb1fd0c51bb2a0c731cd5bddc570"
+    },
+    {
+      "ruta": "src/hooks/useNucleo.ts",
+      "sha256": "606f0932eaefe7f4d02c53b8451c5f0516df013941937329f0dcaddbb366118f"
+    },
+    {
+      "ruta": "src/hooks/usePlataforma.ts",
+      "sha256": "dd08071fa2a77594394face54ed71d33720bef41e103deec3810fd307fbeccc5"
+    },
+    {
+      "ruta": "src/hooks/usePos.ts",
+      "sha256": "124b7144c7f1410ca11a917ce551f4cc86d1b0fc666890a268137476bc74b094"
+    },
+    {
+      "ruta": "src/hooks/usePrestamos.ts",
+      "sha256": "3cf27969c888a712d35ed8e15c3ebb9a2b5b3d86f118a8b9a5f685f79dfbaff7"
+    },
+    {
+      "ruta": "src/hooks/useReportesExtendidos.ts",
+      "sha256": "0dcb9b065a55a00efc30689da2555884abce480977f0eaf0c3b667e0e72a267b"
+    },
+    {
+      "ruta": "src/hooks/useRestaurante.ts",
+      "sha256": "f2c8d4682f37e4eb58127dbeb9473398fa9ff626b87b2ce49015ae2e32623695"
+    },
+    {
+      "ruta": "src/hooks/useServicios.ts",
+      "sha256": "e2c50c20de6c8db357b8a337127739e0954f381cf43dbf1221dc30d8c4b55b39"
+    },
+    {
+      "ruta": "src/hooks/useSucursales.ts",
+      "sha256": "66b6772a5f4b89d914ce7fb192eb7cde7ee35d345441100e6b5805ea6f958d98"
+    },
+    {
+      "ruta": "src/hooks/useSuscripcion.ts",
+      "sha256": "5138bc570fbc9b76d903711dc9bd4676920cdb824c19d5d47b07b43108ab27fc"
+    },
+    {
+      "ruta": "src/index.css",
+      "sha256": "234965027fcfb1975443bfa37572a04dc115972893b2f08acf7c07c3560476c9"
+    },
+    {
+      "ruta": "src/lib/cotizacion.ts",
+      "sha256": "86a616b3f391b947f426005c1ed2291d95cc0e0f96206c15dbbec1edd672c7e0"
+    },
+    {
+      "ruta": "src/lib/descargarArchivo.ts",
+      "sha256": "397ffc1462a9a12ab6c65ddeb6e993123a066821488c913029bb80e59fb50191"
+    },
+    {
+      "ruta": "src/lib/documentoCajaImpresion.ts",
+      "sha256": "d9ddd6447c72cdecfd7c1ab9a0baa408c4194dfe61e81bf6fb73b691f91d3204"
+    },
+    {
+      "ruta": "src/lib/estadoCuenta.ts",
+      "sha256": "924ab96ccd72e2b90ee9b54009446a22efe3b520fec1d816f8be85be42bfc281"
+    },
+    {
+      "ruta": "src/lib/factura.ts",
+      "sha256": "25996e63d5780aa4fd42c5aaa33026cc811cf6977623f03742bc3442855f9068"
+    },
+    {
+      "ruta": "src/lib/permisos.ts",
+      "sha256": "bffab37200194fe00f8468d22f42c20849a446188ef547f778156d9e0a572d40"
+    },
+    {
+      "ruta": "src/lib/tamanoImpresion.ts",
+      "sha256": "b24a6426a16cf28b4861e43c7a6b64f4d31416229518d48a7d1f8d6f2d1276f0"
+    },
+    {
+      "ruta": "src/main.tsx",
+      "sha256": "45ade2206f9c037312fe767985d7660fde39cb0b3b5ca657ce516ff065a16035"
+    },
+    {
+      "ruta": "src/pages/ComingSoonPage.tsx",
+      "sha256": "34559aa512b9adb5aa62b3a699b24119cebd3d829a13c874cf442b5dac2a6872"
+    },
+    {
+      "ruta": "src/pages/DashboardPage.tsx",
+      "sha256": "93cb32b1c8d1149fc1bd210ec9cad61e780bee8ffb629a397d8acbc322750aed"
+    },
+    {
+      "ruta": "src/pages/LoginPage.tsx",
+      "sha256": "086d818bfdbaf4e5542ffdb4a02eda45065440dfbd51d9d20361b8d83fca2303"
+    },
+    {
+      "ruta": "src/pages/MenuPublicoPage.tsx",
+      "sha256": "9b6ac12586c8ce6b90006f50a519526ab3692b43aba00c03907b40f570b03c25"
+    },
+    {
+      "ruta": "src/pages/NotFoundPage.tsx",
+      "sha256": "aa5d2b7149c5e552e1d3a88ce7237de3f44adc2a01e18595089747f492aadc47"
+    },
+    {
+      "ruta": "src/pages/OlvidePasswordPage.tsx",
+      "sha256": "56e4ddd2277d7e97dca8d91303f5e50b626893b9700fbf0f35c1cff9eee33d0f"
+    },
+    {
+      "ruta": "src/pages/RegistroEmpresaPage.tsx",
+      "sha256": "553404760f651e9663bf330bd42f67ed663cb70233753d990337b45b9e9c359d"
+    },
+    {
+      "ruta": "src/pages/RestablecerPasswordPage.tsx",
+      "sha256": "b2badaf4e5272a969cdead9da933075f6631b022e4a0b09ee38cbfd81507d784"
+    },
+    {
+      "ruta": "src/pages/administracion/AdministracionPage.tsx",
+      "sha256": "81ff76077b50c654195776193d92eb8afed6715682d6ac99c5326ad201a8e19d"
+    },
+    {
+      "ruta": "src/pages/administracion/AuditoriaTab.tsx",
+      "sha256": "a597070e9a57f17ec184df9cc82f3d1e44846097ed0353020bb1f1da8a09ecb4"
+    },
+    {
+      "ruta": "src/pages/administracion/HistorialAccesoTab.tsx",
+      "sha256": "78677dbcee9b8634e9abb82427b6e4364ba6bd58d9b6a47f96687a292139fede"
+    },
+    {
+      "ruta": "src/pages/administracion/RolesTab.tsx",
+      "sha256": "107e292562b50d59f1018e563f3caa9514c839f17f1ff040686b8d6d440bb386"
+    },
+    {
+      "ruta": "src/pages/administracion/SucursalesTab.tsx",
+      "sha256": "8f138a55b8b83c4066e3d313ae9c873f4b9b675f10438619952b18ea6e2034d0"
+    },
+    {
+      "ruta": "src/pages/administracion/UsuariosTab.tsx",
+      "sha256": "0804bd44111d2799fa9b63f363d70cc4f9996c2269370d486aaa2d31d1969324"
+    },
+    {
+      "ruta": "src/pages/alertas/AlertasPage.tsx",
+      "sha256": "72bc659b7bb72e04bf4ec8d11eeb34c8d57c3e9806c1beff0f598efa862ec45a"
+    },
+    {
+      "ruta": "src/pages/compras/AbonoProveedorModal.tsx",
+      "sha256": "0aa085b1697436679784a067ed1d8cdc047e95ca6ad59ba1b6228ef18109935a"
+    },
+    {
+      "ruta": "src/pages/compras/ComprasPage.tsx",
+      "sha256": "71d3b04479f4359e1e7de06f655313ac7e3408d3924d1b22abdc52dead265ff0"
+    },
+    {
+      "ruta": "src/pages/compras/FacturaFormModal.tsx",
+      "sha256": "a38f7b121c807a0bc8146b299606dcd315c31b185913a71e484d481f55ca20c1"
+    },
+    {
+      "ruta": "src/pages/compras/FacturasCuentasTab.tsx",
+      "sha256": "80ce30e9ec1cb61be999a1108bbc97d2411d948390cd142eea5f484947cc5645"
+    },
+    {
+      "ruta": "src/pages/compras/OrdenCompraFormModal.tsx",
+      "sha256": "bbd486bb8adb337c7709784a5e5d10662c6089208f87da928ae3a4c207261c9d"
+    },
+    {
+      "ruta": "src/pages/compras/OrdenesCompraTab.tsx",
+      "sha256": "e73b7624c7c68e2d94bbbda2fa39d0ac3f84734ecb232b8f1e26cefdfda6cfd2"
+    },
+    {
+      "ruta": "src/pages/compras/ProveedoresTab.tsx",
+      "sha256": "1e00c80701d268e1767baa181e8b824c84e4a456c3e0af49391898c42713cb3d"
+    },
+    {
+      "ruta": "src/pages/compras/RecepcionFormModal.tsx",
+      "sha256": "e0e29a96f13b3e5a2e1463ae6f4a6f5414f76679bb21e1686573b9fdb9c313dd"
+    },
+    {
+      "ruta": "src/pages/configuracion/ConfiguracionPage.tsx",
+      "sha256": "0f0eb5a0fca021a5940d84c62137c27611f417748257b600affaa7bc222a6601"
+    },
+    {
+      "ruta": "src/pages/contabilidad/ContabilidadPage.tsx",
+      "sha256": "2b6cde145eb676f8822065b00af10a5df2cc29a2e49c3832610e945839d59ad0"
+    },
+    {
+      "ruta": "src/pages/contabilidad/MisClientesContablesPage.tsx",
+      "sha256": "a6c891bd262c785fc768403bd446f3b188eb7af69a6e612715629521875fe173"
+    },
+    {
+      "ruta": "src/pages/descuentos/DescuentosPage.tsx",
+      "sha256": "66e741be572a8c90ec294c122deb53a0be32730a82a466444514eb0dbcbeb048"
+    },
+    {
+      "ruta": "src/pages/documentos/DocumentosPage.tsx",
+      "sha256": "e758f3866171d42a58f09f6d109c82e5b207810f9b5f0279c2769f394b11ff95"
+    },
+    {
+      "ruta": "src/pages/domicilios/DomicilioDetalleModal.tsx",
+      "sha256": "6a5f84e099c0e8b73aa269e09a0b88719702abd30ff468a9f7b8bd58b13ece23"
+    },
+    {
+      "ruta": "src/pages/domicilios/DomicilioFormModal.tsx",
+      "sha256": "84645da344e0b7e9f5e6ec05339b590ab062bd37a7be932f36a98551c6da834e"
+    },
+    {
+      "ruta": "src/pages/domicilios/DomiciliosPage.tsx",
+      "sha256": "805a19d9d5ba7eb3769eb015ee4d1696f6dd1aa7c96c465fec89551d5ebd195d"
+    },
+    {
+      "ruta": "src/pages/gastos/GastosPage.tsx",
+      "sha256": "2bc4c89d51e9bff6cd85c469ce2dcbde6a0266fecc179b4a54f791718c0002ef"
+    },
+    {
+      "ruta": "src/pages/inventario/AjustesTab.tsx",
+      "sha256": "948607f0773def9e21cdca12d9df912e835702f31bb19db7abfffb21187e3cc5"
+    },
+    {
+      "ruta": "src/pages/inventario/CategoriasMarcasTab.tsx",
+      "sha256": "a8ba223a82b6eeac2fae74edb9d0fa2a9b30fd5a5919a66c12bc93e879288be9"
+    },
+    {
+      "ruta": "src/pages/inventario/CombosTab.tsx",
+      "sha256": "d9ddfc5527c4edaeb951b9f2ee4ed18b121120a3c94ca8252037bc670519a4b2"
+    },
+    {
+      "ruta": "src/pages/inventario/ConteosTab.tsx",
+      "sha256": "26ed56d551b38a0e6e6b759c2d34463afd6e29baa4bac97039def5d3875ed942"
+    },
+    {
+      "ruta": "src/pages/inventario/ImagenProductoModal.tsx",
+      "sha256": "2f4885ca7ad0b8111acd45f769af243a0faea7b6e5095fffe8d2014089b6a5bd"
+    },
+    {
+      "ruta": "src/pages/inventario/ImportarProductosModal.tsx",
+      "sha256": "2df418c377a85379bd10e9c23cc9dbfddcfec26bcf574e98f4287fda0f7f3d2a"
+    },
+    {
+      "ruta": "src/pages/inventario/InventarioPage.tsx",
+      "sha256": "da585400416de8c5c429e2732f2765de4fa411b89d65bf6a39ec26bcab2d2cc8"
+    },
+    {
+      "ruta": "src/pages/inventario/ProductoFormModal.tsx",
+      "sha256": "138908548ad07eab3adc769605c0ad7dde1a019f96357d46b824213286440ebc"
+    },
+    {
+      "ruta": "src/pages/inventario/ProductosTab.tsx",
+      "sha256": "c13a0b335dba28d3bbc86576dc7ac8f1d92e5e58ee59d0c7452743e34b739f76"
+    },
+    {
+      "ruta": "src/pages/inventario/StockKardexModal.tsx",
+      "sha256": "926ef7369c7d757cf0e5f793811c55e64cc5cdb9d9f68ad8eb7b55cdb3ec0d45"
+    },
+    {
+      "ruta": "src/pages/inventario/TransferenciasTab.tsx",
+      "sha256": "d2923dccf0a2e764e9285b449ffb93db57de78fe73abb282167a9e4cd871ea4e"
+    },
+    {
+      "ruta": "src/pages/inventario/producto-schema.ts",
+      "sha256": "63e5e49abae7cc91597f7aae84e3e3d4d7f6cbd6f48027d95db10b561ef58990"
+    },
+    {
+      "ruta": "src/pages/login-schema.ts",
+      "sha256": "0c1fb7a18725a32fa85cbd3b71f6ef1b9c6ef64e6542834fa1e7568be45c7864"
+    },
+    {
+      "ruta": "src/pages/nomina/HistorialPagoModal.tsx",
+      "sha256": "987b4e15f1eeb6f1c1310d8d43b7ca33c6a0bcc2f6c89c5a4d09f661b43be6e0"
+    },
+    {
+      "ruta": "src/pages/nomina/NominaPage.tsx",
+      "sha256": "aba14cfb9c0aab7a3fd41046d4863f45ebeee0052f5caa74ca125272fb9a6982"
+    },
+    {
+      "ruta": "src/pages/nomina/TrabajadorFormModal.tsx",
+      "sha256": "57eeaf80ef0f4ee469a513a0974265d5a77bff546343db0b068d6aa17ef218aa"
+    },
+    {
+      "ruta": "src/pages/plataforma/AyudaAdminTab.tsx",
+      "sha256": "846472109719991aa1ac699eca878665253bd4a5afcd4b510f0ee93252e6aa0b"
+    },
+    {
+      "ruta": "src/pages/plataforma/BackupsTab.tsx",
+      "sha256": "fe73ef2c0843a7b912cb1db34830737046784b1c7ef16d5c39496c5d864bea3b"
+    },
+    {
+      "ruta": "src/pages/plataforma/CobroAutomaticoTab.tsx",
+      "sha256": "174bdbcdb44c3a934795adde11cc566b848739008999d42b013a314ccd5af2d8"
+    },
+    {
+      "ruta": "src/pages/plataforma/CodigosInvitacionTab.tsx",
+      "sha256": "988a66b3429ae851ebc3562f35841048771c1b3e1fddaca4e5ee9cab5a95bf8b"
+    },
+    {
+      "ruta": "src/pages/plataforma/DashboardEjecutivoTab.tsx",
+      "sha256": "d3ba91b96485274c46a4c65b095b6194564599db7116f43d657769c4c772f804"
+    },
+    {
+      "ruta": "src/pages/plataforma/NoticiasLoginTab.tsx",
+      "sha256": "3fe9c92f6ba489ce37ee787e0ec3587499a44e035c2cff49fbd6d6f8e6d39dec"
+    },
+    {
+      "ruta": "src/pages/plataforma/PlanEmpresaModal.tsx",
+      "sha256": "6d3f0a2e3d10e8f5837171ca66d737bcb0b78dd93b7325ed192488728b8968f7"
+    },
+    {
+      "ruta": "src/pages/plataforma/PlataformaPage.tsx",
+      "sha256": "ada3863a033aa8fe3c3ca72c2c89a03e9d347d84685bc27684f0ee915315e9ab"
+    },
+    {
+      "ruta": "src/pages/plataforma/TiposNegocioTab.tsx",
+      "sha256": "3ec20a636cfbffeef86d6ea9bd31ae5d502d4704d97307032589a3e3850afc4d"
+    },
+    {
+      "ruta": "src/pages/pos/AbonoClienteModal.tsx",
+      "sha256": "c26a407a02176f89f99a756cb8c7d7167086a2dee628e9f9b952f11ecef58b81"
+    },
+    {
+      "ruta": "src/pages/pos/CajaBar.tsx",
+      "sha256": "d8b9705da6aa4fab6cd8784563d75c1805ec2a21f9151ab1de5d4a37d9bae6f6"
+    },
+    {
+      "ruta": "src/pages/pos/ClientesTab.tsx",
+      "sha256": "cf0685caaf624a3f4a6c21f72456b2ea28689d488dd4e6c7d61cf72ce6b6e9be"
+    },
+    {
+      "ruta": "src/pages/pos/CompartirFacturaModal.tsx",
+      "sha256": "62feb82bb4957d3aa905ffd607499caddfc6a64ebcf0a533de89b9c5795b25f5"
+    },
+    {
+      "ruta": "src/pages/pos/CotizacionesTab.tsx",
+      "sha256": "288368d80824d1f4b1ea124d5ebde59cc58c01f99b952a43d678fc8df06846fe"
+    },
+    {
+      "ruta": "src/pages/pos/CuentasPorCobrarTab.tsx",
+      "sha256": "c3b9dc8efc5a15d5bf53b03aaa95f1962872fa2bac07c715011bf76920aac80e"
+    },
+    {
+      "ruta": "src/pages/pos/DevolucionModal.tsx",
+      "sha256": "46a84899a4f66317c05bcf51f649974a7327162cec210ddc1a556e5d7af6c795"
+    },
+    {
+      "ruta": "src/pages/pos/DocumentosCajaTab.tsx",
+      "sha256": "06fe2316b28e9a6f8e1fad0cde52d52200cf7ab20bbab594416a01f3e7a92894"
+    },
+    {
+      "ruta": "src/pages/pos/NotaDebitoModal.tsx",
+      "sha256": "5db153ccb1afea998722f64e36ef021ed8e5d444ae49c6cd2a7b542dc0ebca97"
+    },
+    {
+      "ruta": "src/pages/pos/PosPage.tsx",
+      "sha256": "6d6123f18f76430039c302e064efef63d20d62f43e53ef99d3723ddc64d9e74e"
+    },
+    {
+      "ruta": "src/pages/pos/VenderTab.tsx",
+      "sha256": "40dfda1cf4ae2dec63cc5e8b456b4906dd774545506a964b7add97c991689c44"
+    },
+    {
+      "ruta": "src/pages/pos/VentasTab.tsx",
+      "sha256": "442f56df90fa23eda9cd8a94dc1049791754c4a69d3e8b0790f1d4510f0f9d0d"
+    },
+    {
+      "ruta": "src/pages/prestamos/CobranzaPrestamos.tsx",
+      "sha256": "5cdc483828d22a36e64853c382ec57cedd1b7097d631f885462f06287aaa809e"
+    },
+    {
+      "ruta": "src/pages/prestamos/CobroPrestamo.tsx",
+      "sha256": "7f5988503ab5cd1d65e034db666af1d06de59baf93cf4fe5ef0e684abfa37a6f"
+    },
+    {
+      "ruta": "src/pages/prestamos/OperacionPrestamos.tsx",
+      "sha256": "cf4bee6ab3e0d6b58d1204c798f4adf32c0921dc984cb72b0cdcf24c14ff96b2"
+    },
+    {
+      "ruta": "src/pages/prestamos/PrestamoDetalleModal.tsx",
+      "sha256": "a33057a375a5b8c321de621c15e5229f1a880ad71f8462111c12885b9091209c"
+    },
+    {
+      "ruta": "src/pages/prestamos/PrestamoFormModal.tsx",
+      "sha256": "28ff5974c0055c1799586a546a0765a926ebd9a9c9758487a725a8ca8e50f7fa"
+    },
+    {
+      "ruta": "src/pages/prestamos/PrestamosPage.tsx",
+      "sha256": "646bd600e8b794e0a958ecbe8de93f1455eef75f9dee597448a6014c0e960bb8"
+    },
+    {
+      "ruta": "src/pages/prestamos/RenovarPrestamoModal.tsx",
+      "sha256": "f37fee6fe8119cfe17f1093c6ae3f96cda1aba78a40e2dc5e9779c6d4beff842"
+    },
+    {
+      "ruta": "src/pages/prestamos/formatoPrestamos.ts",
+      "sha256": "5ac4b98872f648251f729396b45f551d8b4893d408b67ea67386dc8d1a89f4d5"
+    },
+    {
+      "ruta": "src/pages/reportes/ReportesPage.tsx",
+      "sha256": "35467ba8300d66b009d547503a16372f6853e84e86fef56ad41aca9a73be7550"
+    },
+    {
+      "ruta": "src/pages/restaurante/AppCocinaPage.tsx",
+      "sha256": "25c8b413938a11069db0f23ae2458bf4ffd35b413229def0d04e785bcb8231b3"
+    },
+    {
+      "ruta": "src/pages/restaurante/AppMeseroPage.tsx",
+      "sha256": "d744215d03ef6f97361924059af5d521f155bafdcccfa8db560e6e090980ceda"
+    },
+    {
+      "ruta": "src/pages/restaurante/ComandaModal.tsx",
+      "sha256": "2c23568a8fca3bea7550453be18653081c8733ca8708c434245e5ced0849ad71"
+    },
+    {
+      "ruta": "src/pages/restaurante/MesaFormModal.tsx",
+      "sha256": "2d839532a0c9725a30d742556004376b3a6a6fca1e835e70cbbc8df8cf227c1d"
+    },
+    {
+      "ruta": "src/pages/restaurante/RestaurantePage.tsx",
+      "sha256": "b025b93ba6d8aeb1b140cbe2520e4b0c89d751672024fb0a999661d47934b187"
+    },
+    {
+      "ruta": "src/pages/servicios/CitaFormModal.tsx",
+      "sha256": "e0e5e4aeabff3a1cfa09b77bf10f2bb17006cc6eb885e8ead185133897ed5876"
+    },
+    {
+      "ruta": "src/pages/servicios/CitasTab.tsx",
+      "sha256": "efa22baea72f30f68f519a9346e51cc17449c6cb338d03dd643eb730e13d6f0b"
+    },
+    {
+      "ruta": "src/pages/servicios/HistorialTab.tsx",
+      "sha256": "b6ae31e4f692ba1aabfe838db62ae424161415763d286cdf06a914288bb6460e"
+    },
+    {
+      "ruta": "src/pages/servicios/OperacionServicios.tsx",
+      "sha256": "1027e947aa0c718dee2b910a83cba51baa73d64c93b5df80d1c709a09720caa9"
+    },
+    {
+      "ruta": "src/pages/servicios/OrdenTrabajoFormModal.tsx",
+      "sha256": "35a4114643c2ba9e18952560a5a525adc47853dd89720a74252a84cea2070ef9"
+    },
+    {
+      "ruta": "src/pages/servicios/OrdenesTrabajoTab.tsx",
+      "sha256": "e87b6de303d77227760c418d3fa6f06cf1239ec65bd890d179906b11e4eb5ff3"
+    },
+    {
+      "ruta": "src/pages/servicios/ServiciosPage.tsx",
+      "sha256": "8320525288357ed4798169e0b5d201fc745099c60e0bd948b8e9c9f35d61a44c"
+    },
+    {
+      "ruta": "src/pages/servicios/TiposServicioTab.tsx",
+      "sha256": "42a787ded1f1f39ac53c9e63fe66a8518e31ac55f07eaafbde387687ffaffe4e"
+    },
+    {
+      "ruta": "src/stores/authStore.ts",
+      "sha256": "2ae6036111a8ed780dd56b2969f6680444903ab2b03510d5b76de40569968f71"
+    },
+    {
+      "ruta": "src/stores/posStore.ts",
+      "sha256": "8e60d13e2ea7eb982753fa371b87b95a7060d83b970c16a6af65d31733161dd0"
+    },
+    {
+      "ruta": "src/types/auth.ts",
+      "sha256": "0fe8d23f7087cd9a16c3c387875ea15788243027f732f69143944e7716075c1e"
+    },
+    {
+      "ruta": "src/types/ayuda.ts",
+      "sha256": "f1af26e5dc1040fc6c5c622a1c638bac4495bba75c016811ebff7045d1e5a8af"
+    },
+    {
+      "ruta": "src/types/backup.ts",
+      "sha256": "a5922a1c14bf570c4cc182df04f54b6c9703e69cebabf9abe206f6b7db0ea1b2"
+    },
+    {
+      "ruta": "src/types/compras.ts",
+      "sha256": "2815dc26ee3a6896a9da9da19e9e33a3ad023035589e1c6e3a0a751748e4e9b4"
+    },
+    {
+      "ruta": "src/types/contabilidad.ts",
+      "sha256": "c61f421a3ee4252d3040b8b34858db425e54cc37d2b408c4a9732fbe367a07d8"
+    },
+    {
+      "ruta": "src/types/dashboard.ts",
+      "sha256": "6e9c92d53953106b2cdc73b48e097819edc433717410edd1492e505c9bf6dec8"
+    },
+    {
+      "ruta": "src/types/gestion.ts",
+      "sha256": "121eed14f60f93234a080e253ba4c1246c3777b161cc85aff628a292fd64a120"
+    },
+    {
+      "ruta": "src/types/inventario.ts",
+      "sha256": "bfd54bd26165c1e1e4c3cc0fe111455951c5b8c93fbbbaeb40bc209487d44ffe"
+    },
+    {
+      "ruta": "src/types/nucleo.ts",
+      "sha256": "ba0fb7b66d52e3166e8314e940728e71a2d9812c2845fb44e4783805563a1f0b"
+    },
+    {
+      "ruta": "src/types/pos.ts",
+      "sha256": "3b47e6516ec0098fc997f08bfb04d7bea0b0f01731db36b365d06c0e48f1e8c1"
+    },
+    {
+      "ruta": "src/types/reportesExtendidos.ts",
+      "sha256": "244741002d90aa8ea1e50308b7c5bc082487b31c8264261443e96a52e9968b6b"
+    },
+    {
+      "ruta": "src/types/suscripcion.ts",
+      "sha256": "fd0be45c8d68c9aa1418de8799ac1df3bacacbec926882e15ea774a1b2bdf82d"
+    },
+    {
+      "ruta": "src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    }
+  ]
+}

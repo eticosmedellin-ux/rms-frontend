@@ -1,0 +1,34 @@
+{
+  "entrega": "prestamos-6",
+  "fecha": "2026-10-09",
+  "backend": {
+    "pruebas": 125,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "integracion_prestamos": 37,
+    "integracion_servicios": 13,
+    "integracion_restaurante": 13
+  },
+  "frontend": "TypeScript/Vite aprobado",
+  "formato_y_formulario": {
+    "comprobaciones": 16,
+    "tipo": "renderizado estático de componentes reales y conversión de importes"
+  },
+  "sql": "repetición, prerrequisito, desglose, claves y dos usuarios aprobados",
+  "pdf": "comprobante y estado renderizados para revisión visual",
+  "no_verificado": [
+    "Render",
+    "copia de neondb",
+    "navegación completa en navegador",
+    "concurrencia de cobradores reales"
+  ],
+  "limites": [
+    "Registro bancario manual",
+    "Reversión con otro usuario; no históricos ni cadenas refinanciadas",
+    "Costo analítico soportado sin duplicar asiento ni caja",
+    "Rentabilidad de cobros menos costos registrados, sin tasa de retorno ni provisión automática",
+    "Agenda interna sin envío automático",
+    "Conciliación necesaria para aplicar recogidas del cobrador"
+  ]
+}
