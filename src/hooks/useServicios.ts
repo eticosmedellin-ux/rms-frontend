@@ -30,8 +30,8 @@ export function useActualizarTipoServicio() {
   });
 }
 
-export function useCitas() {
-  return useQuery({ queryKey: ['citas'], queryFn: serviciosApi.listarCitas });
+export function useCitas(desde?: string, hasta?: string) {
+  return useQuery({ queryKey: ['citas', desde, hasta], queryFn: () => serviciosApi.listarCitas(desde,hasta), refetchInterval: 60000 });
 }
 
 export function useCitasHistorial() {

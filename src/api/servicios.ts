@@ -31,6 +31,8 @@ export interface Cita {
   duracionMinutos: number;
   estado: EstadoCita;
   notas: string | null;
+  recursoId: number | null;
+  recursoNombre: string | null;
 }
 
 export interface CitaRequest {
@@ -41,7 +43,11 @@ export interface CitaRequest {
   fechaHora: string;
   duracionMinutos?: number;
   notas?: string;
+  recursoId?: number;
 }
+
+export interface RecursoAgenda { id: number; sucursal_id: number; nombre: string; activo: boolean; sucursal: string; }
+export interface InicioCita { fechaHora: string; asignadoAId?: number; sucursalId?: number; }
 
 export type EstadoOrden = 'RECIBIDA' | 'EN_PROCESO' | 'ESPERANDO_REPUESTOS' | 'LISTA' | 'ENTREGADA' | 'CANCELADA';
 export type PrioridadOrden = 'BAJA' | 'MEDIA' | 'ALTA';
@@ -109,7 +115,7 @@ export const crearTipoServicio = async (data: TipoServicioRequest): Promise<Tipo
 export const actualizarTipoServicio = async (id: number, data: TipoServicioRequest): Promise<TipoServicio> =>
   (await apiClient.put<TipoServicio>(`/servicios/tipos/${id}`, data)).data;
 
-export const listarCitas = async (): Promise<Cita[]> => (await apiClient.get<Cita[]>('/servicios/citas')).data;
+export const listarCitas = async (desde?: string, hasta?: string): Promise<Cita[]> => (await apiClient.get<Cita[]>('/servicios/citas', {params: {desde,hasta}})).data;
 
 export const listarCitasHistorial = async (): Promise<Cita[]> =>
   (await apiClient.get<Cita[]>('/servicios/citas/historial')).data;

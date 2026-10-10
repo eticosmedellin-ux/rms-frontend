@@ -6,16 +6,20 @@ import { useSucursales } from '@/hooks/useSucursales';
 import { useClientes } from '@/hooks/usePos';
 import { useUsuarios } from '@/hooks/useNucleo';
 import { getApiErrorMessage } from '@/api/errors';
-import type { Cita } from '@/api/servicios';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/api/client';
+import { usePermisosOperacion } from '@/hooks/usePermisosOperacion';
+import { useAuthStore } from '@/stores/authStore';
+import { CobroCita } from './CobroCita';
+import type { RecursoAgenda, InicioCita, Cita } from '@/api/servicios';
 
-function aInputDatetimeLocal(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onClose: () => void; cita: Cita | null }) {
+export function CitaFormModal({ isOpen, onClose, cita, inicio }: { isOpen: boolean; onClose: () => void; cita: Cita | null; inicio?: InicioCita | null }) {
+  const permisos = usePermisosOperacion('SERVICIOS_CITAS');
+  const usuarioId=useAuthStore(s=>s.usuarioId);
+  const recursos = useQuery({queryKey:['agenda-recursos'],queryFn:async()=>(await apiClient.get<RecursoAgenda[]>('/servicios/citas/recursos')).data,enabled:isOpen});
+  const [recursoId,setRecursoId]=useState('');
+  const [busquedaCliente,setBusquedaCliente]=useState('');
+  const terminada=!!cita && ['COMPLETADA','CANCELADA','NO_ASISTIO'].includes(cita.estado);
   const { data: sucursales } = useSucursales();
   const { data: tiposServicio } = useTiposServicio();
   const { data: clientes } = useClientes();
@@ -35,30 +39,36 @@ export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onCl
 
   useEffect(() => {
     if (isOpen) {
-      setSucursalId(cita?.sucursalId != null ? String(cita.sucursalId) : sucursales?.[0] ? String(sucursales[0].id) : '');
+      setSucursalId(cita?.sucursalId != null ? String(cita.sucursalId) : inicio?.sucursalId ? String(inicio.sucursalId) : sucursales?.[0] ? String(sucursales[0].id) : '');
       setClienteId(cita?.clienteId != null ? String(cita.clienteId) : '');
       setTipoServicioId(cita?.tipoServicioId != null ? String(cita.tipoServicioId) : '');
-      setAsignadoAId(cita?.asignadoAId != null ? String(cita.asignadoAId) : '');
-      setFechaHora(aInputDatetimeLocal(cita?.fechaHora ?? null));
+      setAsignadoAId(cita?.asignadoAId != null ? String(cita.asignadoAId) : inicio?.asignadoAId ? String(inicio.asignadoAId) : '');
+      setRecursoId(cita?.recursoId ? String(cita.recursoId) : '');
+      setBusquedaCliente('');
+      setFechaHora((cita?.fechaHora ?? inicio?.fechaHora ?? '').slice(0,16));
       setDuracionMinutos(cita?.duracionMinutos != null ? String(cita.duracionMinutos) : '30');
       setNotas(cita?.notas ?? '');
       setError(null);
     }
-  }, [isOpen, cita, sucursales]);
+  }, [isOpen, cita, inicio, sucursales]);
 
   async function handleGuardar() {
     setError(null);
-    if (!sucursalId || !fechaHora) {
-      setError('Sucursal y fecha/hora son obligatorios');
+    if (!permisos.operar || terminada || guardando) return;
+    if (!sucursalId || !fechaHora || !asignadoAId) {
+      setError('Selecciona sucursal, empleado y fecha/hora');
       return;
     }
+    const duracion=Number(duracionMinutos);
+    if(!Number.isInteger(duracion)||duracion<5||duracion>1440){setError('La duración debe ser un número entero entre 5 y 1440 minutos.');return;}
     const data = {
       sucursalId: Number(sucursalId),
       clienteId: clienteId ? Number(clienteId) : undefined,
       tipoServicioId: tipoServicioId ? Number(tipoServicioId) : undefined,
       asignadoAUsuarioId: asignadoAId ? Number(asignadoAId) : undefined,
-      fechaHora: new Date(fechaHora).toISOString(),
-      duracionMinutos: Number(duracionMinutos) || 30,
+      fechaHora: `${fechaHora}:00`,
+      recursoId: recursoId ? Number(recursoId) : undefined,
+      duracionMinutos: duracion,
       notas: notas || undefined,
     };
     try {
@@ -83,12 +93,12 @@ export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onCl
     }
   }
 
-  const guardando = crear.isPending || actualizar.isPending;
+  const guardando = crear.isPending || actualizar.isPending || cambiarEstado.isPending;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={cita ? 'Editar cita' : 'Nueva cita'} size="md">
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <fieldset disabled={!permisos.operar || terminada || guardando} className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-ink-600">Sucursal</span>
             <select className="input" value={sucursalId} onChange={(e) => setSucursalId(e.target.value)}>
@@ -101,9 +111,10 @@ export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onCl
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-ink-600">Cliente (opcional)</span>
+            <input className="input mb-2" placeholder="Buscar por nombre o teléfono" aria-label="Buscar cliente" value={busquedaCliente} onChange={e=>setBusquedaCliente(e.target.value)}/>
             <select className="input" value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
               <option value="">Sin cliente</option>
-              {clientes?.map((c) => (
+              {clientes?.filter(c=>String(c.id)===clienteId || `${c.nombre} ${c.telefono??''}`.toLocaleLowerCase().includes(busquedaCliente.toLocaleLowerCase())).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nombre}
                 </option>
@@ -112,7 +123,7 @@ export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onCl
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-ink-600">Tipo de servicio</span>
-            <select className="input" value={tipoServicioId} onChange={(e) => setTipoServicioId(e.target.value)}>
+            <select className="input" value={tipoServicioId} onChange={(e) => {setTipoServicioId(e.target.value);const tipo=tiposServicio?.find(t=>String(t.id)===e.target.value);if(tipo?.duracionMinutos)setDuracionMinutos(String(tipo.duracionMinutos));}}>
               <option value="">Sin especificar</option>
               {tiposServicio?.filter((t) => t.activo).map((t) => (
                 <option key={t.id} value={t.id}>
@@ -125,7 +136,7 @@ export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onCl
             <span className="mb-1 block text-xs font-medium text-ink-600">Asignado a</span>
             <select className="input" value={asignadoAId} onChange={(e) => setAsignadoAId(e.target.value)}>
               <option value="">Sin asignar</option>
-              {usuarios?.map((u) => (
+              {usuarios?.filter(u=>permisos.empresa||permisos.puede('VER_SUCURSAL')||u.id===usuarioId).map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.nombre} {u.apellido ?? ''}
                 </option>
@@ -138,20 +149,23 @@ export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onCl
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-ink-600">Duración (min)</span>
-            <input type="number" className="input" value={duracionMinutos} onChange={(e) => setDuracionMinutos(e.target.value)} />
+            <input type="number" min="5" max="1440" className="input" value={duracionMinutos} onChange={(e) => setDuracionMinutos(e.target.value)} />
           </label>
-        </div>
+          <label className="block col-span-2"><span className="mb-1 block text-xs font-medium text-ink-600">Puesto o equipo (opcional)</span><select className="input" value={recursoId} onChange={e=>setRecursoId(e.target.value)}><option value="">No requiere equipo</option>{recursos.data?.filter(r=>r.activo&&String(r.sucursal_id)===sucursalId).map(r=><option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>
+        </fieldset>
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-ink-600">Notas (opcional)</span>
-          <input className="input" value={notas} onChange={(e) => setNotas(e.target.value)} />
+          <input disabled={!permisos.operar||terminada||guardando} maxLength={255} className="input" value={notas} onChange={(e) => setNotas(e.target.value)} />
         </label>
 
         {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
 
+        {terminada&&<p className="text-sm text-ink-500">Cita finalizada: consulta sus datos y cobros.</p>}
+        {cita&&<CobroCita cita={cita}/>}
         <div className="flex items-center justify-between pt-2">
-          {cita && cita.estado !== 'CANCELADA' && cita.estado !== 'COMPLETADA' ? (
+          {cita && !terminada && permisos.operar && permisos.administrar ? (
             <button
-              onClick={handleCancelar}
+              disabled={guardando} onClick={handleCancelar}
               className="flex items-center gap-1.5 text-xs font-medium text-danger-500 hover:text-danger-600"
             >
               <Ban size={14} />
@@ -166,7 +180,7 @@ export function CitaFormModal({ isOpen, onClose, cita }: { isOpen: boolean; onCl
             </button>
             <button
               onClick={handleGuardar}
-              disabled={guardando}
+              disabled={guardando||!permisos.operar||terminada}
               className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
             >
               {guardando && <Loader2 size={16} className="animate-spin" />}

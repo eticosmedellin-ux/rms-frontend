@@ -1,0 +1,68 @@
+{
+  "entrega": "calendario-3",
+  "fecha": "2026-10-10",
+  "backend": {
+    "pruebas": 161,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "base": "PostgreSQL PGlite 18.3 aislado",
+    "migracion": "Aplicada dos veces sin error",
+    "verificado": [
+      "Cruces de empleado y horarios (pruebas previas conservadas)",
+      "Cruces de equipo entre empleados",
+      "Recursos de otra empresa rechazados",
+      "Cotización única desde cita al reintentar",
+      "Anticipo sin duplicación",
+      "Cita completada requerida para facturar",
+      "Saldo y aplicación de anticipos sin duplicar caja",
+      "Registro bancario con referencia sin duplicación",
+      "Cobros ajenos y recursos administrativos protegidos",
+      "Citas cotizadas conservan sus datos comerciales",
+      "Rango máximo y hora local",
+      "Cancelación bloquea nuevos anticipos"
+    ]
+  },
+  "frontend": {
+    "typescript": "aprobado",
+    "vite": "compilación de producción aprobada",
+    "interaccion": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM, componentes React con API simulada",
+      "comprobaciones": [
+        "Vista diaria por empleado",
+        "Detalle del día y notas",
+        "Rango de consulta",
+        "Control de solapamiento visual",
+        "Formulario desde horario libre",
+        "Búsqueda por teléfono",
+        "Guardar hora local sin UTC",
+        "Preparar y aprobar cotización",
+        "Anticipo con clave y caja",
+        "Saldo actualizado",
+        "Factura oculta antes de completar",
+        "Completar y facturar el saldo exacto",
+        "Vistas semana y mes",
+        "Arrastrar y confirmar reprogramación",
+        "Rol consulta sin escrituras"
+      ],
+      "erroresReact": []
+    }
+  },
+  "pendientes_entorno": [
+    "Instalación en Windows (PS1 no ejecutados aquí)",
+    "SQL en neondb de producción",
+    "Despliegue y comprobación en Render",
+    "Inspección visual en navegador real"
+  ],
+  "limites": [
+    "La cuadrícula propone intervalos de 30 minutos; el formulario permite hora exacta",
+    "Sin disponibilidad configurada se permiten horarios que no se crucen",
+    "Arrastre en vista diaria; formulario como alternativa móvil/teclado",
+    "Un medio por operación de cobro; anticipos sucesivos permiten medios diferentes",
+    "No se ejecutan transferencias externas",
+    "Cancelar cita no reintegra dinero automáticamente",
+    "Históricos con varias cotizaciones requieren revisión en Operación de servicios",
+    "Recordatorios existentes siguen con envío manual autorizado"
+  ]
+}

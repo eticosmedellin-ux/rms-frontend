@@ -1,124 +1,37 @@
-import { useUsuarios } from '@/hooks/useNucleo';
-import { getApiErrorMessage } from '@/api/errors';
-import { useState } from 'react';
-import { Plus, Clock, User as UserIcon } from 'lucide-react';
-import { useCitas, useCambiarEstadoCita } from '@/hooks/useServicios';
-import { LoadingState, EmptyState } from '@/components/ui/States';
-import { CitaFormModal } from '@/pages/servicios/CitaFormModal';
-import type { Cita, EstadoCita } from '@/api/servicios';
-
-const ESTADO_LABELS: Record<EstadoCita, string> = {
-  PROGRAMADA: 'Programada',
-  CONFIRMADA: 'Confirmada',
-  EN_CURSO: 'En curso',
-  COMPLETADA: 'Completada',
-  CANCELADA: 'Cancelada',
-  NO_ASISTIO: 'No asistió',
-};
-
-const ESTADO_TONOS: Record<EstadoCita, string> = {
-  PROGRAMADA: 'bg-ink-100 text-ink-600',
-  CONFIRMADA: 'bg-amber-100 text-amber-700',
-  EN_CURSO: 'bg-blue-100 text-blue-700',
-  COMPLETADA: 'bg-success-50 text-success-600',
-  CANCELADA: 'bg-danger-50 text-danger-500',
-  NO_ASISTIO: 'bg-danger-50 text-danger-500',
-};
-
-const SIGUIENTE: Partial<Record<EstadoCita, EstadoCita>> = {
-  PROGRAMADA: 'CONFIRMADA',
-  CONFIRMADA: 'EN_CURSO',
-  EN_CURSO: 'COMPLETADA',
-};
-
-function formatoFechaHora(iso: string) {
-  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-export function CitasTab() {
-  const { data: citas, isLoading } = useCitas();
-  const cambiarEstado = useCambiarEstadoCita();
-  const {data:usuarios}=useUsuarios();
-  const [empleado,setEmpleado]=useState(''),[dia,setDia]=useState('');
-  const visibles=(citas??[]).filter(c=>(!empleado||String(c.asignadoAId)===empleado)&&(!dia||c.fechaHora.slice(0,10)===dia));
-  const [formAbierto, setFormAbierto] = useState(false);
-  const [citaEditar, setCitaEditar] = useState<Cita | null>(null);
-
-  return (
-    <div>
-      <div className="flex justify-end">
-        <button
-          onClick={() => {
-            setCitaEditar(null);
-            setFormAbierto(true);
-          }}
-          className="flex items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
-        >
-          <Plus size={16} />
-          Nueva cita
-        </button>
-      </div>
-
-      <div className="mt-4 flex gap-3"><label>Empleado<select className="ml-2 rounded border p-2" value={empleado} onChange={e=>setEmpleado(e.target.value)}><option value="">Todos</option>{usuarios?.map(u=><option key={u.id} value={u.id}>{u.nombre}</option>)}</select></label><label>Día<input className="ml-2 rounded border p-2" type="date" value={dia} onChange={e=>setDia(e.target.value)}/></label></div>
-      {cambiarEstado.error&&<p role="alert" className="mt-3 text-red-700">{getApiErrorMessage(cambiarEstado.error,'No se pudo cambiar el estado')}</p>}
-      <div className="mt-4">
-        {isLoading ? (
-          <LoadingState />
-        ) : visibles.length > 0 ? (
-          <div className="space-y-2">
-            {visibles.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => {
-                  setCitaEditar(c);
-                  setFormAbierto(true);
-                }}
-                className="flex cursor-pointer items-center justify-between rounded-xl border border-ink-100 bg-white px-4 py-3 shadow-card hover:border-ink-200"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5 text-sm text-ink-500">
-                    <Clock size={14} />
-                    {formatoFechaHora(c.fechaHora)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-ink-800">{c.clienteNombre ?? 'Sin cliente'}</p>
-                    <p className="text-xs text-ink-400">
-                      {c.tipoServicioNombre ?? 'Sin tipo de servicio'} · {c.sucursalNombre}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {c.asignadoANombre && (
-                    <span className="flex items-center gap-1 text-xs text-ink-400">
-                      <UserIcon size={12} />
-                      {c.asignadoANombre}
-                    </span>
-                  )}
-                  {SIGUIENTE[c.estado] ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        cambiarEstado.mutate({ id: c.id, estado: SIGUIENTE[c.estado]! });
-                      }}
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${ESTADO_TONOS[c.estado]}`}
-                    >
-                      {ESTADO_LABELS[c.estado]}
-                    </button>
-                  ) : (
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ESTADO_TONOS[c.estado]}`}>
-                      {ESTADO_LABELS[c.estado]}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="Sin citas próximas" description="Agenda la primera cita." />
-        )}
-      </div>
-
-      <CitaFormModal isOpen={formAbierto} onClose={() => setFormAbierto(false)} cita={citaEditar} />
-    </div>
-  );
+import {useState,useRef,useEffect} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
+import {getApiErrorMessage} from '@/api/errors';
+import {useUsuarios} from '@/hooks/useNucleo';
+import {useSucursales} from '@/hooks/useSucursales';
+import {useAuthStore} from '@/stores/authStore';
+import {usePermisosOperacion} from '@/hooks/usePermisosOperacion';
+import {useCitas,useActualizarCita,useCambiarEstadoCita} from '@/hooks/useServicios';
+import {LoadingState} from '@/components/ui/States';
+import {CitaFormModal} from './CitaFormModal';
+import {RecursosAgenda} from './RecursosAgenda';
+import {fechaHoy,sumarDias,sumarMes,hora,cruza} from './agenda';
+import type {Cita,EstadoCita,InicioCita} from '@/api/servicios';
+const labels:Record<EstadoCita,string>={PROGRAMADA:'Programada',CONFIRMADA:'Confirmada',EN_CURSO:'En curso',COMPLETADA:'Completada',CANCELADA:'Cancelada',NO_ASISTIO:'No asistió'};
+const tonos:Record<EstadoCita,string>={PROGRAMADA:'bg-ink-100 text-ink-700',CONFIRMADA:'bg-amber-100 text-amber-800',EN_CURSO:'bg-blue-100 text-blue-800',COMPLETADA:'bg-green-100 text-green-800',CANCELADA:'bg-red-100 text-red-800',NO_ASISTIO:'bg-red-100 text-red-800'};
+type Disponibilidad={usuario_id:number;sucursal_id:number;dia:number;desde:string;hasta:string};
+export function CitasTab(){
+ const permisos=usePermisosOperacion('SERVICIOS_CITAS'),uid=useAuthStore(s=>s.usuarioId);
+ const [dia,setDia]=useState(fechaHoy),[vista,setVista]=useState<'dia'|'semana'|'mes'|'lista'>('dia'),[empleado,setEmpleado]=useState(''),[sucursal,setSucursal]=useState(''),[busqueda,setBusqueda]=useState(''),[error,setError]=useState(''),[form,setForm]=useState(false),[editar,setEditar]=useState<Cita|null>(null),[inicio,setInicio]=useState<InicioCita|null>(null),[recursos,setRecursos]=useState(false);
+ const primerMes=dia.slice(0,7)+'-01';const lunes= sumarDias(dia,-((new Date(`${dia}T12:00:00`).getDay()+6)%7));const desde=vista==='mes'?sumarDias(primerMes,-((new Date(`${primerMes}T12:00:00`).getDay()+6)%7)):vista==='semana'?lunes:dia;const cantidad=vista==='mes'?42:vista==='semana'?7:1;const hasta=sumarDias(desde,cantidad-1);
+ const grid=useRef<HTMLDivElement>(null);
+ const {data:citas,isLoading,error:cargaError}=useCitas(`${desde}T00:00:00`,`${hasta}T23:59:59`);const {data:usuarios}=useUsuarios(),{data:sucursales}=useSucursales();const actualizar=useActualizarCita(),estado=useCambiarEstadoCita();
+ const disponibilidad=useQuery({queryKey:['agenda-disponibilidad'],queryFn:async()=>(await apiClient.get<Disponibilidad[]>('/servicios/citas/operacion/disponibilidad')).data});
+ useEffect(()=>{if(vista==='dia'&&!isLoading&&grid.current){const fila=grid.current.querySelectorAll<HTMLTableRowElement>('tbody tr')[16];if(fila)grid.current.scrollTop=Math.max(0,fila.offsetTop-40);}},[dia,vista,isLoading]);
+ const propios=!permisos.empresa&&!permisos.puede('VER_SUCURSAL');const empleados=(usuarios??[]).filter(u=>!propios||u.id===uid);const visibles=(citas??[]).filter(c=>(!empleado||String(c.asignadoAId)===empleado)&&(!sucursal||String(c.sucursalId)===sucursal)&&`${c.clienteNombre??''} ${c.tipoServicioNombre??''} ${c.asignadoANombre??''} ${c.notas??''}`.toLocaleLowerCase().includes(busqueda.toLocaleLowerCase()));
+ const delDia=visibles.filter(c=>c.fechaHora.slice(0,10)===dia);const dias=Array.from({length:cantidad},(_,i)=>sumarDias(desde,i));
+ function abrir(c:Cita){setEditar(c);setInicio(null);setForm(true);}
+ function nueva(fechaHora=`${dia}T09:00`,emp?:number){setEditar(null);setInicio({fechaHora,asignadoAId:emp??(empleado?Number(empleado):propios?uid??undefined:undefined),sucursalId:sucursal?Number(sucursal):sucursales?.[0]?.id});setForm(true);}
+ function permitido(d:string,min:number,emp:number,sid:number){const todos=(disponibilidad.data??[]).filter(h=>h.usuario_id===emp);if(!todos.length)return true;const dow=(new Date(`${d}T12:00:00`).getDay()+6)%7+1;return todos.some(h=>h.sucursal_id===sid&&h.dia===dow&&h.desde.slice(0,5)<=hora(min)&&h.hasta.slice(0,5)>=hora(min+30));}
+ async function mover(id:number,d:string,min:number,emp:number){const c=(citas??[]).find(x=>x.id===id);if(!c||!permisos.operar||actualizar.isPending)return;const fecha=`${d}T${hora(min)}:00`;if(c.fechaHora.slice(0,16)===fecha.slice(0,16)&&c.asignadoAId===emp)return;if(!window.confirm(`¿Reprogramar la cita #${id} para ${d} a las ${hora(min)}?`))return;setError('');try{await actualizar.mutateAsync({id,data:{sucursalId:c.sucursalId,clienteId:c.clienteId??undefined,tipoServicioId:c.tipoServicioId??undefined,asignadoAUsuarioId:emp,fechaHora:fecha,duracionMinutos:c.duracionMinutos,notas:c.notas??undefined,recursoId:c.recursoId??undefined}});}catch(e){setError(getApiErrorMessage(e,'No se pudo reprogramar. La cita conserva su horario anterior.'));}}
+ const tarjeta=(c:Cita)=><button key={c.id} draggable={permisos.operar&&['PROGRAMADA','CONFIRMADA','EN_CURSO'].includes(c.estado)} onDragStart={e=>e.dataTransfer.setData('text/plain',String(c.id))} onClick={()=>abrir(c)} className={`block w-full rounded border p-2 text-left text-xs ${tonos[c.estado]}`}><strong>{c.fechaHora.slice(11,16)} · {c.clienteNombre??'Sin cliente'}</strong><br/>{c.tipoServicioNombre??'Servicio'} · {c.duracionMinutos} min<br/>{c.asignadoANombre} · {labels[c.estado]}{c.recursoNombre&&<><br/>{c.recursoNombre}</>}</button>;
+ return <div className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">Calendario de citas</h2><div className="flex gap-2">{permisos.administrar&&<button className="rounded border px-3 py-2 text-sm" onClick={()=>setRecursos(!recursos)}>Puestos y equipos</button>}<button disabled={!permisos.operar} className="rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={()=>nueva()}>Nueva cita</button></div></div>{recursos&&permisos.administrar&&<RecursosAgenda/>}<div className="flex flex-wrap items-end gap-3"><button className="rounded border p-2" aria-label="Período anterior" onClick={()=>setDia(vista==='mes'?sumarMes(dia,-1):sumarDias(dia,vista==='semana'?-7:-1))}>‹</button><button className="rounded border p-2" onClick={()=>setDia(fechaHoy())}>Hoy</button><label className="text-sm">Fecha<input className="input" type="date" value={dia} onChange={e=>e.target.value&&setDia(e.target.value)}/></label><button className="rounded border p-2" aria-label="Período siguiente" onClick={()=>setDia(vista==='mes'?sumarMes(dia,1):sumarDias(dia,vista==='semana'?7:1))}>›</button><label className="text-sm">Vista<select className="input" value={vista} onChange={e=>setVista(e.target.value as typeof vista)}><option value="dia">Día por empleado</option><option value="semana">Semana</option><option value="mes">Mes</option><option value="lista">Lista del día</option></select></label><label className="text-sm">Sucursal<select className="input" value={sucursal} onChange={e=>setSucursal(e.target.value)}><option value="">Todas</option>{sucursales?.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}</select></label><label className="text-sm">Empleado<select className="input" value={empleado} onChange={e=>setEmpleado(e.target.value)}><option value="">{propios?'Mi agenda':'Todos'}</option>{empleados.map(u=><option key={u.id} value={u.id}>{u.nombre}</option>)}</select></label><label className="text-sm">Buscar<input className="input" placeholder="Cliente, servicio o notas" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></label></div>
+ <div className="flex flex-wrap gap-3 text-sm">{(['PROGRAMADA','CONFIRMADA','EN_CURSO','COMPLETADA','CANCELADA','NO_ASISTIO'] as EstadoCita[]).map(s=><span key={s} className={`rounded px-2 py-1 ${tonos[s]}`}>{labels[s]}: {delDia.filter(c=>c.estado===s).length}</span>)}<span className="p-1">Día seleccionado: {dia}</span></div>{(error||cargaError||disponibilidad.error)&&<p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{error||getApiErrorMessage(cargaError??disponibilidad.error,'No se pudo consultar la agenda. No se ofrecen horarios hasta recargar.')}</p>}
+ {isLoading?<LoadingState/>:vista==='dia'?<><p className="text-xs text-ink-500">Pulsa un horario libre para crear una cita. Arrastra una cita para reprogramarla y confirma. Si no hay disponibilidad configurada se permiten horarios sin cruces; al guardar se valida la duración completa.</p><div ref={grid} className="max-h-[640px] overflow-auto rounded-xl border bg-white"><table className="w-full text-sm"><thead className="sticky top-0 bg-white"><tr><th className="p-2">Hora</th>{empleados.filter(u=>!empleado||String(u.id)===empleado).map(u=><th key={u.id} className="min-w-44 p-2">{u.nombre}</th>)}</tr></thead><tbody>{Array.from({length:48},(_,i)=>i*30).map(min=><tr key={min}><th className="border-t p-2 text-xs text-ink-500">{hora(min)}</th>{empleados.filter(u=>!empleado||String(u.id)===empleado).map(u=>{const sid=sucursal?Number(sucursal):sucursales?.[0]?.id??0;const celda=delDia.filter(c=>c.asignadoAId===u.id&&Math.floor((Number(c.fechaHora.slice(11,13))*60+Number(c.fechaHora.slice(14,16)))/30)*30===min);const ocupado=delDia.some(c=>c.asignadoAId===u.id&&cruza(c,dia,min,30));const libre=!cargaError&&!disponibilidad.isLoading&&!disponibilidad.error&&min+30<1440&&permitido(dia,min,u.id,sid)&&!ocupado;return <td key={u.id} className={`border-l border-t p-1 align-top ${ocupado?'bg-ink-50':''}`} onDragOver={e=>{if(permisos.operar)e.preventDefault();}} onDrop={e=>{e.preventDefault();mover(Number(e.dataTransfer.getData('text/plain')),dia,min,u.id);}}>{celda.map(tarjeta)}{!celda.length&&(libre?<button disabled={!permisos.operar||actualizar.isPending} className="w-full rounded p-2 text-left text-xs text-ink-400 hover:bg-ink-50 disabled:opacity-50" aria-label={`Nueva cita ${hora(min)} con ${u.nombre}`} onClick={()=>nueva(`${dia}T${hora(min)}`,u.id)}>Libre</button>:<span className="block p-2 text-xs text-ink-400">{ocupado?'Ocupado':'No disponible'}</span>)}</td>;})}</tr>)}</tbody></table></div></>:vista==='lista'?<div className="space-y-2">{delDia.map(tarjeta)}{!delDia.length&&<p className="p-4 text-sm text-ink-400">No hay citas con estos filtros.</p>}</div>:<div className="overflow-x-auto"><div className="grid min-w-[700px] grid-cols-7 gap-2">{dias.map(d=><section key={d} className={`min-h-32 rounded border p-2 ${d===dia?'border-ink-700 bg-ink-50':'bg-white'}`}><button className="mb-2 text-sm font-semibold" onClick={()=>{setDia(d);setVista('dia');}}>{new Date(`${d}T12:00:00`).toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'})}</button><div className="space-y-1">{visibles.filter(c=>c.fechaHora.slice(0,10)===d).map(tarjeta)}</div><button disabled={!permisos.operar} className="mt-2 text-xs underline" onClick={()=>nueva(`${d}T09:00`)}>+ Agendar</button></section>)}</div></div>}
+ <section className="rounded-xl border bg-white p-4"><h3 className="mb-2 font-semibold">Detalle del día · {dia}</h3>{!delDia.length?<p className="text-sm text-ink-400">No hay citas para este día.</p>:<div className="space-y-2">{delDia.map(c=><div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-3"><button className="text-left text-sm" onClick={()=>abrir(c)}><strong>{c.fechaHora.slice(11,16)} · {c.clienteNombre??'Sin cliente'}</strong><br/>{c.tipoServicioNombre} · {c.asignadoANombre} · {c.sucursalNombre} · {c.duracionMinutos} min{c.recursoNombre&&` · ${c.recursoNombre}`}<br/>{c.notas}</button><div className="flex flex-wrap gap-1"><span className={`rounded px-2 py-1 text-xs ${tonos[c.estado]}`}>{labels[c.estado]}</span>{permisos.operar&&(['PROGRAMADA','CONFIRMADA','EN_CURSO'].includes(c.estado))&&<select aria-label={`Cambiar estado cita ${c.id}`} disabled={estado.isPending} className="rounded border p-1 text-xs" value="" onChange={async e=>{const destino=e.target.value as EstadoCita;if(!window.confirm(`Cita #${c.id}: ¿marcar ${labels[destino]}?`))return;try{await estado.mutateAsync({id:c.id,estado:destino});}catch(err){setError(getApiErrorMessage(err,'No se pudo cambiar el estado'));}}}><option value="">Cambiar estado…</option>{(c.estado==='EN_CURSO'?['COMPLETADA']:c.estado==='PROGRAMADA'?['CONFIRMADA','EN_CURSO','NO_ASISTIO']:['EN_CURSO','NO_ASISTIO']).map(s=><option key={s} value={s}>{labels[s as EstadoCita]}</option>)}{permisos.administrar&&<option value="CANCELADA">Cancelar</option>}</select>}<button className="rounded border px-2 py-1 text-xs" onClick={()=>abrir(c)}>Abrir / cobro</button></div></div>)}</div>}</section><CitaFormModal isOpen={form} onClose={()=>setForm(false)} cita={editar} inicio={inicio}/></div>;
 }
