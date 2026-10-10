@@ -1,0 +1,58 @@
+{
+  "entrega": "tutorial-6",
+  "fecha": "2026-10-10",
+  "backend": {
+    "pruebas": 186,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "base": "PostgreSQL PGlite 18.3 aislado",
+    "migracion": "Aplicada dos veces sin error",
+    "verificado": [
+      "Guía por permisos y plan",
+      "20 módulos y 104 pasos únicos",
+      "Búsqueda por empresa y ámbito",
+      "Código de barras sin precios/costos",
+      "Consulta parametrizada y límites",
+      "Contexto de sucursales autorizado",
+      "Registro explícito de preguntas con longitudes validadas",
+      "Regresiones de partes anteriores"
+    ]
+  },
+  "frontend": {
+    "typescript": "aprobado",
+    "vite": "aprobado",
+    "interaccion": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM con API simulada; no navegador gráfico real",
+      "comprobaciones": [
+        "20 módulos del tutorial",
+        "Paso resaltado y navegación",
+        "Progreso local se conserva",
+        "Progreso separado por empleado",
+        "Búsqueda de módulos sin tildes",
+        "Tutorial no envía operaciones de negocio",
+        "Ayuda busca cuotas",
+        "Abrir y cerrar tutorial global con Escape",
+        "Pregunta solo se registra con pulsación explícita",
+        "Buscador solo consulta al enviar",
+        "Resultados abren módulos sin guardar"
+      ],
+      "erroresReact": []
+    }
+  },
+  "pendientes_entorno": [
+    "PS1 Windows",
+    "SQL producción neondb",
+    "Despliegue Render",
+    "Inspección gráfica real"
+  ],
+  "limites": [
+    "Tutorial seguro de acciones principales, no superposición sobre cada botón real",
+    "Búsqueda abre módulos; selección automática no universal",
+    "Contexto de sucursal de caja, no filtro global",
+    "Guía versionada se edita en código; árbol previo conserva edición",
+    "Preguntas registradas no envían comunicaciones externas",
+    "Progreso local por navegador"
+  ]
+}

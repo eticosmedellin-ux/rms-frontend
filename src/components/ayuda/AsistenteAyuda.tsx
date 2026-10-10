@@ -1,3 +1,5 @@
+import GuiaAyuda from './GuiaAyuda';
+import {getApiErrorMessage} from '@/api/errors';
 import { useState } from 'react';
 import { HelpCircle, X, ArrowLeft, RotateCcw, MessageCircleWarning, CheckCircle2 } from 'lucide-react';
 import { useRaizAyuda, useNodoAyuda, useRegistrarConsultaSinRespuesta } from '@/hooks/useAyuda';
@@ -11,13 +13,15 @@ function urlIncrustable(url: string): string | null {
 }
 
 export function AsistenteAyuda() {
+  const [modo,setModo]=useState<'guia'|'preguntas'>('guia');
+  const [error,setError]=useState('');
   const [abierto, setAbierto] = useState(false);
   const [nodoActualId, setNodoActualId] = useState<number | null>(null);
   const [pila, setPila] = useState<{ id: number; titulo: string }[]>([]);
   const [avisado, setAvisado] = useState(false);
 
-  const { data: raiz, isLoading: cargandoRaiz } = useRaizAyuda(abierto && nodoActualId === null);
-  const { data: nodoNavegado, isLoading: cargandoNodo } = useNodoAyuda(nodoActualId);
+  const { data: raiz, isLoading: cargandoRaiz, error: errorRaiz } = useRaizAyuda(abierto && modo==='preguntas' && nodoActualId === null);
+  const { data: nodoNavegado, isLoading: cargandoNodo, error: errorNodo } = useNodoAyuda(nodoActualId);
   const registrarSinRespuesta = useRegistrarConsultaSinRespuesta();
 
   const nodo = nodoActualId === null ? raiz : nodoNavegado;
@@ -62,8 +66,8 @@ export function AsistenteAyuda() {
   }
 
   async function avisarSoporte() {
-    await registrarSinRespuesta.mutateAsync({ rutaResumen: rutaResumen() });
-    setAvisado(true);
+    if(registrarSinRespuesta.isPending||avisado)return;setError('');
+    try{await registrarSinRespuesta.mutateAsync({ rutaResumen: rutaResumen() });setAvisado(true);}catch(e){setError(getApiErrorMessage(e,'No se pudo registrar la consulta. Intenta de nuevo.'));}
   }
 
   const esRespuestaVacia = nodo?.tipo === 'RESPUESTA' && !nodo.contenido && !nodo.videoUrl;
@@ -80,7 +84,7 @@ export function AsistenteAyuda() {
       </button>
 
       {abierto && (
-        <div className="fixed bottom-24 right-6 z-40 flex max-h-[70vh] w-96 flex-col rounded-xl border border-ink-100 bg-white shadow-lg">
+        <div className="fixed bottom-24 right-6 z-40 flex max-h-[75vh] w-[calc(100vw-3rem)] max-w-md flex-col rounded-xl border border-ink-100 bg-white shadow-lg">
           <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
             <div className="flex items-center gap-2">
               {(pila.length > 0 || nodoActualId !== null) && (
@@ -100,10 +104,11 @@ export function AsistenteAyuda() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            {cargando || !nodo ? (
+          <div className="flex gap-2 border-b px-4 py-2"><button className={`rounded px-2 py-1 text-xs ${modo==='guia'?'bg-ink-800 text-white':'bg-ink-50'}`} onClick={()=>{setModo('guia');setNodoActualId(null);}}>Guía rápida</button><button className={`rounded px-2 py-1 text-xs ${modo==='preguntas'?'bg-ink-800 text-white':'bg-ink-50'}`} onClick={()=>setModo('preguntas')}>Preguntas configuradas</button></div><div className="flex-1 overflow-y-auto p-4">
+            {modo==='guia'?<GuiaAyuda/>:<>{error&&<p role="alert" className="mb-2 text-xs text-red-700">{error}</p>}{(errorRaiz||errorNodo)&&<p role="alert" className="mb-2 text-sm text-red-700">{getApiErrorMessage(errorRaiz||errorNodo,'No se pudieron cargar las preguntas configuradas. Consulta Guía rápida.')}</p>}
+            {cargando ? (
               <LoadingState />
-            ) : nodo.tipo === 'PREGUNTA' ? (
+            ) : !nodo ? (<p className="text-sm text-ink-500">No hay preguntas disponibles. Puedes usar Guía rápida.</p>) : nodo.tipo === 'PREGUNTA' ? (
               <div>
                 <p className="mb-3 text-sm font-medium text-ink-800">{nodo.titulo}</p>
                 <div className="space-y-2">
@@ -175,7 +180,7 @@ export function AsistenteAyuda() {
                   Hacer otra pregunta
                 </button>
               </div>
-            )}
+            )}</>}
           </div>
         </div>
       )}

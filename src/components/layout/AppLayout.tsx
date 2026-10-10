@@ -1,3 +1,4 @@
+import {TutorialGlobal} from '@/features/tutorial/TutorialUso';
 import {useApariencia} from '@/features/apariencia/AparienciaProvider';
 import {fondo} from '@/features/apariencia/tema';
 import { useState } from 'react';
@@ -47,6 +48,7 @@ export function AppLayout() {
         </main>
       </div>
       <AsistenteAyuda />
+      <TutorialGlobal/>
     </div>
   );
 }

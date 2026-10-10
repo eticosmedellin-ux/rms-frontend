@@ -1,3 +1,7 @@
+import BuscadorGeneral from './BuscadorGeneral';
+import {useQuery} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
+import {usePosStore} from '@/stores/posStore';
 import {useApariencia} from '@/features/apariencia/AparienciaProvider';
 import {fondo} from '@/features/apariencia/tema';
 import {useQueryClient} from '@tanstack/react-query';
@@ -7,6 +11,9 @@ import { useAuthStore } from '@/stores/authStore';
 
 export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
   const apariencia=useApariencia();
+  const a=useAuthStore(),sucursalId=usePosStore(x=>x.sucursalId);
+  const contexto=useQuery({queryKey:['contexto-cabecera',a.empresaId,a.usuarioId],queryFn:async()=>(await apiClient.get<{sucursales:{id:number;nombre:string}[]}>('/ayuda/contexto')).data,retry:false});
+  const nombreSucursal=contexto.data?.sucursales.find(s=>s.id===sucursalId)?.nombre;
   const navigate = useNavigate();const qc=useQueryClient();
   const nombreCompleto = useAuthStore((state) => state.nombreCompleto);
   const nombreEmpresa = useAuthStore((state) => state.nombreEmpresa);
@@ -26,11 +33,11 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
         </button>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-ink-800 dark:text-ink-100">{nombreEmpresa}</p>
-          <p className="truncate text-xs text-ink-400 dark:text-ink-400">{roles.join(' · ')}</p>
+          <p className="truncate text-xs text-ink-400 dark:text-ink-400">{sucursalId?`Caja: ${nombreSucursal??'Sucursal #'+sucursalId}`:'Sin sucursal de caja seleccionada'} · {roles.join(' · ')}</p>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4"><BuscadorGeneral/>
         <span className="hidden text-sm text-ink-600 sm:inline">{nombreCompleto}</span>
         <button
           onClick={handleLogout}

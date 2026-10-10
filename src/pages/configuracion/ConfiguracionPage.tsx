@@ -1,3 +1,5 @@
+import TutorialUso from '@/features/tutorial/TutorialUso';
+import {normalizar} from '@/features/tutorial/guia';
 import AccesoEmpresaConfig from '@/features/sicom/AccesoEmpresaConfig';
 import ConfiguracionSicom from '@/features/sicom/ConfiguracionSicom';
 import { useState, useEffect, type ChangeEvent } from 'react';
@@ -17,13 +19,15 @@ import { getApiErrorMessage } from '@/api/errors';
 import { comprimirImagen } from '@/api/imagen';
 import { useTiposNegocioActivos } from '@/hooks/usePlataforma';
 
-const SECCIONES=[['empresa','Mi empresa'],['acceso','Cuenta y perfiles'],['pagos','Métodos de pago'],['redes','Redes y bancos'],['sistema','Sistema'],['ventas','Ventas'],['inventario','Inventario'],['impresion','Impresión'],['impuestos','Impuestos y categorías'],['facturacion','Facturación electrónica'],['fidelizacion','Fidelización'],['facturadores','Usuarios de facturación']] as const;
+const SECCIONES=[['empresa','Mi empresa'],['acceso','Cuenta y perfiles'],['pagos','Métodos de pago'],['redes','Redes y bancos'],['sistema','Sistema'],['ventas','Ventas'],['inventario','Inventario'],['impresion','Impresión'],['impuestos','Impuestos y categorías'],['facturacion','Facturación electrónica'],['fidelizacion','Fidelización'],['facturadores','Usuarios de facturación'],['tutorial','Tutorial']] as const;
+const GRUPOS=[['Empresa y acceso',['empresa','acceso','redes']],['Operación',['pagos','ventas','inventario','impuestos','fidelizacion','facturadores']],['Documentos y sistema',['impresion','facturacion','sistema']],['Aprender a usar SICOM',['tutorial']]] as const;
+const DETALLES:Record<string,string>={empresa:'Identificación, contacto, logo y tipo de negocio',acceso:'Ingreso de empresa, contraseña y perfiles',pagos:'Medios disponibles para cobrar',redes:'Contacto, redes sociales y datos bancarios',sistema:'Idioma, moneda, zona horaria y tema',ventas:'Opciones del punto de venta',inventario:'Reglas generales de existencias',impresion:'Impresora, tiquetes, tamaño y contenido',impuestos:'Categorías, subcategorías, reglas y aplicación masiva',facturacion:'Proveedor y datos de facturación electrónica',fidelizacion:'Reglas y beneficios de clientes',facturadores:'Acciones de usuarios dedicados a facturar',tutorial:'Guía por módulos, botones y secciones sin operar datos reales'};
 export default function ConfiguracionPage() {
  const [seccion,setSeccion]=useState('empresa'),[busqueda,setBusqueda]=useState(''),[editada,setEditada]=useState(false);
- useEffect(()=>{const listo=()=>setEditada(false);const salir=(e:BeforeUnloadEvent)=>{if(editada){e.preventDefault();e.returnValue='';}};window.addEventListener('sicom-config-guardada',listo);window.addEventListener('beforeunload',salir);return()=>{window.removeEventListener('sicom-config-guardada',listo);window.removeEventListener('beforeunload',salir);};},[editada]);
- const visibles=SECCIONES.filter(([,nombre])=>nombre.toLocaleLowerCase().includes(busqueda.toLocaleLowerCase()));
- const contenido=()=>{switch(seccion){case 'empresa':return <MiEmpresaCard/>;case 'acceso':return <AccesoEmpresaConfig/>;case 'pagos':return <MetodosPagoCard/>;case 'redes':return <RedesYBancoCard/>;case 'sistema':return <SistemaCard/>;case 'ventas':return <VentasGeneralCard/>;case 'inventario':return <InventarioGeneralCard/>;case 'impresion':return <ImpresionCard/>;case 'impuestos':return <><ImpuestosCard/><ConfiguracionSicom seccion="impuestos"/></>;case 'facturacion':return <FacturacionElectronicaCard/>;case 'fidelizacion':return <ConfiguracionSicom seccion="fidelizacion"/>;case 'facturadores':return <ConfiguracionSicom seccion="facturadores"/>;}}
- return <div><h1 className="font-display text-2xl font-semibold text-ink-800">Configuración</h1><p className="mt-1 text-sm text-ink-400">Selecciona un tema para consultar y cambiar sus opciones.</p><div className="mt-6 grid gap-5 md:grid-cols-[240px_minmax(0,1fr)]"><aside className="rounded-xl border bg-white p-3 self-start md:sticky md:top-0"><label className="text-sm">Buscar opción<input className="input mt-2" value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Impuestos, acceso…"/></label><nav aria-label="Opciones de configuración" className="mt-3 flex flex-col gap-1">{visibles.map(([id,label])=><button key={id} aria-current={seccion===id?'page':undefined} onClick={()=>{if(seccion===id)return;if(editada&&!window.confirm('Hay cambios sin guardar. ¿Cambiar de sección y descartarlos?'))return;setEditada(false);setSeccion(id);}} className={`rounded-lg px-3 py-3 text-left text-sm ${seccion===id?'bg-ink-800 text-white':'hover:bg-ink-50 text-ink-700'}`}>{label}</button>)}{!visibles.length&&<p className="p-2 text-sm">No hay opciones con ese nombre.</p>}</nav></aside><section key={seccion} className="min-w-0 space-y-5" onChange={()=>setEditada(true)}>{contenido()}</section></div></div>;
+ useEffect(()=>{const listo=()=>setEditada(false);const salir=(e:BeforeUnloadEvent)=>{if(editada){e.preventDefault();e.returnValue='';}};const marcar=()=>setEditada(true);window.addEventListener('sicom-config-editada',marcar);window.addEventListener('sicom-config-guardada',listo);window.addEventListener('beforeunload',salir);return()=>{window.removeEventListener('sicom-config-editada',marcar);window.removeEventListener('sicom-config-guardada',listo);window.removeEventListener('beforeunload',salir);};},[editada]);
+ const visibles=SECCIONES.filter(([,nombre])=>normalizar(nombre+' '+DETALLES[SECCIONES.find(s=>s[1]===nombre)?.[0]??'']).includes(normalizar(busqueda)));
+ const contenido=()=>{switch(seccion){case 'empresa':return <MiEmpresaCard/>;case 'acceso':return <AccesoEmpresaConfig/>;case 'pagos':return <MetodosPagoCard/>;case 'redes':return <RedesYBancoCard/>;case 'sistema':return <SistemaCard/>;case 'ventas':return <VentasGeneralCard/>;case 'inventario':return <InventarioGeneralCard/>;case 'impresion':return <ImpresionCard/>;case 'impuestos':return <><ImpuestosCard/><ConfiguracionSicom seccion="impuestos"/></>;case 'facturacion':return <FacturacionElectronicaCard/>;case 'fidelizacion':return <ConfiguracionSicom seccion="fidelizacion"/>;case 'facturadores':return <ConfiguracionSicom seccion="facturadores"/>;case 'tutorial':return <TutorialUso/>;}}
+ return <div><h1 className="font-display text-2xl font-semibold text-ink-800">Configuración</h1><p className="mt-1 text-sm text-ink-400">Selecciona un tema para consultar y cambiar sus opciones.</p><div className="mt-6 grid gap-5 md:grid-cols-[240px_minmax(0,1fr)]"><aside className="rounded-xl border bg-white p-3 self-start md:sticky md:top-0"><label className="text-sm">Buscar opción<input className="input mt-2" value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Impuestos, acceso…"/></label><nav aria-label="Opciones de configuración" className="mt-3 flex flex-col gap-1">{GRUPOS.map(([grupo,ids])=><div key={grupo}>{visibles.some(([id])=>(ids as readonly string[]).includes(id))&&<p className="mb-1 mt-3 px-3 text-xs font-semibold text-ink-400">{grupo}</p>}{visibles.filter(([id])=>(ids as readonly string[]).includes(id)).map(([id,label])=><button key={id} aria-current={seccion===id?'page':undefined} onClick={()=>{if(seccion===id)return;if(editada&&!window.confirm('Hay cambios sin guardar. ¿Cambiar de sección y descartarlos?'))return;setEditada(false);setSeccion(id);}} className={`rounded-lg px-3 py-3 text-left text-sm ${seccion===id?'bg-ink-800 text-white':'hover:bg-ink-50 text-ink-700'}`}>{label}</button>)}</div>)}{!visibles.length&&<p className="p-2 text-sm">No hay opciones con ese nombre.</p>}</nav></aside><section key={seccion} className="min-w-0 space-y-5" onChange={()=>{if(seccion!=='tutorial')setEditada(true);}}><div><h2 className="font-display text-lg font-semibold">{SECCIONES.find(([id])=>id===seccion)?.[1]}</h2><p className="mt-1 text-sm text-ink-500">{DETALLES[seccion]}</p>{editada&&<p role="status" className="mt-2 text-xs text-amber-700">Cambios sin guardar. Usa el botón de guardar de esta sección.</p>}</div>{contenido()}</section></div></div>;
 }
 
 function MiEmpresaCard() {
@@ -60,6 +64,7 @@ function MiEmpresaCard() {
   }, [empresa]);
 
   function toggleTipoNegocio(id: number) {
+    window.dispatchEvent(new Event('sicom-config-editada'));
     setTiposNegocioIds((actuales) => {
       if (actuales.includes(id)) return actuales.filter((x) => x !== id);
       if (actuales.length >= 2) return actuales;
@@ -125,7 +130,7 @@ function MiEmpresaCard() {
           </label>
           {logoUrl && (
             <button
-              onClick={() => setLogoUrl(null)}
+              onClick={() => {setLogoUrl(null);window.dispatchEvent(new Event('sicom-config-editada'));}}
               className="ml-2 text-xs font-medium text-ink-400 hover:text-danger-500"
             >
               Quitar
