@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { Wallet, CircleDollarSign } from 'lucide-react';
 import { useClientes, useCuentasPorCobrar } from '@/hooks/usePos';
@@ -8,7 +9,8 @@ import type { CuentaPorCobrar } from '@/types/pos';
 
 export function CuentasPorCobrarTab() {
   const { data: clientes } = useClientes();
-  const [clienteId, setClienteId] = useState<number | null>(null);
+  const [url]=useSearchParams();
+  const [clienteId, setClienteId] = useState<number | null>(()=>url.get('origen')==='reporte'&&url.get('clienteId')?Number(url.get('clienteId')):null);
   const { data: cuentas, isLoading } = useCuentasPorCobrar(clienteId);
   const [cuentaAbonando, setCuentaAbonando] = useState<CuentaPorCobrar | null>(null);
   const [notaDebitoAbierta, setNotaDebitoAbierta] = useState(false);

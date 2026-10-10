@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { Plus, Boxes, Pencil, Upload, Camera } from 'lucide-react';
 import { useProductos } from '@/hooks/useInventario';
@@ -9,7 +10,9 @@ import { ImagenProductoModal } from '@/pages/inventario/ImagenProductoModal';
 import type { Producto } from '@/types/inventario';
 
 export function ProductosTab() {
-  const { data: productos, isLoading } = useProductos();
+  const [url,setUrl]=useSearchParams();const referencia=url.get('origen')==='reporte'?url.get('referencia'):null;
+  const { data: todos, isLoading } = useProductos();
+  const productos=referencia?todos?.filter(p=>String(p.id)===referencia):todos;
   const [modalFormAbierto, setModalFormAbierto] = useState(false);
   const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
   const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
@@ -28,6 +31,7 @@ export function ProductosTab() {
 
   return (
     <div>
+      {referencia&&<p className="mb-3 rounded bg-ink-50 p-3 text-sm">Producto #{referencia} desde el reporte: abre Stock y Kardex para revisar sus existencias. <button className="underline" onClick={()=>{const p=new URLSearchParams(url);p.delete('referencia');setUrl(p);}}>Ver todos los productos</button></p>}
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-ink-400">
           {productos?.length ?? 0} producto{productos?.length === 1 ? '' : 's'} registrado

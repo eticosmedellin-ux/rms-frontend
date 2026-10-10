@@ -1,4 +1,5 @@
 import {HistorialOrden} from '@/features/sicom/HistorialOrden';
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { Plus, Send, PackageCheck, XCircle } from 'lucide-react';
 import { useOrdenesCompra, useEnviarOrdenCompra, useCancelarOrdenCompra } from '@/hooks/useCompras';
@@ -18,7 +19,9 @@ const ESTADO_STYLES: Record<EstadoOrdenCompra, string> = {
 };
 
 export function OrdenesCompraTab() {
-  const { data: ordenes, isLoading } = useOrdenesCompra();
+  const [url,setUrl]=useSearchParams();const referencia=url.get('origen')==='reporte'?url.get('referencia'):null;
+  const { data: todas, isLoading } = useOrdenesCompra();
+  const ordenes=referencia?todas?.filter(o=>String(o.id)===referencia):todas;
   const enviar = useEnviarOrdenCompra();
   const cancelar = useCancelarOrdenCompra();
   const [historialId,setHistorialId]=useState<number|null>(null);
@@ -28,6 +31,7 @@ export function OrdenesCompraTab() {
   const [ordenFacturando, setOrdenFacturando] = useState<OrdenCompra | null>(null);
   return (
     <div>
+      {referencia&&<p className="mb-3 rounded bg-ink-50 p-3 text-sm">Orden #{referencia} desde el reporte. Usa su botón de recepción para registrar lo que llegó. <button className="underline" onClick={()=>{const p=new URLSearchParams(url);p.delete('referencia');setUrl(p);}}>Ver todas las órdenes</button></p>}
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-ink-400">
           {ordenes?.length ?? 0} orden{ordenes?.length === 1 ? '' : 'es'} de compra

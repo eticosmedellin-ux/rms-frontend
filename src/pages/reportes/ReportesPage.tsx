@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react';
+import { CentroReportes } from '@/features/reportes/CentroReportes';
+import { useAuthStore } from '@/stores/authStore';
 import { Download } from 'lucide-react';
 import { useReporteVentas, useReporteUtilidad, useReporteValorInventario } from '@/hooks/useGestion';
 import {
@@ -24,6 +26,7 @@ function money(v: number) {
 }
 
 const TABS = [
+  { id: 'detalle', label: 'Detalle con filtros y descarga', usaFechas: false },
   { id: 'resumen', label: 'Resumen (ventas, utilidad, inventario)', usaFechas: true },
   { id: 'kardex', label: 'Kardex', usaFechas: true },
   { id: 'compras', label: 'Compras', usaFechas: true },
@@ -36,7 +39,7 @@ const TABS = [
 ] as const;
 
 export default function ReportesPage() {
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('resumen');
+  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('detalle');
   const [desde, setDesde] = useState(primerDiaDelMes());
   const [hasta, setHasta] = useState(hoy());
   const [consultar, setConsultar] = useState(false);
@@ -46,10 +49,10 @@ export default function ReportesPage() {
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-ink-800">Centro de reportes</h1>
-      <p className="mt-1 text-sm text-ink-400">Consulta, filtra, exporta a Excel e imprime cualquier reporte del sistema.</p>
+      <p className="mt-1 text-sm text-ink-400">Abre el detalle, aplica filtros y descarga exactamente el resultado consultado. Los informes anteriores siguen disponibles para el administrador.</p>
 
       <div className="mt-4 flex gap-1 overflow-x-auto rounded-lg bg-ink-50 p-1 text-sm font-medium">
-        {TABS.map((t) => (
+        {TABS.filter(t=>t.id==='detalle'||useAuthStore.getState().esSuperadmin||useAuthStore.getState().esAdministradorTotal).map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -82,6 +85,7 @@ export default function ReportesPage() {
       )}
 
       <div className="mt-6">
+        {tab === 'detalle' && <CentroReportes />}
         {tab === 'resumen' && <ResumenTab desde={desde} hasta={hasta} consultar={consultar} />}
         {tab === 'kardex' && <KardexTab desde={desde} hasta={hasta} consultar={consultar} />}
         {tab === 'compras' && <ComprasTab desde={desde} hasta={hasta} consultar={consultar} />}

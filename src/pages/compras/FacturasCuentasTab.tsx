@@ -1,4 +1,5 @@
 import {HistorialProveedor} from '@/features/sicom/HistorialProveedor';
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { Plus, Wallet } from 'lucide-react';
 import { useProveedores, useFacturasPorProveedor, useCuentasPorPagar } from '@/hooks/useCompras';
@@ -9,7 +10,8 @@ import type { CuentaPorPagar } from '@/types/compras';
 
 export function FacturasCuentasTab() {
   const { data: proveedores } = useProveedores();
-  const [proveedorId, setProveedorId] = useState<number | null>(null);
+  const [url]=useSearchParams();
+  const [proveedorId, setProveedorId] = useState<number | null>(()=>url.get('origen')==='reporte'&&url.get('proveedorId')?Number(url.get('proveedorId')):null);
   const [modalFacturaAbierto, setModalFacturaAbierto] = useState(false);
   const [cuentaAbonando, setCuentaAbonando] = useState<CuentaPorPagar | null>(null);
 

@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { ProveedoresTab } from '@/pages/compras/ProveedoresTab';
 import { OrdenesCompraTab } from '@/pages/compras/OrdenesCompraTab';
@@ -12,7 +13,8 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 export default function ComprasPage() {
-  const [tab, setTab] = useState<TabId>('proveedores');
+  const [url]=useSearchParams();
+  const [tab, setTab] = useState<TabId>(()=>TABS.some(t=>t.id===url.get('tab'))?url.get('tab') as TabId:'proveedores');
 
   return (
     <div>

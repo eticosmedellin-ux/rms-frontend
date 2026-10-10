@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState,createContext,useContext, type ReactNode } from 'react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
@@ -19,6 +19,11 @@ import {
   TrendingUp, TrendingDown, Package, AlertTriangle, Wallet, Users, ShoppingCart, Percent,
   UtensilsCrossed, CalendarClock, Landmark, Bike,
 } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
+import { DetalleReporte } from '@/features/reportes/DetalleReporte';
+import { FiltrosReportes,useFiltrosReportes,hoy as fechaHoy,type Filtro } from '@/features/reportes/FiltrosReportes';
+import { PendientesDashboard } from '@/features/reportes/PendientesDashboard';
+import { getApiErrorMessage } from '@/api/errors';
 import { Link } from 'react-router-dom';
 import { LoadingState } from '@/components/ui/States';
 
@@ -32,20 +37,27 @@ function hoy(): string {
   return new Date().toISOString().slice(0, 10);
 }
 function money(v: number) {
-  return `$${v.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`;
+  if(v==null)return 'Restringido';
+  return `$${v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function DashboardPage() {
+const AbrirIndicador=createContext<(label:string)=>void>(()=>{});
+export default function DashboardPage(){const auth=useAuthStore();if(!auth.esSuperadmin&&!auth.esAdministradorTotal&&!auth.permisos.includes('REPORTES_CONSULTAR'))return <div><h1 className="font-display text-2xl font-semibold text-ink-800">Inicio</h1><p className="mt-2 text-sm text-ink-500">Usa el menú para abrir las operaciones autorizadas de tu perfil. Los indicadores financieros requieren permiso de reportes.</p></div>;return <DashboardResumen/>;}
+function descargarDashboard(datos:unknown,f:Filtro){const filas:string[][]=[['Dashboard SICOM'],['Desde',f.desde,'Hasta',f.hasta,'Sucursal',f.sucursalId||'Todas'],['Nota','Los saldos son actuales. Los indicadores especializados históricos se identifican en pantalla.'],['Indicador','Valor']];function recorrer(x:unknown,p:string){if(x==null)return;if(Array.isArray(x)){x.forEach((v,i)=>recorrer(v,`${p} ${i+1}`));return;}if(typeof x==='object'){Object.entries(x).forEach(([k,v])=>recorrer(v,`${p} ${k.replace(/([A-Z])/g,' $1').toLowerCase()}`.trim()));return;}filas.push([p,typeof x==='number'?x.toLocaleString('es-CO',{maximumFractionDigits:3}):String(x)]);}recorrer(datos,'');const text='\uFEFF'+filas.map(a=>a.map(v=>'"'+v.replace(/^[=+@\t\r-]/,m=>"'"+m).replaceAll('"','""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download=`sicom-dashboard-${f.desde}-${f.hasta}.csv`;a.click();URL.revokeObjectURL(url);}
+function DashboardResumen() {
   const nombreCompleto = useAuthStore((state) => state.nombreCompleto);
   const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
   const permisos = useAuthStore((state) => state.permisos);
   const { data: miPlan } = useMiPlan();
   const { data: sucursales } = useSucursales();
-  const [desde, setDesde] = useState(primerDiaDelMes());
-  const [hasta, setHasta] = useState(hoy());
-  const [sucursalId, setSucursalId] = useState<number | null>(null);
-
-  const { data, isLoading } = useDashboard(desde, hasta, sucursalId);
+  const {f:guardados,cambiar}=useFiltrosReportes();
+  const f={...guardados,usuarioId:'',estado:''};const desde=f.desde,hasta=f.hasta,sucursalId=f.sucursalId?Number(f.sucursalId):null;
+  const [detalle,setDetalle]=useState<{tipo:string;f:Filtro;nota?:string}|null>(null);
+  const auth=useAuthStore();const costos=auth.esSuperadmin||auth.esAdministradorTotal||auth.permisos.includes('REPORTES_VER_COSTOS');
+  function abrir(label:string){let tipo='ventas',ff={...f},nota='';switch(label){case 'Hoy':ff.desde=ff.hasta=fechaHoy();break;case 'Este mes':ff.desde=fechaHoy().slice(0,7)+'-01';ff.hasta=fechaHoy();break;case 'Este año':ff.desde=fechaHoy().slice(0,4)+'-01-01';ff.hasta=fechaHoy();break;case 'Stock bajo':tipo='inventario';ff.estado='BAJO';break;case 'Agotados':tipo='inventario';ff.estado='AGOTADO';break;case 'Valor del inventario':tipo='inventario';break;case 'Saldo actual':tipo='cajas';break;case 'Entradas':tipo='caja';ff.estado='INGRESO';break;case 'Salidas':tipo='caja';ff.estado='EGRESO';break;case 'Nuevos':tipo='clientes';nota='El indicador cuenta clientes activos creados en el período en toda la empresa; este directorio es actual y no filtra por creación.';break;case 'Frecuentes':tipo='ventas';nota='Frecuentes: clientes con dos o más ventas completadas en el período. Revisa sus ventas en el detalle.';break;case 'Con cartera':case 'Cuentas por cobrar':tipo='cxc';break;case 'Compras del período':tipo='compras';break;case 'Gastos del período':tipo='gastos';break;case 'Utilidad estimada':case 'Margen':tipo='utilidad';if(!costos)return;nota=label==='Margen'?'Margen = utilidad estimada / ventas sin impuestos × 100.':'';break;case 'Ticket promedio':nota='Ticket = total de ventas completadas / número de ventas.';break;case 'Productos vendidos':nota='Suma de cantidades en líneas vendidas. Puede mezclar unidades de distintos productos.';break;case 'Vs. período anterior':nota='Variación = (ventas del período − ventas del período anterior de igual duración) / ventas anteriores × 100. Si no hubo ventas anteriores, no se calcula porcentaje.';break;default:nota='Consulta las filas que componen este indicador.';}
+   setDetalle({tipo,f:ff,nota});
+  }
+  const { data, isLoading,error } = useDashboard(desde, hasta, sucursalId);
   const { data: alertas } = useAlertas();
 
   function moduloHabilitado(ruta: string) {
@@ -72,7 +84,7 @@ export default function DashboardPage() {
   const { data: analiticaServicios } = useAnaliticaServicios(desde, hasta, mostrarServicios);
 
   return (
-    <div>
+    <AbrirIndicador.Provider value={abrir}><div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink-800">
@@ -81,25 +93,12 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-ink-400">Este es el estado de tu negocio.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <input type="date" className="input w-auto" value={desde} onChange={(e) => setDesde(e.target.value)} />
-          <span className="text-sm text-ink-400">a</span>
-          <input type="date" className="input w-auto" value={hasta} onChange={(e) => setHasta(e.target.value)} />
-          <select
-            className="input w-auto"
-            value={sucursalId ?? ''}
-            onChange={(e) => setSucursalId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">Todas las sucursales</option>
-            {sucursales?.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="space-y-2"><FiltrosReportes f={f} cambiar={cambiar}/><button className="rounded border px-3 py-2 text-xs" disabled={!data||isLoading} onClick={()=>descargarDashboard({general:data,restaurante:analiticaRestaurante,servicios:analiticaServicios,prestamosHistorico:dashPrestamos},f)}>Descargar dashboard (CSV / Excel)</button></div>
+
       </div>
 
+      <div className="mt-4"><PendientesDashboard f={f}/></div>
+      {error&&<p role="alert" className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700">{getApiErrorMessage(error,'No se pudo cargar el dashboard')}</p>}
       {(alertas?.length ?? 0) > 0 && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm font-medium text-amber-800">
@@ -111,11 +110,11 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {isLoading || !data ? (
+      {isLoading ? (
         <div className="mt-8">
           <LoadingState />
         </div>
-      ) : (
+      ) : data ? (
         <div className="mt-6 space-y-8">
           {/* Ventas */}
           <Seccion titulo="Ventas">
@@ -286,7 +285,7 @@ export default function DashboardPage() {
           {/* Análisis por tipo de negocio — cada empresa ve solo las gráficas de lo que
               realmente hace, en vez de un dashboard genérico igual para todos. */}
           {mostrarRestaurante && analiticaRestaurante && (
-            <Seccion titulo="Análisis de Restaurante">
+            <AbrirIndicador.Provider value={()=>setDetalle({tipo:'restaurante',f,nota:'Detalle de comandas. Consumo y venta facturada son conceptos distintos; el tiempo de atención se calcula entre apertura y cierre.'})}><Seccion titulo="Análisis de Restaurante">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <Kpi label="Ventas del período" value={money(analiticaRestaurante.ventasTotales)} icon={Wallet} tone="text-success-600" />
                 <Kpi label="Ticket promedio" value={money(analiticaRestaurante.ticketPromedio)} icon={ShoppingCart} tone="text-ink-600" />
@@ -312,11 +311,11 @@ export default function DashboardPage() {
                   </ResponsiveContainer>
                 </div>
               )}
-            </Seccion>
+            </Seccion></AbrirIndicador.Provider>
           )}
 
           {mostrarServicios && analiticaServicios && (
-            <Seccion titulo="Análisis de Servicios">
+            <AbrirIndicador.Provider value={label=>setDetalle({tipo:label.includes('Citas')?'citas':'ordenes',f,nota:'Detalle operativo de servicios. Una cita u orden completada no implica pago; consulta la venta vinculada para sus ingresos.'})}><Seccion titulo="Análisis de Servicios">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <Kpi label="Ingresos del período" value={money(analiticaServicios.ingresosTotales)} icon={Wallet} tone="text-success-600" />
                 <Kpi
@@ -347,11 +346,11 @@ export default function DashboardPage() {
                   </ResponsiveContainer>
                 </div>
               )}
-            </Seccion>
+            </Seccion></AbrirIndicador.Provider>
           )}
 
           {mostrarPrestamos && dashPrestamos && (
-            <Seccion titulo="Análisis de Préstamos">
+            <AbrirIndicador.Provider value={()=>setDetalle({tipo:'prestamos',f,nota:'Los indicadores antiguos de préstamos son históricos y no usan este filtro de fechas. Este detalle muestra contratos por su fecha de inicio; los recaudos se consultan dentro de cada contrato.'})}><Seccion titulo="Análisis de Préstamos">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <Kpi label="Capital recuperado" value={money(dashPrestamos.capitalRecuperado)} icon={Wallet} tone="text-success-600" />
                 <Kpi label="Intereses generados" value={money(dashPrestamos.interesesGenerados)} icon={TrendingUp} tone="text-success-600" />
@@ -363,11 +362,12 @@ export default function DashboardPage() {
                 />
                 <Kpi label="Tasa de renovación" value={`${dashPrestamos.tasaRenovacion.toFixed(0)}%`} icon={Percent} tone="text-ink-600" />
               </div>
-            </Seccion>
+            </Seccion></AbrirIndicador.Provider>
           )}
         </div>
-      )}
-    </div>
+      ) : null}
+      <Modal isOpen={!!detalle} onClose={()=>setDetalle(null)} title="Detalle del indicador" size="lg">{detalle&&<div className="space-y-3">{detalle.nota&&<p className="rounded bg-ink-50 p-3 text-sm">{detalle.nota}</p>}<DetalleReporte tipo={detalle.tipo} f={detalle.f}/></div>}</Modal>
+    </div></AbrirIndicador.Provider>
   );
 }
 
@@ -423,14 +423,17 @@ function Kpi({
   icon: typeof TrendingUp;
   tone: string;
 }) {
+  const abrir=useContext(AbrirIndicador);
+  const restringido=value==='Restringido'||value==='null%';
   return (
-    <div className="rounded-xl border border-ink-100 bg-white p-4 shadow-card">
+    <button disabled={restringido} onClick={()=>abrir(label)} className="rounded-xl border border-ink-100 bg-white p-4 shadow-card text-left hover:border-ink-300 disabled:cursor-default">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-ink-400">{label}</span>
         <Icon size={16} className={tone} />
       </div>
-      <p className="mt-2 font-display text-lg font-semibold text-ink-800">{value}</p>
-    </div>
+      <p className="mt-2 font-display text-lg font-semibold text-ink-800">{value==='null%'?'Restringido':value}</p>
+      <span className="mt-1 block text-xs text-ink-400">{restringido?'Sin permiso de costos':'Ver detalle'}</span>
+    </button>
   );
 }
 

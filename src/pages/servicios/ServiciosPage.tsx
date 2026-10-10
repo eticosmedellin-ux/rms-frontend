@@ -42,7 +42,10 @@ export default function ServiciosPage() {
     return puedeCitas || puedeOrdenes; // historial respeta los módulos habilitados
   });
 
-  const [tab, setTab] = useState<(typeof TODOS_LOS_TABS)[number]['id']>(TABS[0]?.id ?? 'historial');
+  const [tab, setTab] = useState<(typeof TODOS_LOS_TABS)[number]['id']>(()=>{
+    const solicitada=new URLSearchParams(window.location.search).get('tab');
+    return TABS.find(t=>t.id===solicitada)?.id ?? TABS[0]?.id ?? 'historial';
+  });
 
   return (
     <div>

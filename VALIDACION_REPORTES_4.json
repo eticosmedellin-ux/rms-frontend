@@ -1,0 +1,62 @@
+{
+  "entrega": "reportes-4",
+  "fecha": "2026-10-10",
+  "backend": {
+    "pruebas": 167,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "base": "PostgreSQL PGlite 18.3 aislado",
+    "migracion": "Aplicada dos veces sin error",
+    "verificado": [
+      "Todo el catálogo ejecuta consultas sobre el esquema real de integración",
+      "Filtros por sucursal y estado, cantidades y valoración",
+      "Rechazo de sucursal ajena y rangos inválidos",
+      "Consultas sin permiso financiero rechazadas",
+      "Consultar no concede costos ni datos especializados",
+      "Caja incluye movimientos de sesiones cerradas",
+      "Pruebas anteriores de permisos, préstamos, inventario, servicios y calendario conservadas"
+    ]
+  },
+  "frontend": {
+    "typescript": "aprobado",
+    "vite": "compilación de producción aprobada",
+    "interaccion": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM, componentes React con API simulada",
+      "comprobaciones": [
+        "Detalle y explicación",
+        "Filtros de fecha y sucursal",
+        "Filtro de estado con nombres",
+        "Buscar por código de barras",
+        "CSV exactamente del resultado filtrado",
+        "Protección de fórmulas en CSV",
+        "Acceso a compra con proveedor seleccionado",
+        "Pendientes del dashboard",
+        "Indicador abre detalle con mismos filtros",
+        "Centavos legibles",
+        "Descarga del dashboard",
+        "Costos restringidos",
+        "Sin permiso no consulta dashboard financiero"
+      ],
+      "erroresReact": []
+    }
+  },
+  "pendientes_entorno": [
+    "Instalación en Windows: PS1 no ejecutados aquí",
+    "SQL en neondb de producción",
+    "Despliegue y comprobación en Render",
+    "Inspección visual en navegador real"
+  ],
+  "limites": [
+    "CSV compatible con Excel, no XLSX",
+    "Nuevo centro de reportes usa filtros compartidos; los informes anteriores conservan sus controles",
+    "Existencias, cartera, recepción y saldos son actuales, no por período",
+    "Ventas no resta devoluciones posteriores; utilidad es estimación operativa",
+    "Indicadores antiguos de préstamos son históricos",
+    "Algunos indicadores de clientes abren el directorio con explicación, no su composición exacta",
+    "Descarga del dashboard incluye indicadores; pendientes se descargan desde sus reportes",
+    "Más de 10.000 filas exige reducir filtros",
+    "Acceder al módulo no ejecuta pagos ni recepciones"
+  ]
+}

@@ -1,4 +1,5 @@
 import TrasladosBanco from '@/features/sicom/TrasladosBanco';
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { CajaBar } from '@/pages/pos/CajaBar';
 import { VenderTab } from '@/pages/pos/VenderTab';
@@ -21,7 +22,8 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 export default function PosPage() {
-  const [tab, setTab] = useState<TabId>('vender');
+  const [url]=useSearchParams();
+  const [tab, setTab] = useState<TabId>(()=>TABS.some(t=>t.id===url.get('tab'))?url.get('tab') as TabId:'vender');
 
   return (
     <div>
