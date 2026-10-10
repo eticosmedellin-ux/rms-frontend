@@ -1,3 +1,5 @@
+import {useApariencia} from '@/features/apariencia/AparienciaProvider';
+import {fondo} from '@/features/apariencia/tema';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, UtensilsCrossed, Sparkles } from 'lucide-react';
@@ -25,6 +27,7 @@ const ESTADO_LABELS: Record<Mesa['estado'], string> = {
  *  menú administrativo (reportes, configuración, etc.). Ideal para dejar en el celular
  *  de cada mesero o en una tablet mostrador. */
 export default function AppMeseroPage() {
+ const apariencia=useApariencia();
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const { data: mesas, isLoading } = useMesas();
@@ -40,7 +43,7 @@ export default function AppMeseroPage() {
   }
 
   return (
-    <div className="min-h-screen bg-ink-50">
+    <div style={apariencia.activo?fondo(apariencia.sistema):undefined} className="sicom-sistema min-h-screen bg-ink-50">
       <header className="flex items-center justify-between border-b border-ink-100 bg-white px-4 py-3 sm:px-6">
         <p className="flex items-center gap-2 font-display text-lg font-bold text-ink-800">
           <UtensilsCrossed size={22} />

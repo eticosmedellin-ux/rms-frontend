@@ -72,3 +72,28 @@
     transform: scale(1);
   }
 }
+
+/* Apariencia publicada. Se aplica solo cuando el superadministrador activa el diseño. */
+.sicom-personalizado {font-family:var(--ap-fuente);}
+.sicom-personalizado .sicom-sistema {color:var(--ap-texto);font-family:var(--ap-fuente);font-size:var(--ap-font);}
+.sicom-personalizado .sicom-sistema [class~="bg-white"] {background-color:var(--ap-superficie);}
+.sicom-personalizado .sicom-sistema [class~="text-ink-800"],.sicom-personalizado .sicom-sistema [class~="text-ink-700"] {color:var(--ap-texto);}
+.sicom-personalizado .sicom-sistema [class~="text-ink-400"],.sicom-personalizado .sicom-sistema [class~="text-ink-500"] {color:var(--ap-secundario);}
+.sicom-personalizado .sicom-sistema button[class~="bg-ink-800"],.sicom-personalizado .sicom-sistema button[class~="bg-slate-800"],.sicom-personalizado .sicom-sistema a[class~="bg-ink-800"] {background-color:var(--ap-primario);color:var(--ap-primario-texto);}
+.sicom-personalizado .sicom-sistema [class~="rounded-xl"],.sicom-personalizado .sicom-sistema [class~="rounded-lg"] {border-radius:var(--ap-radio);}
+.sicom-personalizado .sicom-sistema .input {background-color:var(--ap-superficie);border-color:var(--ap-borde);color:var(--ap-texto);border-radius:var(--ap-radio);}
+.sicom-personalizado .sicom-sistema h1,.sicom-personalizado .sicom-sistema h2,.sicom-personalizado .sicom-sistema h3 {font-family:var(--ap-fuente);}
+.sicom-login-personalizado {font-family:var(--ap-fuente);font-size:var(--ap-font);}
+.sicom-login-personalizado input:not([type="checkbox"]) {background-color:#172033;color:white;border-radius:var(--ap-radio);}
+.sicom-login-personalizado button[type="submit"],.sicom-login-personalizado .sicom-ingresar {background-color:var(--ap-primario);color:var(--ap-primario-texto);border-radius:var(--ap-radio);}
+.sicom-fondo-transparente {background-color:#e2e8f0;background-image:linear-gradient(45deg,#cbd5e1 25%,transparent 25%),linear-gradient(-45deg,#cbd5e1 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cbd5e1 75%),linear-gradient(-45deg,transparent 75%,#cbd5e1 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;}
+.sicom-personalizado .sicom-sistema [class~="border-ink-100"],.sicom-personalizado .sicom-sistema [class~="border-ink-200"] {border-color:var(--ap-borde);}
+.sicom-personalizado .sicom-sistema [class~="text-sm"] {font-size:var(--ap-font);}
+.sicom-personalizado .sicom-sistema [class~="text-xs"] {font-size:calc(var(--ap-font)*.857);}
+.sicom-personalizado .sicom-sistema [class~="text-lg"] {font-size:calc(var(--ap-font)*1.286);}
+.sicom-personalizado .sicom-sistema [class~="text-xl"] {font-size:calc(var(--ap-font)*1.429);}
+.sicom-personalizado .sicom-sistema [class~="text-2xl"] {font-size:calc(var(--ap-font)*1.714);}
+@media(max-width:640px){
+ .sicom-login-personalizado form {transform:none!important;max-width:100%!important;}
+ .sicom-login-personalizado h1>div {transform:none!important;}
+}

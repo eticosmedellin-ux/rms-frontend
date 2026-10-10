@@ -17,27 +17,13 @@ import { getApiErrorMessage } from '@/api/errors';
 import { comprimirImagen } from '@/api/imagen';
 import { useTiposNegocioActivos } from '@/hooks/usePlataforma';
 
+const SECCIONES=[['empresa','Mi empresa'],['acceso','Cuenta y perfiles'],['pagos','Métodos de pago'],['redes','Redes y bancos'],['sistema','Sistema'],['ventas','Ventas'],['inventario','Inventario'],['impresion','Impresión'],['impuestos','Impuestos y categorías'],['facturacion','Facturación electrónica'],['fidelizacion','Fidelización'],['facturadores','Usuarios de facturación']] as const;
 export default function ConfiguracionPage() {
-  return (
-    <div>
-      <h1 className="font-display text-2xl font-semibold text-ink-800">Configuración</h1>
-      <p className="mt-1 text-sm text-ink-400">Datos de tu empresa, métodos de pago e impuestos.</p>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <AccesoEmpresaConfig />
-        <ConfiguracionSicom />
-        <MiEmpresaCard />
-        <MetodosPagoCard />
-        <RedesYBancoCard />
-        <SistemaCard />
-        <VentasGeneralCard />
-        <InventarioGeneralCard />
-        <ImpresionCard />
-        <ImpuestosCard />
-        <FacturacionElectronicaCard />
-      </div>
-    </div>
-  );
+ const [seccion,setSeccion]=useState('empresa'),[busqueda,setBusqueda]=useState(''),[editada,setEditada]=useState(false);
+ useEffect(()=>{const listo=()=>setEditada(false);const salir=(e:BeforeUnloadEvent)=>{if(editada){e.preventDefault();e.returnValue='';}};window.addEventListener('sicom-config-guardada',listo);window.addEventListener('beforeunload',salir);return()=>{window.removeEventListener('sicom-config-guardada',listo);window.removeEventListener('beforeunload',salir);};},[editada]);
+ const visibles=SECCIONES.filter(([,nombre])=>nombre.toLocaleLowerCase().includes(busqueda.toLocaleLowerCase()));
+ const contenido=()=>{switch(seccion){case 'empresa':return <MiEmpresaCard/>;case 'acceso':return <AccesoEmpresaConfig/>;case 'pagos':return <MetodosPagoCard/>;case 'redes':return <RedesYBancoCard/>;case 'sistema':return <SistemaCard/>;case 'ventas':return <VentasGeneralCard/>;case 'inventario':return <InventarioGeneralCard/>;case 'impresion':return <ImpresionCard/>;case 'impuestos':return <><ImpuestosCard/><ConfiguracionSicom seccion="impuestos"/></>;case 'facturacion':return <FacturacionElectronicaCard/>;case 'fidelizacion':return <ConfiguracionSicom seccion="fidelizacion"/>;case 'facturadores':return <ConfiguracionSicom seccion="facturadores"/>;}}
+ return <div><h1 className="font-display text-2xl font-semibold text-ink-800">Configuración</h1><p className="mt-1 text-sm text-ink-400">Selecciona un tema para consultar y cambiar sus opciones.</p><div className="mt-6 grid gap-5 md:grid-cols-[240px_minmax(0,1fr)]"><aside className="rounded-xl border bg-white p-3 self-start md:sticky md:top-0"><label className="text-sm">Buscar opción<input className="input mt-2" value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Impuestos, acceso…"/></label><nav aria-label="Opciones de configuración" className="mt-3 flex flex-col gap-1">{visibles.map(([id,label])=><button key={id} aria-current={seccion===id?'page':undefined} onClick={()=>{if(seccion===id)return;if(editada&&!window.confirm('Hay cambios sin guardar. ¿Cambiar de sección y descartarlos?'))return;setEditada(false);setSeccion(id);}} className={`rounded-lg px-3 py-3 text-left text-sm ${seccion===id?'bg-ink-800 text-white':'hover:bg-ink-50 text-ink-700'}`}>{label}</button>)}{!visibles.length&&<p className="p-2 text-sm">No hay opciones con ese nombre.</p>}</nav></aside><section key={seccion} className="min-w-0 space-y-5" onChange={()=>setEditada(true)}>{contenido()}</section></div></div>;
 }
 
 function MiEmpresaCard() {
@@ -112,7 +98,7 @@ function MiEmpresaCard() {
         logoUrl: logoUrl || undefined,
         tiposNegocioIds: tiposNegocioIds.length > 0 ? tiposNegocioIds : undefined,
       });
-      setGuardado(true);
+      setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar la empresa'));
     }
@@ -325,7 +311,7 @@ function FacturacionElectronicaCard() {
         activa,
       });
       setApiKey('');
-      setGuardado(true);
+      setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar la configuración'));
     }
@@ -483,7 +469,7 @@ function ImpresionCard() {
         mensajeAgradecimiento: mensajeAgradecimiento || undefined,
         infoAdicionalDocumentos: infoAdicionalDocumentos || undefined,
       });
-      setGuardado(true);
+      setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar la configuración de impresión'));
     }
@@ -607,7 +593,7 @@ function RedesYBancoCard() {
         bancoNumeroCuenta: bancoNumeroCuenta || undefined,
         bancoTitular: bancoTitular || undefined,
       });
-      setGuardado(true);
+      setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar'));
     }
@@ -707,7 +693,7 @@ function SistemaCard() {
     if (!empresa) return;
     try {
       await actualizar.mutateAsync({ nombre: empresa.nombre, moneda, zonaHoraria, idioma, tema });
-      setGuardado(true);
+      setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar la configuración del sistema'));
     }
@@ -809,7 +795,7 @@ function VentasGeneralCard() {
     if (!empresa) return;
     try {
       await actualizar.mutateAsync({ nombre: empresa.nombre, permitirStockNegativo, confirmarAntesDeVenta });
-      setGuardado(true);
+      setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar la configuración de ventas'));
     }
@@ -893,7 +879,7 @@ function InventarioGeneralCard() {
     if (!empresa) return;
     try {
       await actualizar.mutateAsync({ nombre: empresa.nombre, stockMinimoDefault: Number(stockMinimoDefault) || 0 });
-      setGuardado(true);
+      setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar la configuración de inventario'));
     }

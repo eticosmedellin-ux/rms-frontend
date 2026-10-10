@@ -1,9 +1,12 @@
+import {useApariencia} from '@/features/apariencia/AparienciaProvider';
+import {fondo} from '@/features/apariencia/tema';
 import {useQueryClient} from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Menu } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
+  const apariencia=useApariencia();
   const navigate = useNavigate();const qc=useQueryClient();
   const nombreCompleto = useAuthStore((state) => state.nombreCompleto);
   const nombreEmpresa = useAuthStore((state) => state.nombreEmpresa);
@@ -16,7 +19,7 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between gap-2 border-b border-ink-100 bg-white px-3 dark:border-ink-700 dark:bg-ink-800 sm:px-6">
+    <header style={apariencia.activo?fondo(apariencia.cabecera):undefined} className="flex h-16 items-center justify-between gap-2 border-b border-ink-100 bg-white px-3 dark:border-ink-700 dark:bg-ink-800 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
         <button onClick={onAbrirMenu} className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-50 md:hidden">
           <Menu size={22} />

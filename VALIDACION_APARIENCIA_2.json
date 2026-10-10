@@ -1,0 +1,62 @@
+{
+  "entrega": "apariencia-2",
+  "fecha": "2026-10-10",
+  "backend": {
+    "pruebas": 153,
+    "fallos": 0,
+    "errores": 0,
+    "omitidas": 0,
+    "base": "PostgreSQL PGlite 18.3 aislado",
+    "migracion": "Aplicada dos veces sin error",
+    "verificado": [
+      "Borrador distinto sin cambiar publicación",
+      "Edición solo para superadministrador",
+      "Conflictos de versión impiden sobrescrituras",
+      "Publicación e historial",
+      "Recuperación como borrador",
+      "Imágenes privadas antes de publicar",
+      "Original solo para superadministrador",
+      "Acceso público solo a imágenes del diseño activo",
+      "PNG transparente, recorte por borde y conservación de original",
+      "Rechazo de SVG disfrazado",
+      "Contraste, colores y límites de posición"
+    ]
+  },
+  "frontend": {
+    "typescript": "aprobado",
+    "vite": "compilación de producción aprobada",
+    "interaccion": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM, interacción real de componentes React con API simulada",
+      "comprobaciones": [
+        "Cambio de marca",
+        "Arrastre del logo",
+        "Guardar borrador sin publicar",
+        "Publicar con confirmación",
+        "Vistas de ingreso, perfiles y sistema",
+        "Controles de imágenes y fondos",
+        "Historial",
+        "Las doce secciones de Configuración",
+        "Advertencia de cambios sin guardar",
+        "Separación de fidelización y facturadores",
+        "Búsqueda de opciones"
+      ],
+      "erroresReact": []
+    },
+    "navegador_grafico_real": "No comprobado: navegador no disponible en esta sesión"
+  },
+  "produccion": {
+    "windows": "No ejecutado en el equipo del usuario",
+    "render": "No publicado ni verificado",
+    "neondb": "No modificado"
+  },
+  "limites": [
+    "Recorte de fondos uniformes; fotografías complejas requieren PNG ya recortado",
+    "El editor personaliza zonas y elementos previstos, no HTML libre",
+    "Vista previa con datos de ejemplo, no registra operaciones",
+    "Diseño global para todas las empresas, publicado solo por superadministrador",
+    "Imágenes PNG/JPG hasta 5 MB; lado máximo 4096 y 8 millones de píxeles",
+    "Galería muestra imágenes recientes",
+    "Se mantienen logos empresariales de facturas y operaciones anteriores"
+  ]
+}

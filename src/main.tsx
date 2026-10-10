@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from '@/App';
+import {AparienciaProvider} from '@/features/apariencia/AparienciaProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import '@/index.css';
 
@@ -20,7 +21,7 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <App />
+          <AparienciaProvider><App /></AparienciaProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

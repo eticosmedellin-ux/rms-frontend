@@ -1,3 +1,5 @@
+import {useApariencia} from '@/features/apariencia/AparienciaProvider';
+import {fondo} from '@/features/apariencia/tema';
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -14,6 +16,7 @@ const MENSAJE_LICENCIA: Record<string, string> = {
 };
 
 export function AppLayout() {
+  const apariencia=useApariencia();
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const { data: miPlan } = useMiPlan();
   useAplicarTema();
@@ -35,7 +38,7 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-ink-50 dark:bg-ink-900">
+    <div className="sicom-sistema flex h-screen bg-ink-50 dark:bg-ink-900" style={apariencia.activo?fondo(apariencia.sistema):undefined}>
       <Sidebar abierto={menuMovilAbierto} onCerrar={() => setMenuMovilAbierto(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar onAbrirMenu={() => setMenuMovilAbierto(true)} />

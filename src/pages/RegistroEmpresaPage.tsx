@@ -1,3 +1,4 @@
+import {MarcaSicom} from '@/features/apariencia/MarcaSicom';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle2 } from 'lucide-react';
@@ -94,10 +95,7 @@ export default function RegistroEmpresaPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink-50 px-6 py-12">
       <div className="w-full max-w-md rounded-xl border border-ink-100 bg-white p-8 shadow-card">
-        <span className="font-display text-xl font-bold tracking-tight">
-          <span className="text-ink-900">SIC</span>
-          <span className="text-sicom-green">OM</span>
-        </span>
+        <MarcaSicom/>
         <h1 className="mt-4 font-display text-2xl font-semibold text-ink-800">Registra tu negocio</h1>
         <p className="mt-1 text-sm text-ink-400">Crea tu empresa y tu usuario administrador para empezar a usar el sistema.</p>
 

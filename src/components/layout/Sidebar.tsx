@@ -1,3 +1,6 @@
+import {MarcaSicom} from '@/features/apariencia/MarcaSicom';
+import {useApariencia} from '@/features/apariencia/AparienciaProvider';
+import {fondo} from '@/features/apariencia/tema';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -72,6 +75,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
 ];
 
 export function Sidebar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => void }) {
+  const apariencia=useApariencia();
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
   const permisos = useAuthStore((state) => state.permisos);
@@ -106,16 +110,17 @@ export function Sidebar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () 
         <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={onCerrar} aria-hidden="true" />
       )}
       <aside
+        style={apariencia.activo?fondo(apariencia.menu):undefined}
         className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-ink-800 text-ink-100 transition-transform duration-200 md:static md:z-auto md:flex md:translate-x-0 ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex h-16 items-center justify-between gap-2 px-6">
+        <div className="flex min-h-16 items-center justify-between gap-2 px-4 py-2" style={apariencia.activo?{minHeight:Math.min(apariencia.logoAlto,80)+24}:undefined}>
           <div className="flex items-center gap-2">
-            <span className="font-display text-lg font-bold tracking-tight">
+            {apariencia.activo?<MarcaSicom compacta/>:<span className="font-display text-lg font-bold tracking-tight">
               <span className="text-white">SIC</span>
               <span className="text-sicom-greenLight">OM</span>
-            </span>
+            </span>}
             <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-300">
               Beta
             </span>

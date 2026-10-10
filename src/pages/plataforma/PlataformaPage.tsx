@@ -1,3 +1,4 @@
+import EditorApariencia from '@/features/apariencia/EditorApariencia';
 import {DobleFactor} from '@/features/sicom/DobleFactor';
 import {ContadoresPlataforma} from '@/features/sicom/ContadoresPlataforma';
 import { useState } from 'react';
@@ -17,6 +18,7 @@ import { DashboardEjecutivoTab } from '@/pages/plataforma/DashboardEjecutivoTab'
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'seguridad', label: 'Seguridad' },
+  { id: 'apariencia', label: 'Apariencia en vivo' },
   { id: 'contadores', label: 'Contadores' },
   { id: 'empresas', label: 'Empresas' },
   { id: 'codigos', label: 'Códigos de invitación' },
@@ -56,6 +58,7 @@ export default function PlataformaPage() {
       <div className="mt-5">
         {tab === 'dashboard' && <DashboardEjecutivoTab />}
         {tab === 'seguridad' && <DobleFactor />}
+        {tab === 'apariencia' && <EditorApariencia />}
         {tab === 'contadores' && <ContadoresPlataforma />}
         {tab === 'empresas' && <EmpresasTab />}
         {tab === 'codigos' && <CodigosInvitacionTab />}

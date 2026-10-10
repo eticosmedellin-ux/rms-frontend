@@ -1,3 +1,5 @@
+import {useApariencia} from '@/features/apariencia/AparienciaProvider';
+import {fondo} from '@/features/apariencia/tema';
 import { useState } from 'react';
 import { getApiErrorMessage } from '@/api/errors';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +26,7 @@ const SIGUIENTE: Partial<Record<EstadoItemComanda, EstadoItemComanda>> = {
 /** App simplificada de Cocina/Bar — pantalla completa, sin el menú administrativo, para
  *  dejar montada en una tablet de cocina o el celular del ayudante de cocina. */
 export default function AppCocinaPage() {
+ const apariencia=useApariencia();
   const [estacion,setEstacion]=useState('TODAS');
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -40,7 +43,7 @@ export default function AppCocinaPage() {
     .sort((a, b) => a.id - b.id);
 
   return (
-    <div className="min-h-screen bg-ink-900 text-white">
+    <div style={apariencia.activo?fondo(apariencia.sistema):undefined} className="sicom-sistema min-h-screen bg-ink-900 text-white">
       <header className="flex items-center justify-between border-b border-ink-700 px-4 py-3 sm:px-6">
         <p className="flex items-center gap-2 font-display text-lg font-bold">
           <ChefHat size={22} />

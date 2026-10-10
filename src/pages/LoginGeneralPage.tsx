@@ -1,3 +1,6 @@
+import {MarcaSicom} from '@/features/apariencia/MarcaSicom';
+import {useApariencia} from '@/features/apariencia/AparienciaProvider';
+import {fondo,variables,imagenUrl} from '@/features/apariencia/tema';
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -24,6 +27,7 @@ const ICONOS_FONDO = [
 ];
 
 export default function LoginGeneralPage() {
+  const apariencia=useApariencia();
   const navigate = useNavigate();
   const qc=useQueryClient();
   const location = useLocation();
@@ -55,8 +59,8 @@ export default function LoginGeneralPage() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12"
-      style={{
+      className={`relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12 ${apariencia.activo?'sicom-login-personalizado':''}`}
+      style={apariencia.activo?{...variables(apariencia),...fondo(apariencia.login)}:{
         background:
           'radial-gradient(circle at 20% 20%, #123a5e 0%, #0c2740 35%, #081a2c 65%, #061422 100%)',
       }}
@@ -73,7 +77,7 @@ export default function LoginGeneralPage() {
 
       {/* Hexágono real del logo, gigante y muy difuminado, como marca de agua ambiental */}
       <img
-        src="/branding/sicom-hexagono.png"
+        src={apariencia.activo&&apariencia.logoId?imagenUrl(apariencia.logoId):"/branding/sicom-hexagono.png"}
         alt=""
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 top-1/4 w-[26rem] rotate-12 opacity-[0.10] blur-sm motion-reduce:animate-none"
@@ -114,10 +118,7 @@ export default function LoginGeneralPage() {
         )}
         <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-8 shadow-2xl backdrop-blur-2xl">
         <div className="text-center">
-          <span className="font-display text-2xl font-bold tracking-tight">
-            <span className="text-white">SIC</span>
-            <span className="text-sicom-greenLight">OM</span>
-          </span>
+          <MarcaSicom/>
           <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-white/50">
             Sistema Integrado Comercial
           </p>
