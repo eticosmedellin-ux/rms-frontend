@@ -30,12 +30,12 @@ export function useActualizarTipoServicio() {
   });
 }
 
-export function useCitas(desde?: string, hasta?: string) {
-  return useQuery({ queryKey: ['citas', desde, hasta], queryFn: () => serviciosApi.listarCitas(desde,hasta), refetchInterval: 60000 });
+export function useCitas(desde?: string, hasta?: string, habilitado = true) {
+  return useQuery({ queryKey: ['citas', desde, hasta], queryFn: () => serviciosApi.listarCitas(desde,hasta), enabled: habilitado, refetchInterval: 60000 });
 }
 
-export function useCitasHistorial() {
-  return useQuery({ queryKey: ['citas-historial'], queryFn: serviciosApi.listarCitasHistorial });
+export function useCitasHistorial(habilitado = true) {
+  return useQuery({ queryKey: ['citas-historial'], queryFn: serviciosApi.listarCitasHistorial, enabled: habilitado });
 }
 
 export function useCrearCita() {

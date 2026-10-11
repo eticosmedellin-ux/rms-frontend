@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {useAuthStore} from '@/stores/authStore';
+import {contextoConsulta} from '@/api/queryClient';
 import * as inventarioApi from '@/api/inventario';
 import type {
   AjusteInventarioRequest,
@@ -11,15 +13,18 @@ import type {
 } from '@/types/inventario';
 
 export function useCategorias() {
-  return useQuery({ queryKey: ['categorias'], queryFn: inventarioApi.listarCategorias });
+  const contexto=contextoConsulta(useAuthStore());
+  return useQuery({ queryKey: ['categorias',contexto], queryFn: inventarioApi.listarCategorias, staleTime: 300000 });
 }
 
 export function useMarcas() {
-  return useQuery({ queryKey: ['marcas'], queryFn: inventarioApi.listarMarcas });
+  const contexto=contextoConsulta(useAuthStore());
+  return useQuery({ queryKey: ['marcas',contexto], queryFn: inventarioApi.listarMarcas, staleTime: 300000 });
 }
 
 export function useProductos() {
-  return useQuery({ queryKey: ['productos'], queryFn: inventarioApi.listarProductos });
+  const contexto=contextoConsulta(useAuthStore());
+  return useQuery({ queryKey: ['productos',contexto], queryFn: inventarioApi.listarProductos, staleTime: 30000 });
 }
 
 export function useCrearCategoria() {
@@ -96,7 +101,7 @@ export function useRegistrarEntrada() {
   return useMutation({
     mutationFn: (data: EntradaInventarioRequest) => inventarioApi.registrarEntrada(data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['stock', 'producto', variables.productoId] });
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
       queryClient.invalidateQueries({ queryKey: ['kardex', variables.productoId] });
       queryClient.invalidateQueries({ queryKey: ['productos'] });
     },

@@ -14,8 +14,8 @@ export function useActivarContabilidad() {
   });
 }
 
-export function useCuentasContables() {
-  return useQuery({ queryKey: ['cuentas-contables'], queryFn: api.listarCuentasContables });
+export function useCuentasContables(habilitado = true) {
+  return useQuery({ queryKey: ['cuentas-contables'], enabled: habilitado, queryFn: api.listarCuentasContables });
 }
 
 export function useLibroDiario(desde: string, hasta: string, habilitado: boolean) {

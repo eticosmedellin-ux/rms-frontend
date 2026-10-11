@@ -1,0 +1,68 @@
+{
+  "entrega": "rendimiento-1",
+  "fecha": "2026-10-11",
+  "base_entrega": "tutorial-6",
+  "backend": {
+    "pruebas": {
+      "tests": 194,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "base": "PostgreSQL PGlite 18.3 aislado",
+    "migracion": "Aplicada dos veces; índices y ANALYZE",
+    "verificado": [
+      "Dashboard compara todos los campos contra versión anterior",
+      "Dashboard con 16 consultas fijas y filtros de empresa",
+      "Fin de día incluye fracciones de segundo",
+      "Catálogo agrupa presentaciones",
+      "Stock conserva cantidades y validación de empresa",
+      "Clientes conserva compras y saldo sin multiplicación por joins",
+      "Historial paginado conserva detalles e impuestos",
+      "Historial respeta empresa",
+      "Regresiones anteriores"
+    ]
+  },
+  "frontend": {
+    "typescript": "aprobado",
+    "vite": "compilación producción aprobada",
+    "interaccion": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM, API simulada",
+      "comprobaciones": [
+        "Catálogo no se repite al remontar dentro de vigencia",
+        "Crear categoría invalida su lista",
+        "No solicita historial de citas deshabilitado",
+        "Refresh token conserva contexto y caché",
+        "Cambio de empresa elimina caché",
+        "Cambio de empleado elimina caché",
+        "Datos de empresa nueva consultados de nuevo"
+      ],
+      "erroresReact": []
+    }
+  },
+  "medicion_local": {
+    "consultasAntes": 336,
+    "clientes": 81,
+    "entorno": "PostgreSQL PGlite 18.3 local; un caso sintético, no Render/Neon",
+    "tiempoDespuesMs": 19.668116,
+    "consultasDespues": 16,
+    "tiempoAntesMs": 347.067588,
+    "ventasPeriodo": 120
+  },
+  "pendientes_entorno": [
+    "SQL en neondb producción",
+    "PS1 en Windows",
+    "Despliegue Render",
+    "Prueba gráfica y medición con datos reales"
+  ],
+  "limites": [
+    "No acceso a estadísticas o credenciales de tu producción",
+    "No se garantiza porcentaje de mejora en Neon/Render",
+    "Índices de migración bloquean escrituras durante construcción; espera por lock limitada a 5s",
+    "Catálogo sigue completo con imágenes",
+    "Sin caché de servidor de saldos o permisos",
+    "No todas las consultas del sistema han sido perfiladas",
+    "No cambios automáticos de planes, regiones ni host Neon"
+  ]
+}
