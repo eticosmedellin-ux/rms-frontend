@@ -1,3 +1,4 @@
+import {normalizar} from '@/components/busqueda/BuscarSeleccion';
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useProveedores, useCrearProveedor } from '@/hooks/useCompras';
@@ -6,7 +7,9 @@ import { Modal } from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/api/errors';
 
 export function ProveedoresTab() {
-  const { data: proveedores, isLoading } = useProveedores();
+  const { data: todosProveedores, isLoading } = useProveedores();
+  const [busqueda,setBusqueda]=useState('');
+  const proveedores=todosProveedores?.filter(p=>normalizar([p.nombre,p.nit,p.telefono,p.email,p.contactoNombre].join(' ')).includes(normalizar(busqueda)));
   const [modalAbierto, setModalAbierto] = useState(false);
 
   return (
@@ -25,6 +28,7 @@ export function ProveedoresTab() {
         </button>
       </div>
 
+      <input className="input mb-3" type="search" aria-label="Buscar proveedor" placeholder="Proveedor, NIT, teléfono o contacto" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
       {isLoading ? (
         <LoadingState />
       ) : proveedores && proveedores.length > 0 ? (

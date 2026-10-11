@@ -1,3 +1,4 @@
+import {useStockSucursal} from '@/hooks/useInventario';
 import { useState } from 'react';
 import { Plus, Send, PackageCheck, XCircle, Loader2 } from 'lucide-react';
 import {
@@ -126,6 +127,9 @@ function TransferenciaFormModal({ isOpen, onClose }: { isOpen: boolean; onClose:
   const [sucursalDestinoId, setSucursalDestinoId] = useState('');
   const [lineas, setLineas] = useState<LineaDetalle[]>([{ productoId: '', cantidad: '', costoUnitario: '' }]);
   const [error, setError] = useState<string | null>(null);
+  const {data:stock=[]}=useStockSucursal(sucursalOrigenId?Number(sucursalOrigenId):null);
+  const acumulado=new Map<number,number>();for(const l of lineas)if(l.productoId)acumulado.set(Number(l.productoId),(acumulado.get(Number(l.productoId))??0)+Number(l.cantidad));
+  const insuficientes=Array.from(acumulado).filter(([id,q])=>q>(stock.find(s=>s.productoId===id)?.stockActual??0));
 
   async function handleSubmit() {
     setError(null);
@@ -139,6 +143,7 @@ function TransferenciaFormModal({ isOpen, onClose }: { isOpen: boolean; onClose:
       return;
     }
 
+    if(insuficientes.length){setError('Stock insuficiente en la sucursal de origen. Reduce las cantidades.');return;}
     try {
       await crear.mutateAsync({
         sucursalOrigenId: Number(sucursalOrigenId),
@@ -189,6 +194,7 @@ function TransferenciaFormModal({ isOpen, onClose }: { isOpen: boolean; onClose:
           TRÁNSITO); al "recibir" se aumenta el stock del destino.
         </p>
 
+        {!!insuficientes.length&&<p role="alert" className="text-danger-600">No se puede transferir: stock insuficiente en origen para {insuficientes.map(([id,q])=>`${stock.find(s=>s.productoId===id)?.productoNombre??`Producto #${id}`} (solicitado ${q}, stock ${stock.find(s=>s.productoId===id)?.stockActual??0})`).join('; ')}.</p>}
         {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
 
         <div className="flex justify-end gap-3 pt-2">
@@ -197,7 +203,7 @@ function TransferenciaFormModal({ isOpen, onClose }: { isOpen: boolean; onClose:
           </button>
           <button
             onClick={handleSubmit}
-            disabled={crear.isPending}
+            disabled={crear.isPending||!!insuficientes.length}
             className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
           >
             {crear.isPending && <Loader2 size={16} className="animate-spin" />}

@@ -1,103 +1,22 @@
-import { useState } from 'react';
-import { Modal } from '@/components/ui/Modal';
-import { DetalleLineasEditor, type LineaDetalle } from '@/components/ui/DetalleLineasEditor';
-import { useSucursales } from '@/hooks/useSucursales';
-import { useProveedores } from '@/hooks/useCompras';
-import { useCrearOrdenCompra } from '@/hooks/useCompras';
-import { getApiErrorMessage } from '@/api/errors';
-import { Loader2 } from 'lucide-react';
-
-export function OrdenCompraFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { data: sucursales } = useSucursales();
-  const { data: proveedores } = useProveedores();
-  const crear = useCrearOrdenCompra();
-
-  const [sucursalId, setSucursalId] = useState('');
-  const [proveedorId, setProveedorId] = useState('');
-  const [observaciones, setObservaciones] = useState('');
-  const [lineas, setLineas] = useState<LineaDetalle[]>([{ productoId: '', cantidad: '', costoUnitario: '' }]);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit() {
-    setError(null);
-    const detallesValidos = lineas.filter((l) => l.productoId !== '' && l.cantidad !== '');
-    if (!sucursalId || !proveedorId || detallesValidos.length === 0) {
-      setError('Completa sucursal, proveedor y al menos un producto');
-      return;
-    }
-
-    try {
-      await crear.mutateAsync({
-        sucursalId: Number(sucursalId),
-        proveedorId: Number(proveedorId),
-        observaciones: observaciones || undefined,
-        detalles: detallesValidos.map((l) => ({
-          productoId: Number(l.productoId),
-          cantidadPedida: Number(l.cantidad),
-          costoUnitarioEstimado: l.costoUnitario ? Number(l.costoUnitario) : undefined,
-        })),
-      });
-      setSucursalId('');
-      setProveedorId('');
-      setObservaciones('');
-      setLineas([{ productoId: '', cantidad: '', costoUnitario: '' }]);
-      onClose();
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'No se pudo crear la orden de compra'));
-    }
-  }
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Nueva orden de compra" size="lg">
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-ink-700">Sucursal</span>
-            <select className="input" value={sucursalId} onChange={(e) => setSucursalId(e.target.value)}>
-              <option value="">Selecciona…</option>
-              {sucursales?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-ink-700">Proveedor</span>
-            <select className="input" value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}>
-              <option value="">Selecciona…</option>
-              {proveedores?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-ink-700">Observaciones</span>
-          <input className="input" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
-        </label>
-
-        <DetalleLineasEditor lineas={lineas} onChange={setLineas} labelCantidad="Cant. pedida" />
-
-        {error && <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button onClick={onClose} className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50">
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={crear.isPending}
-            className="flex items-center gap-2 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
-          >
-            {crear.isPending && <Loader2 size={16} className="animate-spin" />}
-            Crear orden
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
+import {useState} from 'react';
+import {Modal} from '@/components/ui/Modal';
+import {BuscarSeleccion} from '@/components/busqueda/BuscarSeleccion';
+import {useSucursales} from '@/hooks/useSucursales';
+import {useProveedores,useCrearOrdenCompra} from '@/hooks/useCompras';
+import {useProductos,useStockSucursal,useCategorias} from '@/hooks/useInventario';
+import {ProductoFormModal} from '@/pages/inventario/ProductoFormModal';
+import {getApiErrorMessage} from '@/api/errors';
+import type {Producto} from '@/types/inventario';
+type Linea={productoId:number;sucursalId:number;cantidad:string;costo:string;presentacionId?:number;impuestoTipo:string;impuestoTarifa:number;ubicacion:string};
+const dinero=(n:number)=>n.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:2});
+export function OrdenCompraFormModal({isOpen,onClose}:{isOpen:boolean;onClose:()=>void}){
+ const {data:sucursales=[]}=useSucursales(),{data:proveedores=[]}=useProveedores(),{data:productos=[]}=useProductos(),{data:categorias=[]}=useCategorias();const crear=useCrearOrdenCompra();
+ const [sucursal,setSucursal]=useState<number[]>([]),[proveedor,setProveedor]=useState<number[]>([]),[lineas,setLineas]=useState<Linea[]>([]),[observaciones,setObservaciones]=useState(''),[categoria,setCategoria]=useState(''),[nuevo,setNuevo]=useState(false),[error,setError]=useState('');
+ const agregar=(p:Producto)=>setLineas(ls=>[...ls,{productoId:p.id,sucursalId:sucursal[0]??0,cantidad:'1',costo:String(p.precioCompra),impuestoTipo:p.impuestoTipo??'SIN_CONFIGURAR',impuestoTarifa:p.impuestoTarifa??0,ubicacion:p.ubicacion??''}]);
+ async function guardar(){setError('');if(!sucursal[0]||!proveedor[0]||!lineas.length||lineas.some(l=>!l.sucursalId||Number(l.cantidad)<=0||Number(l.costo)<0)){setError('Selecciona proveedor, sucursal y cantidades positivas en todas las líneas.');return;}try{await crear.mutateAsync({sucursalId:sucursal[0],proveedorId:proveedor[0],observaciones,detalles:lineas.map(l=>({...l,cantidadPedida:Number(l.cantidad),costoUnitarioEstimado:Number(l.costo)}))});setLineas([]);onClose();}catch(e){setError(getApiErrorMessage(e));}}
+ return <><Modal isOpen={isOpen} onClose={onClose} title="Nueva orden de compra" size="lg"><div className="space-y-4"><div className="grid sm:grid-cols-2 gap-3"><BuscarSeleccion label="Sucursal inicial" opciones={sucursales} valor={sucursal} onChange={setSucursal}/><BuscarSeleccion label="Proveedor" opciones={proveedores.map(p=>({...p,buscar:p.nit??''}))} valor={proveedor} onChange={setProveedor}/></div><p className="text-xs">Cada línea tiene su propio destino. La orden no aumenta el inventario: se actualiza al recibir la mercancía.</p><div className="flex gap-2"><select aria-label="Categoría" className="input" value={categoria} onChange={e=>setCategoria(e.target.value)}><option value="">Todas las categorías</option>{categorias.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select><button className="text-sm underline whitespace-nowrap" onClick={()=>setNuevo(true)}>Nuevo producto</button></div><BuscarSeleccion label="Añadir producto" valor={[]} onChange={ids=>{const p=productos.find(p=>p.id===ids[0]);if(p)agregar(p);}} opciones={productos.filter(p=>!categoria||p.categoriaId===Number(categoria)).map(p=>({id:p.id,nombre:p.nombre,buscar:[p.codigoInterno,p.codigoBarras,p.marca,p.categoria,p.descripcion].join(' ')}))}/>{lineas.map((l,i)=><LineaCompra key={i} linea={l} producto={productos.find(p=>p.id===l.productoId)} sucursales={sucursales} cambiar={x=>setLineas(lineas.map((l,j)=>j===i?x:l))} quitar={()=>setLineas(lineas.filter((_,j)=>j!==i))}/>)}<label className="block text-sm">Observaciones<input className="input" value={observaciones} onChange={e=>setObservaciones(e.target.value)}/></label>{error&&<p role="alert" className="text-danger-600">{error}</p>}<button className="rounded bg-ink-800 text-white px-4 py-2" disabled={crear.isPending} onClick={guardar}>Crear orden</button></div></Modal><ProductoFormModal isOpen={nuevo} onClose={()=>setNuevo(false)} productoEditando={null} onCreado={agregar}/></>;
+}
+function LineaCompra({linea:l,producto:p,sucursales,cambiar,quitar}:{linea:Linea;producto?:Producto;sucursales:{id:number;nombre:string}[];cambiar:(l:Linea)=>void;quitar:()=>void}){
+ const {data:stock=[]}=useStockSucursal(l.sucursalId||null);const factor=p?.presentaciones?.find(x=>x.id===l.presentacionId)?.unidades??1;const cantidad=Number(l.cantidad),costo=Number(l.costo),total=cantidad*costo;const venta=Number(p?.precioVenta??0),margen=venta>0?(venta-costo/factor)/venta*100:0;
+ return <section className="rounded border p-3 space-y-2"><div className="flex justify-between"><strong>{p?.nombre??`Producto ${l.productoId}`}</strong><button className="text-xs underline" onClick={quitar}>Quitar</button></div><div className="grid sm:grid-cols-3 gap-2"><label className="text-xs">Presentación<select className="input" value={l.presentacionId??''} onChange={e=>{const id=Number(e.target.value)||undefined;const f=p?.presentaciones?.find(x=>x.id===id)?.unidades??1;cambiar({...l,presentacionId:id,costo:String((p?.precioCompra??0)*f)});}}><option value="">Unidad base ({p?.unidadMedida})</option>{p?.presentaciones?.map(x=><option key={x.id} value={x.id}>{x.nombre} · {x.unidades} unidades</option>)}</select></label><label className="text-xs">Stock actual en destino (unidades)<input className="input" readOnly value={stock.find(s=>s.productoId===l.productoId)?.stockActual??0}/></label><label className="text-xs">Cantidad pedida<input className="input" type="number" min="0.01" step="0.01" value={l.cantidad} onChange={e=>cambiar({...l,cantidad:e.target.value})}/></label><label className="text-xs">Costo por presentación<input className="input" type="number" min="0" step="0.000001" value={l.costo} onChange={e=>cambiar({...l,costo:e.target.value})}/></label><label className="text-xs">Costo total (sin impuesto)<input className="input" type="number" min="0" step="0.01" value={Number(total.toFixed(2))} onChange={e=>{if(cantidad>0)cambiar({...l,costo:String(Number(e.target.value)/cantidad)});}}/></label><BuscarSeleccion label="Sucursal de destino" opciones={sucursales} valor={l.sucursalId?[l.sucursalId]:[]} onChange={ids=>cambiar({...l,sucursalId:ids[0]??0})}/><label className="text-xs">Impuesto<select className="input" value={l.impuestoTipo} onChange={e=>cambiar({...l,impuestoTipo:e.target.value,impuestoTarifa:['IVA','INC'].includes(e.target.value)?l.impuestoTarifa:0})}>{['SIN_CONFIGURAR','IVA','INC','EXENTO','EXCLUIDO','NO_APLICA'].map(t=><option key={t}>{t}</option>)}</select></label><label className="text-xs">Tarifa (%)<input type="number" min="0" max="100" step="0.01" className="input" disabled={!['IVA','INC'].includes(l.impuestoTipo)} value={l.impuestoTarifa} onChange={e=>cambiar({...l,impuestoTarifa:Number(e.target.value)})}/></label><label className="text-xs">Ubicación física<input className="input" maxLength={300} value={l.ubicacion} onChange={e=>cambiar({...l,ubicacion:e.target.value})}/></label></div><p className="text-xs">Se recibirán {cantidad*factor} unidades a {dinero(costo/factor)} por unidad. Margen estimado sobre precio de catálogo: {margen.toLocaleString('es-CO',{maximumFractionDigits:2})}%. Impuesto estimado: {dinero(total*l.impuestoTarifa/100)}.</p></section>;
 }

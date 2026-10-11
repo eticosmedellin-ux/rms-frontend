@@ -1,3 +1,5 @@
+import {normalizar,concordancia} from '@/components/busqueda/BuscarSeleccion';
+import {ProductoFicha} from '@/features/inventario/ProductoFicha';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { Plus, Boxes, Pencil, Upload, Camera } from 'lucide-react';
@@ -12,7 +14,9 @@ import type { Producto } from '@/types/inventario';
 export function ProductosTab() {
   const [url,setUrl]=useSearchParams();const referencia=url.get('origen')==='reporte'?url.get('referencia'):null;
   const { data: todos, isLoading } = useProductos();
-  const productos=referencia?todos?.filter(p=>String(p.id)===referencia):todos;
+  const [busqueda,setBusqueda]=useState(''),[categoria,setCategoria]=useState('');
+  const [ficha,setFicha]=useState<Producto|null>(null);
+  const productos=(referencia?todos?.filter(p=>String(p.id)===referencia):todos)?.filter(p=>(!categoria||p.categoria===categoria)&&normalizar([p.nombre,p.codigoInterno,p.codigoBarras,p.categoria,p.marca,p.descripcion,p.ubicacion].join(' ')).includes(normalizar(busqueda))).sort((a,b)=>concordancia(a.nombre,busqueda)-concordancia(b.nombre,busqueda));
   const [modalFormAbierto, setModalFormAbierto] = useState(false);
   const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
   const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
@@ -55,6 +59,7 @@ export function ProductosTab() {
         </div>
       </div>
 
+      <div className="flex gap-2 mb-3"><input aria-label="Buscar producto" type="search" className="input" placeholder="Nombre, código, barras, categoría, marca o ubicación" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/><select className="input max-w-48" aria-label="Filtrar categoría" value={categoria} onChange={e=>setCategoria(e.target.value)}><option value="">Todas las categorías</option>{Array.from(new Set(todos?.map(p=>p.categoria).filter(Boolean))).map(c=><option key={c} value={c??''}>{c}</option>)}</select></div>
       {isLoading ? (
         <LoadingState label="Cargando productos…" />
       ) : productos && productos.length > 0 ? (
@@ -86,7 +91,7 @@ export function ProductosTab() {
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-ink-500">{p.codigoInterno}</td>
                   <td className="px-4 py-3 font-medium text-ink-800">
-                    {p.nombre}
+                    <button className="underline" onClick={()=>setFicha(p)}>{p.nombre}</button>
                     {!p.manejaInventario && (
                       <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">
                         Servicio
@@ -100,6 +105,7 @@ export function ProductosTab() {
                   </td>
                   <td className="px-4 py-3 text-right font-medium text-ink-800">
                     ${p.precioVenta.toLocaleString('es-CO')}
+                    <p className="text-xs text-ink-400">Margen: {p.precioVenta>0?((p.precioVenta-p.precioCompra)/p.precioVenta*100).toLocaleString('es-CO',{maximumFractionDigits:2}):'—'}%</p>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
@@ -140,6 +146,7 @@ export function ProductosTab() {
         />
       )}
 
+      {ficha&&<ProductoFicha producto={ficha} cerrar={()=>setFicha(null)}/>}
       <ProductoFormModal
         isOpen={modalFormAbierto}
         onClose={() => setModalFormAbierto(false)}

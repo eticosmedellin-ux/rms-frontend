@@ -1,3 +1,4 @@
+import {BuscarSeleccion} from '@/components/busqueda/BuscarSeleccion';
 import { Plus, Trash2 } from 'lucide-react';
 import { useProductos } from '@/hooks/useInventario';
 
@@ -47,18 +48,8 @@ export function DetalleLineasEditor({
       <div className="mt-1 space-y-2">
         {lineas.map((linea, index) => (
           <div key={index} className="grid grid-cols-[1fr_100px_100px_auto] gap-2">
-            <select
-              className="input"
-              value={linea.productoId}
-              onChange={(e) => actualizarLinea(index, { productoId: Number(e.target.value) })}
-            >
-              <option value="">Selecciona…</option>
-              {productos?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
+            <BuscarSeleccion label="Producto" opciones={(productos??[]).map(p=>({id:p.id,nombre:p.nombre,buscar:[p.codigoInterno,p.codigoBarras,p.categoria,p.marca].join(' ')}))} valor={linea.productoId?[Number(linea.productoId)]:[]} onChange={ids=>actualizarLinea(index,{productoId:ids[0]??'',costoUnitario:String(productos?.find(p=>p.id===ids[0])?.precioCompra??0)})}/>
+
             <input
               type="number"
               className="input"

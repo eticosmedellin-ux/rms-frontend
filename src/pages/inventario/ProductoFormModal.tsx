@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
@@ -14,15 +14,19 @@ interface ProductoFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   productoEditando: Producto | null;
+  onCreado?:(p:Producto)=>void;
 }
 
-export function ProductoFormModal({ isOpen, onClose, productoEditando }: ProductoFormModalProps) {
+export function ProductoFormModal({ isOpen, onClose, productoEditando, onCreado }: ProductoFormModalProps) {
   const { data: categorias } = useCategorias();
   const { data: marcas } = useMarcas();
   const crear = useCrearProducto();
   const actualizar = useActualizarProducto();
   const [serverError, setServerError] = useState<string | null>(null);
 
+  const [ubicacion,setUbicacion]=useState('');
+  const [presentaciones,setPresentaciones]=useState<{nombre:string;unidades:number;codigoBarras?:string}[]>([]);
+  useEffect(()=>{if(isOpen){setUbicacion(productoEditando?.ubicacion??'');setPresentaciones(productoEditando?.presentaciones?.map(p=>({nombre:p.nombre,unidades:p.unidades,codigoBarras:p.codigo_barras??''}))??[]);}},[isOpen,productoEditando]);
   const isEditing = productoEditando !== null;
 
   const {
@@ -41,8 +45,8 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
           nombre: productoEditando.nombre,
           descripcion: productoEditando.descripcion ?? '',
           unidadMedida: productoEditando.unidadMedida,
-          categoriaId: '',
-          marcaId: '',
+          categoriaId: productoEditando.categoriaId?String(productoEditando.categoriaId):'',
+          marcaId: productoEditando.marcaId?String(productoEditando.marcaId):'',
           precioCompra: productoEditando.precioCompra,
           precioVenta: productoEditando.precioVenta,
           esServicio: !productoEditando.manejaInventario,
@@ -70,6 +74,7 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
   async function onSubmit(values: ProductoFormValues) {
     setServerError(null);
     const payload = {
+      ubicacion,presentaciones,
       codigoInterno: values.codigoInterno,
       codigoBarras: values.codigoBarras || null,
       nombre: values.nombre,
@@ -88,7 +93,7 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
       if (isEditing) {
         await actualizar.mutateAsync({ id: productoEditando.id, data: payload });
       } else {
-        await crear.mutateAsync(payload);
+        const nuevo=await crear.mutateAsync(payload);onCreado?.(nuevo);
       }
       reset();
       onClose();
@@ -183,6 +188,8 @@ export function ProductoFormModal({ isOpen, onClose, productoEditando }: Product
         </div>
 
         <div className="grid grid-cols-2 gap-4"><Field label="Tratamiento del impuesto"><select className="input" {...register('impuestoTipo')}>{(['SIN_CONFIGURAR','IVA','INC','EXENTO','EXCLUIDO','NO_APLICA'] as const).map(t=><option key={t} value={t}>{{SIN_CONFIGURAR:"Sin configurar",IVA:"IVA",INC:"Impuesto al consumo (INC)",EXENTO:"Exento",EXCLUIDO:"Excluido",NO_APLICA:"No aplica"}[t]}</option>)}</select></Field><Field label="Tarifa (%)" error={errors.impuestoTarifa?.message}><input type="number" min="0" max="100" step="0.01" className="input" disabled={!['IVA','INC'].includes(watch('impuestoTipo')??'')} {...register('impuestoTarifa')}/></Field></div>
+        <Field label="Ubicación física (estante, pasillo o bodega)"><input className="input" maxLength={300} value={ubicacion} onChange={e=>setUbicacion(e.target.value)}/></Field>
+        {!esServicio&&<section className="rounded border p-3 space-y-2"><strong>Presentaciones de compra</strong><p className="text-xs">La unidad base es {watch('unidadMedida')}. Una caja de 10 se registra aquí como 10 unidades base.</p>{presentaciones.map((p,i)=><div className="grid grid-cols-3 gap-2" key={i}><input aria-label="Nombre de presentación" className="input" value={p.nombre} onChange={e=>setPresentaciones(presentaciones.map((x,j)=>j===i?{...x,nombre:e.target.value}:x))}/><input aria-label="Unidades por presentación" type="number" min="0.01" step="0.01" className="input" value={p.unidades} onChange={e=>setPresentaciones(presentaciones.map((x,j)=>j===i?{...x,unidades:Number(e.target.value)}:x))}/><div><input aria-label="Código de barras presentación" className="input" value={p.codigoBarras??''} onChange={e=>setPresentaciones(presentaciones.map((x,j)=>j===i?{...x,codigoBarras:e.target.value}:x))}/><button type="button" className="text-xs underline" onClick={()=>setPresentaciones(presentaciones.filter((_,j)=>j!==i))}>Quitar</button></div></div>)}<button type="button" className="text-sm underline" onClick={()=>setPresentaciones([...presentaciones,{nombre:'',unidades:1}])}>Añadir caja o presentación</button></section>}
         {serverError && (
           <div className="rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{serverError}</div>
         )}

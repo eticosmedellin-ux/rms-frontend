@@ -1,3 +1,4 @@
+import {ImportarComprasXml} from './ImportarComprasXml';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { ProveedoresTab } from '@/pages/compras/ProveedoresTab';
@@ -5,6 +6,7 @@ import { OrdenesCompraTab } from '@/pages/compras/OrdenesCompraTab';
 import { FacturasCuentasTab } from '@/pages/compras/FacturasCuentasTab';
 
 const TABS = [
+  {id:'xml',label:'Importar XML'},
   { id: 'proveedores', label: 'Proveedores' },
   { id: 'ordenes', label: 'Órdenes de compra' },
   { id: 'facturas', label: 'Facturas y cuentas por pagar' },
@@ -38,6 +40,7 @@ export default function ComprasPage() {
       </div>
 
       <div className="mt-5">
+        {tab === 'xml'&&<ImportarComprasXml/>}
         {tab === 'proveedores' && <ProveedoresTab />}
         {tab === 'ordenes' && <OrdenesCompraTab />}
         {tab === 'facturas' && <FacturasCuentasTab />}

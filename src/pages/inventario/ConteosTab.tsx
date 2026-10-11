@@ -1,3 +1,5 @@
+import {ConteoTareas} from '@/features/inventario/ConteoTareas';
+import {BuscarSeleccion} from '@/components/busqueda/BuscarSeleccion';
 import { useState } from 'react';
 import { Plus, CheckCircle2, Loader2 } from 'lucide-react';
 import { useConteos, useIniciarConteo, useCerrarConteo, useProductos } from '@/hooks/useInventario';
@@ -14,6 +16,7 @@ export function ConteosTab() {
 
   return (
     <div>
+      <ConteoTareas administrar/>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-ink-400">
           {conteos?.length ?? 0} conteo{conteos?.length === 1 ? '' : 's'} registrado{conteos?.length === 1 ? '' : 's'}
@@ -91,10 +94,6 @@ function IniciarConteoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const [productoIds, setProductoIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  function toggleProducto(id: number) {
-    setProductoIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
-  }
-
   function seleccionarTodos() {
     setProductoIds(productos?.map((p) => p.id) ?? []);
   }
@@ -137,14 +136,8 @@ function IniciarConteoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               Seleccionar todos
             </button>
           </div>
-          <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-ink-100 p-2">
-            {productos?.map((p) => (
-              <label key={p.id} className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-ink-50">
-                <input type="checkbox" checked={productoIds.includes(p.id)} onChange={() => toggleProducto(p.id)} />
-                {p.nombre}
-              </label>
-            ))}
-          </div>
+          <BuscarSeleccion label="Buscar productos por coincidencia" multiple opciones={(productos??[]).filter(p=>p.manejaInventario).map(p=>({id:p.id,nombre:p.nombre,buscar:[p.codigoInterno,p.codigoBarras,p.categoria].join(' ')}))} valor={productoIds} onChange={setProductoIds}/>
+
         </div>
 
         <p className="text-xs text-ink-400">

@@ -1,3 +1,4 @@
+import {ConteoTareas} from '@/features/inventario/ConteoTareas';
 import {TutorialGlobal} from '@/features/tutorial/TutorialUso';
 import {useApariencia} from '@/features/apariencia/AparienciaProvider';
 import {fondo} from '@/features/apariencia/tema';
@@ -23,6 +24,7 @@ export function AppLayout() {
   useAplicarTema();
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
+  const [menuPCOculto,setMenuPCOculto]=useState(false);
   if (!esSuperadmin && miPlan && miPlan.estadoLicencia !== 'ACTIVA') {
     return (
       <div className="flex h-screen items-center justify-center bg-ink-50 px-6 dark:bg-ink-900">
@@ -40,10 +42,11 @@ export function AppLayout() {
 
   return (
     <div className="sicom-sistema flex h-screen bg-ink-50 dark:bg-ink-900" style={apariencia.activo?fondo(apariencia.sistema):undefined}>
-      <Sidebar abierto={menuMovilAbierto} onCerrar={() => setMenuMovilAbierto(false)} />
+      <Sidebar ocultoPC={menuPCOculto} abierto={menuMovilAbierto} onCerrar={() => setMenuMovilAbierto(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar onAbrirMenu={() => setMenuMovilAbierto(true)} />
+        <Topbar onAbrirMenu={() => {if(window.matchMedia('(min-width: 768px)').matches)setMenuPCOculto(!menuPCOculto);else setMenuMovilAbierto(!menuMovilAbierto);}} />
         <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
+          <ConteoTareas/>
           <Outlet />
         </main>
       </div>

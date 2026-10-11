@@ -33,7 +33,11 @@ export function FacturaFormModal({ isOpen, onClose, proveedorId, orden }: Factur
   useEffect(() => {
     if (isOpen) {
       setNumeroFactura(''); setError(null);
-      setLineas(orden ? orden.detalles.filter(d => d.cantidadRecibida > (d.cantidadFacturada ?? 0)).map(d => ({productoId: d.productoId, cantidad: String(d.cantidadRecibida - (d.cantidadFacturada ?? 0)), costoUnitario: String(d.costoUnitarioEstimado)})) : [{productoId:'',cantidad:'',costoUnitario:''}]);
+      if(orden){
+        const porProducto=new Map<number,{cantidad:number;valor:number}>();let impuesto=0;
+        for(const d of orden.detalles){const q=d.cantidadRecibida-(d.cantidadFacturada??0);if(q<=0)continue;const actual=porProducto.get(d.productoId)??{cantidad:0,valor:0};actual.cantidad+=q;actual.valor+=q*d.costoUnitarioEstimado;porProducto.set(d.productoId,actual);impuesto+=q*d.costoUnitarioEstimado*(d.impuestoTarifa??0)/100;}
+        setLineas(Array.from(porProducto,([productoId,x])=>({productoId,cantidad:String(x.cantidad),costoUnitario:String(x.valor/x.cantidad)})));setImpuestos(impuesto.toFixed(2));
+      }else setLineas([{productoId:'',cantidad:'',costoUnitario:''}]);
     }
   }, [isOpen, orden]);
   async function handleSubmit() {

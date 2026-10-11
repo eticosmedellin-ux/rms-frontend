@@ -1,3 +1,4 @@
+import {textoFactura} from './busqueda-facturas';
 import {HistorialProveedor} from '@/features/sicom/HistorialProveedor';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
@@ -15,9 +16,11 @@ export function FacturasCuentasTab() {
   const [modalFacturaAbierto, setModalFacturaAbierto] = useState(false);
   const [cuentaAbonando, setCuentaAbonando] = useState<CuentaPorPagar | null>(null);
 
-  const { data: facturas, isLoading: cargandoFacturas } = useFacturasPorProveedor(proveedorId);
+  const [busqueda,setBusqueda]=useState('');
+  const { data: todasFacturas, isLoading: cargandoFacturas } = useFacturasPorProveedor(proveedorId);
   const { data: cuentas, isLoading: cargandoCuentas } = useCuentasPorPagar(proveedorId);
 
+  const facturas=todasFacturas?.filter(f=>textoFactura(f).includes(busqueda.toLocaleLowerCase()));
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -48,6 +51,7 @@ export function FacturasCuentasTab() {
         )}
       </div>
 
+      <input className="input mb-3" type="search" aria-label="Buscar factura" placeholder="Factura, fecha o estado" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
       {!proveedorId ? (
         <EmptyState title="Selecciona un proveedor" description="Elige uno arriba para ver sus facturas y cuentas por pagar." />
       ) : (

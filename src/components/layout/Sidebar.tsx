@@ -74,7 +74,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
   },
 ];
 
-export function Sidebar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => void }) {
+export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolean; onCerrar: () => void;ocultoPC?:boolean }) {
   const apariencia=useApariencia();
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
@@ -111,7 +111,7 @@ export function Sidebar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () 
       )}
       <aside
         style={apariencia.activo?fondo(apariencia.menu):undefined}
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-ink-800 text-ink-100 transition-transform duration-200 md:static md:z-auto md:flex md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-ink-800 text-ink-100 transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${ocultoPC?'md:hidden':'md:flex'} ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -1,3 +1,4 @@
+import {normalizar} from '@/components/busqueda/BuscarSeleccion';
 import {HistorialOrden} from '@/features/sicom/HistorialOrden';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
@@ -21,7 +22,8 @@ const ESTADO_STYLES: Record<EstadoOrdenCompra, string> = {
 export function OrdenesCompraTab() {
   const [url,setUrl]=useSearchParams();const referencia=url.get('origen')==='reporte'?url.get('referencia'):null;
   const { data: todas, isLoading } = useOrdenesCompra();
-  const ordenes=referencia?todas?.filter(o=>String(o.id)===referencia):todas;
+  const [busqueda,setBusqueda]=useState('');
+  const ordenes=(referencia?todas?.filter(o=>String(o.id)===referencia):todas)?.filter(o=>normalizar([o.numero,o.proveedor,o.facturas,o.observaciones].join(' ')).includes(normalizar(busqueda)));
   const enviar = useEnviarOrdenCompra();
   const cancelar = useCancelarOrdenCompra();
   const [historialId,setHistorialId]=useState<number|null>(null);
@@ -45,6 +47,7 @@ export function OrdenesCompraTab() {
         </button>
       </div>
 
+      <input type="search" aria-label="Buscar orden" placeholder="Buscar por orden, factura o proveedor" className="input mb-3" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
       {isLoading ? (
         <LoadingState />
       ) : ordenes && ordenes.length > 0 ? (
@@ -62,9 +65,9 @@ export function OrdenesCompraTab() {
             <tbody className="divide-y divide-ink-50">
               {ordenes.map((o) => (
                 <tr key={o.id} className="hover:bg-ink-50/60">
-                  <td className="px-4 py-3 font-mono text-xs text-ink-600">{o.numero}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-ink-600">{new Date(o.fecha).toLocaleDateString('es-CO')} · {o.numero}</td>
                   <td className="px-4 py-3 font-medium text-ink-800">{o.proveedor}</td>
-                  <td className="px-4 py-3 text-ink-500">{o.sucursal}</td>
+                  <td className="px-4 py-3 text-ink-500">{Array.from(new Set(o.detalles.map(d=>d.sucursal??o.sucursal))).join(', ')}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ESTADO_STYLES[o.estado]}`}>
                       {o.estado.replaceAll('_', ' ')}

@@ -29,6 +29,7 @@ export type EstadoOrdenCompra =
   | 'CANCELADA';
 
 export interface DetalleOrdenCompraResponse {
+  id?:number;sucursalId?:number;sucursal?:string;cantidadCompra?:number;factorConversion?:number;presentacion?:string;costoCompra?:number;impuestoTipo?:string;impuestoTarifa?:number;ubicacion?:string;
   productoId: number;
   producto: string;
   cantidadPedida: number;
@@ -38,6 +39,7 @@ export interface DetalleOrdenCompraResponse {
 }
 
 export interface OrdenCompra {
+  facturas?:string;
   id: number;
   numero: string;
   proveedorId: number;
@@ -56,14 +58,14 @@ export interface OrdenCompraRequest {
   proveedorId: number;
   fechaEsperada?: string | null;
   observaciones?: string | null;
-  detalles: { productoId: number; cantidadPedida: number; costoUnitarioEstimado?: number }[];
+  detalles: { productoId: number; cantidadPedida: number; costoUnitarioEstimado?: number; sucursalId?:number;presentacionId?:number;impuestoTipo?:string;impuestoTarifa?:number;ubicacion?:string }[];
 }
 
 export interface RecepcionCompraRequest {
   ordenId?: number | null;
   sucursalId: number;
   observaciones?: string | null;
-  detalles: { productoId: number; cantidadRecibida: number; costoUnitario: number; lote?:string; vencimiento?:string; condicionesRecepcion?:string; cantidadRechazada?:number; motivoRechazo?:string }[];
+  detalles: { detalleOrdenId?:number;sucursalId?:number;productoId: number; cantidadRecibida: number; costoUnitario: number; lote?:string; vencimiento?:string; condicionesRecepcion?:string; cantidadRechazada?:number; motivoRechazo?:string }[];
 }
 
 export interface FacturaCompra {

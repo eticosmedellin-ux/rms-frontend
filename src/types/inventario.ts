@@ -13,6 +13,7 @@ export interface Marca {
 }
 
 export interface Producto {
+  ubicacion?:string; categoriaId?:number; marcaId?:number;
   presentaciones?:{id:number;nombre:string;unidades:number;codigo_barras:string}[];
   id: number;
   codigoInterno: string;
@@ -55,6 +56,7 @@ export interface ComboRequest {
 }
 
 export interface ProductoRequest {
+  ubicacion?:string; presentaciones?:{nombre:string;unidades:number;codigoBarras?:string}[];
   categoriaId: number | null;
   marcaId: number | null;
   codigoInterno: string;

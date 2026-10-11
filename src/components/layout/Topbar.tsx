@@ -28,7 +28,7 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
   return (
     <header style={apariencia.activo?fondo(apariencia.cabecera):undefined} className="flex h-16 items-center justify-between gap-2 border-b border-ink-100 bg-white px-3 dark:border-ink-700 dark:bg-ink-800 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
-        <button onClick={onAbrirMenu} className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-50 md:hidden">
+        <button onClick={onAbrirMenu} aria-label="Mostrar u ocultar menú" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-50">
           <Menu size={22} />
         </button>
         <div className="min-w-0">
