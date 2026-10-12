@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import { OperacionServicios } from '@/pages/servicios/OperacionServicios';
 import { useState } from 'react';
 import { CitasTab } from '@/pages/servicios/CitasTab';
@@ -34,18 +35,21 @@ export default function ServiciosPage() {
     (incluidaEnPlanDirecta(miPlan?.rutasHabilitadas, PLAN_SERVICIOS_ORDENES) &&
       (esAdministradorTotal || permisos.includes(MODULO_SERVICIOS_ORDENES+'_CONSULTAR')));
 
+  const tabCitas=usePestanas('SERVICIOS_CITAS'),tabOrdenes=usePestanas('SERVICIOS_ORDENES');
   const TABS = TODOS_LOS_TABS.filter((t) => {
-    if (t.id === 'citas') return puedeCitas;
-    if (t.id === 'ordenes') return puedeOrdenes;
-    if (t.id === 'tipos') return puedeCitas || puedeOrdenes; // tipos de servicio alimenta a Citas
-    if (t.id === 'operacion') return puedeCitas || puedeOrdenes;
-    return puedeCitas || puedeOrdenes; // historial respeta los módulos habilitados
+    if (t.id === 'citas') return puedeCitas&&tabCitas(t.id);
+    if (t.id === 'ordenes') return puedeOrdenes&&tabOrdenes(t.id);
+    if (t.id === 'tipos') return puedeCitas&&tabCitas(t.id) || puedeOrdenes&&tabOrdenes(t.id); // tipos de servicio alimenta a Citas
+    if (t.id === 'operacion') return puedeCitas&&tabCitas(t.id) || puedeOrdenes&&tabOrdenes(t.id);
+    return puedeCitas&&tabCitas(t.id) || puedeOrdenes&&tabOrdenes(t.id); // historial respeta los módulos habilitados
   });
 
-  const [tab, setTab] = useState<(typeof TODOS_LOS_TABS)[number]['id']>(()=>{
+  const [seleccion, setTab] = useState<(typeof TODOS_LOS_TABS)[number]['id']>(()=>{
     const solicitada=new URLSearchParams(window.location.search).get('tab');
     return TABS.find(t=>t.id===solicitada)?.id ?? TABS[0]?.id ?? 'historial';
   });
+  const tab=TABS.find(t=>t.id===seleccion)?.id??TABS[0]?.id;
+  if(!tab)return <p>Tu rol no tiene pestañas de servicios habilitadas.</p>;
 
   return (
     <div>
@@ -71,7 +75,7 @@ export default function ServiciosPage() {
         {tab === 'ordenes' && puedeOrdenes && <OrdenesTrabajoTab />}
         {tab === 'tipos' && <TiposServicioTab />}
         {tab === 'historial' && <HistorialTab />}
-        {tab === 'operacion' && (puedeOrdenes || puedeCitas) && <OperacionServicios base={puedeOrdenes?'ordenes':'citas'} />}
+        {tab === 'operacion' && (puedeOrdenes || puedeCitas) && <OperacionServicios base={puedeOrdenes&&tabOrdenes('operacion')?'ordenes':'citas'} />}
       </div>
     </div>
   );

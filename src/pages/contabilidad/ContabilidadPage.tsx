@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import RevisionCierre from './RevisionCierre';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Plus, ShieldCheck, ShieldAlert, Lock, XCircle } from 'lucide-react';
@@ -42,7 +43,10 @@ export default function ContabilidadPage() {
   const { data: activa, isLoading: cargandoActiva } = useContabilidadActiva();
   const activar = useActivarContabilidad();
   const [errorActivar, setErrorActivar] = useState<string | null>(null);
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('revision');
+  const [seleccion, setTab] = useState<(typeof TABS)[number]['id']>('revision');
+  const permiteTab=usePestanas('CONTABILIDAD');
+  const tabsPermitidas=TABS.filter(t=>permiteTab(t.id));
+  const tab=tabsPermitidas.find(t=>t.id===seleccion)?.id??tabsPermitidas[0]?.id;
   const [mesRevision,setMesRevision]=useState<string>();
   const [desde, setDesde] = useState(primerDiaDelMes());
   const [hasta, setHasta] = useState(hoy());
@@ -56,10 +60,11 @@ export default function ContabilidadPage() {
     }
   }
 
+  if(!tab)return <p className="rounded border p-3">Tu rol no tiene pestañas habilitadas en este módulo.</p>;
   if (cargandoActiva) return <LoadingState />;
 
   if (!activa) {
-    return (
+  return (
       <div className="mx-auto max-w-xl rounded-xl border border-ink-100 bg-white p-8 text-center shadow-card">
         <ShieldAlert size={36} className="mx-auto mb-3 text-amber-500" />
         <h1 className="font-display text-lg font-semibold text-ink-800">Contabilidad no activada</h1>
@@ -98,7 +103,7 @@ export default function ContabilidadPage() {
       </div>
 
       <div className="mt-4 flex gap-1 overflow-x-auto rounded-lg bg-ink-50 p-1 text-sm font-medium">
-        {TABS.map((t) => (
+        {tabsPermitidas.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}

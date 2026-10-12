@@ -1,0 +1,184 @@
+{
+  "entrega": "usuarios-pestanas-3",
+  "backend": {
+    "entorno": "Spring Boot y PostgreSQL PGlite aislado",
+    "tests": 225,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "compilacion_typescript_vite": "aprobado",
+    "interaccion": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM con API simulada",
+      "comprobaciones": [
+        "Turnos sin filtros Desde/Hasta/Empleado",
+        "Reportes conservan filtros",
+        "Lupa envía búsqueda",
+        "Selección abre ficha y roles",
+        "Ficha sin contraseñas",
+        "Confirmación desigual bloquea envío",
+        "Contraseña correcta envía cambio",
+        "Pestaña sin permiso no se muestra",
+        "Envío al cliente sin permiso no se muestra"
+      ],
+      "erroresReact": []
+    }
+  },
+  "permisos_pestanas": 105,
+  "pendiente_en_entorno_usuario": [
+    "SQL en base real",
+    "Scripts PowerShell en Windows",
+    "Publicación y prueba de roles/contraseñas reales"
+  ],
+  "detalle": [
+    {
+      "name": "com.rms.service.LotesServiceTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ControlesV2Test",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.CalculoVentaTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.CompraPdfTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.security.PermisosOperacionRespuestaTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RestauranteHorarioTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RespuestaMatiasTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.PlanPrestamoTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ComercioServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.AparienciaConfigTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.security.FacturacionAuthorizationTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ImpuestosMasivosTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RestauranteIntegracionTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.PerfilesEmpresaTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RestauranteContabilidadTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ImpuestosCalculoTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.DispensacionServiceTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ServiciosIntegracionTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ImagenAparienciaTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ContabilidadPagosTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.PrestamosIntegracionTest",
+      "tests": "124",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ]
+}

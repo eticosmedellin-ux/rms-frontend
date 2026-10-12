@@ -1,3 +1,4 @@
+import {useEnvioCliente} from '@/hooks/usePestanas';
 import {PreviewPago} from '@/components/ui/PreviewPago';
 import { useState } from 'react';
 import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail, Share2 } from 'lucide-react';
@@ -36,6 +37,7 @@ const ESTADO_DIAN_TONO: Record<EstadoFacturaElectronica, string> = {
 const TAMANO_PAGINA = 25;
 
 export function VentasTab() {
+  const puedeEnviar=useEnvioCliente('VENTAS');
   const [pagina, setPagina] = useState(0);
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
@@ -201,7 +203,7 @@ export function VentasTab() {
                     >
                       <Undo2 size={16} />
                     </button>
-                    {v.cliente !== 'Mostrador' && (
+                    {puedeEnviar&&v.cliente !== 'Mostrador' && (
                       <button
                         onClick={() => setVentaNotaDebito(v)}
                         title="Cargo adicional (nota débito)"
@@ -211,13 +213,13 @@ export function VentasTab() {
                       </button>
                     )}
                     <BotonEnviarCorreo venta={v} />
-                    <button
+                    {puedeEnviar&&(<button
                       onClick={() => setVentaCompartiendo(v)}
                       title="Compartir"
                       className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                     >
                       <Share2 size={16} />
-                    </button>
+                    </button>)}
                   </div>
                 </td>
               </tr>
@@ -324,11 +326,12 @@ function EstadoDian({ venta }: { venta: Venta }) {
 
 /** Manda por correo la factura (o el comprobante, si no se facturó) al cliente de la venta. */
 function BotonEnviarCorreo({ venta }: { venta: Venta }) {
+  const puedeEnviar=useEnvioCliente('VENTAS');
   const enviar = useEnviarFacturaPorCorreo();
   const [estado, setEstado] = useState<'idle' | 'ok' | 'error'>('idle');
   const [mensajeError, setMensajeError] = useState<string | null>(null);
 
-  if (venta.cliente === 'Mostrador') return null;
+  if (!puedeEnviar||venta.cliente === 'Mostrador') return null;
 
   async function handleClick() {
     setEstado('idle');

@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import {usePermisosOperacion} from '@/hooks/usePermisosOperacion';
 import {useQueryClient} from '@tanstack/react-query';
 import {apiClient} from '@/api/client';
@@ -64,7 +65,9 @@ function RestauranteContenido() {
   const [mesaEditar, setMesaEditar] = useState<Mesa | null>(null);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
   const [mesaQr, setMesaQr] = useState<Mesa | null>(null);
-  const [vista, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'menu' | 'analitica' | 'historial' | 'operacion'>('mesas');
+  const [vistaSolicitada, setVista] = useState<'mesas' | 'cocina' | 'reservas' | 'menu' | 'analitica' | 'historial' | 'operacion'>('mesas');
+  const tabPermiso=usePestanas('RESTAURANTE');
+  const vista=["mesas", "cocina", "reservas", "menu", "analitica", "historial", "operacion"].find(t=>t===vistaSolicitada&&tabPermiso(t))??["mesas", "cocina", "reservas", "menu", "analitica", "historial", "operacion"].find(tabPermiso)??'';
 
   function manejarClicMesa(m: Mesa) {
     // Una mesa en Limpieza no tiene comanda que gestionar — clic rápido la libera.
@@ -124,16 +127,16 @@ function RestauranteContenido() {
       {permisos.operar&&<PedidosCapturados/>}
       {permisos.administrar&&permisos.empresa&&<CatalogoOperacion/>}
       <div className="mt-4 flex flex-wrap gap-1 border-b border-ink-100">
-        <button className="border-b-2 px-4 py-2 text-sm font-medium" onClick={()=>setVista('operacion')}>Operación y liquidaciones</button>
-        <button
+        {tabPermiso('operacion')&&(<button className="border-b-2 px-4 py-2 text-sm font-medium" onClick={()=>setVista('operacion')}>Operación y liquidaciones</button>)}
+        {tabPermiso('mesas')&&(<button
           onClick={() => setVista('mesas')}
           className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'mesas' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
           }`}
         >
           Mesas
-        </button>
-        <button
+        </button>)}
+        {tabPermiso('cocina')&&(<button
           onClick={() => setVista('cocina')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'cocina' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
@@ -141,8 +144,8 @@ function RestauranteContenido() {
         >
           <ChefHat size={14} />
           Cocina / Bar
-        </button>
-        <button
+        </button>)}
+        {tabPermiso('reservas')&&(<button
           onClick={() => setVista('reservas')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'reservas' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
@@ -150,8 +153,8 @@ function RestauranteContenido() {
         >
           <CalendarPlus size={14} />
           Reservas
-        </button>
-        {permisos.empresa&&<button
+        </button>)}
+        {permisos.empresa&&tabPermiso('menu')&&(<button
           onClick={() => setVista('menu')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'menu' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
@@ -159,8 +162,8 @@ function RestauranteContenido() {
         >
           <QrCode size={14} />
           Menú digital
-        </button>}
-        {permisos.reportes&&<button
+        </button>)}
+        {permisos.reportes&&tabPermiso('analitica')&&(<button
           onClick={() => setVista('analitica')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'analitica' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
@@ -168,8 +171,8 @@ function RestauranteContenido() {
         >
           <BarChart3 size={14} />
           Analítica
-        </button>}
-        <button
+        </button>)}
+        {tabPermiso('historial')&&(<button
           onClick={() => setVista('historial')}
           className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             vista === 'historial' ? 'border-ink-800 text-ink-800' : 'border-transparent text-ink-400 hover:text-ink-600'
@@ -177,7 +180,7 @@ function RestauranteContenido() {
         >
           <HistoryIcon size={14} />
           Historial
-        </button>
+        </button>)}
       </div>
 
       {vista==='operacion'&&<OperacionRestaurante/>}

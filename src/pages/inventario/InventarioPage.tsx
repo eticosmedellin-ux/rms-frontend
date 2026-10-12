@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import Comercio from '@/features/sicom/Comercio';
 import Drogueria from '@/features/sicom/Drogueria';
 import { useState } from 'react';
@@ -22,8 +23,12 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 export default function InventarioPage() {
-  const [tab, setTab] = useState<TabId>('productos');
+  const [seleccion, setTab] = useState<TabId>('productos');
+  const permiteTab=usePestanas('INVENTARIO');
+  const tabsPermitidas=TABS.filter(t=>permiteTab(t.id));
+  const tab=tabsPermitidas.find(t=>t.id===seleccion)?.id??tabsPermitidas[0]?.id;
 
+  if(!tab)return <p className="rounded border p-3">Tu rol no tiene pestañas habilitadas en este módulo.</p>;
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-ink-800">Inventario</h1>
@@ -32,7 +37,7 @@ export default function InventarioPage() {
       </p>
 
       <div className="mt-5 flex gap-1 border-b border-ink-100">
-        {TABS.map(({ id, label }) => (
+        {tabsPermitidas.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setTab(id)}

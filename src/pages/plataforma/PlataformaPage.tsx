@@ -1,3 +1,4 @@
+import {GestionUsuarios} from '@/features/sicom/GestionUsuarios';
 import EditorApariencia from '@/features/apariencia/EditorApariencia';
 import {DobleFactor} from '@/features/sicom/DobleFactor';
 import {ContadoresPlataforma} from '@/features/sicom/ContadoresPlataforma';
@@ -17,6 +18,7 @@ import { TiposNegocioTab } from '@/pages/plataforma/TiposNegocioTab';
 import { DashboardEjecutivoTab } from '@/pages/plataforma/DashboardEjecutivoTab';
 
 const TABS = [
+  { id: 'usuarios', label: 'Usuarios y contraseñas' },
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'seguridad', label: 'Seguridad' },
   { id: 'apariencia', label: 'Apariencia en vivo' },
@@ -57,6 +59,7 @@ export default function PlataformaPage() {
       </div>
 
       <div className="mt-5">
+        {tab === 'usuarios' && <GestionUsuarios plataforma/>}
         {tab === 'dashboard' && <DashboardEjecutivoTab />}
         {tab === 'seguridad' && <DobleFactor />}
         {tab === 'apariencia' && <EditorApariencia />}

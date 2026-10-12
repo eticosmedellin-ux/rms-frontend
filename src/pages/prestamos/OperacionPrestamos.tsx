@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import {ClienteRapido} from '@/components/ui/ClienteRapido';
 import {PreviewPago} from '@/components/ui/PreviewPago';
 import {usePermisosOperacion} from '@/hooks/usePermisosOperacion';
@@ -8,9 +9,10 @@ type Row=Record<string,unknown>;type Plan={capital:number;tasa:number;unidad:str
 const path='/prestamos/operacion';const rows=(r:unknown)=>Array.isArray(r)?r as Row[]:[];
 const hoy=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 export function OperacionPrestamos(){
- const permisos=usePermisosOperacion('PRESTAMOS');const visible=(t:string)=>['simulador','cartera'].includes(t)||(permisos.empresa&&(t==='config'?permisos.administrar:t==='control'?permisos.reportes&&permisos.costos:permisos.administrar));
+ const permisos=usePermisosOperacion('PRESTAMOS');const tabPermiso=usePestanas('PRESTAMOS');const visibleAnterior=(t:string)=>['simulador','cartera'].includes(t)||(permisos.empresa&&(t==='config'?permisos.administrar:t==='control'?permisos.reportes&&permisos.costos:permisos.administrar));const visible=(t:string)=>visibleAnterior(t)&&tabPermiso('op_'+t);
  const [clienteNuevo,setClienteNuevo]=useState(''),[buscarCliente,setBuscarCliente]=useState('');
- const [tab,setTab]=useState('simulador'),[error,setError]=useState(''),[mensaje,setMensaje]=useState(''),[busy,setBusy]=useState(false),[seleccion,setSeleccion]=useState<number|null>(null),[sucursal,setSucursal]=useState(''),[planes,setPlanes]=useState<{plan:Plan;sim:Sim}[]>([]),[elegido,setElegido]=useState(0);
+ const [seleccionTab,setTab]=useState('simulador'),[error,setError]=useState(''),[mensaje,setMensaje]=useState(''),[busy,setBusy]=useState(false),[seleccion,setSeleccion]=useState<number|null>(null),[sucursal,setSucursal]=useState(''),[planes,setPlanes]=useState<{plan:Plan;sim:Sim}[]>([]),[elegido,setElegido]=useState(0);
+ const tab=["simulador", "cartera", "bancos", "config", "cobranza", "rutas", "control"].find(t=>t===seleccionTab&&visible(t))??["simulador", "cartera", "bancos", "config", "cobranza", "rutas", "control"].find(visible)??'';
  const {data:clientes}=useClientes(),{data:sucursales}=useSucursales(),{data:caja}=useCajaAbierta(sucursal?Number(sucursal):null);const qc=useQueryClient();const key=['prestamos-operacion'];
  const lista=useQuery({queryKey:[...key,'lista'],queryFn:async()=>(await apiClient.get<Row[]>(path)).data});const detalle=useQuery({queryKey:[...key,'detalle',seleccion],queryFn:async()=>(await apiClient.get<Row>(`${path}/${seleccion}`)).data,enabled:seleccion!=null});const config=useQuery({queryKey:[...key,'config'],queryFn:async()=>(await apiClient.get<Row>(`${path}/config`)).data,enabled:permisos.administrar&&permisos.empresa});const reportes=useQuery({queryKey:[...key,'reportes'],queryFn:async()=>(await apiClient.get<Row>(`${path}/reportes`)).data,enabled:permisos.reportes});const bancos=useQuery({queryKey:[...key,'bancos'],queryFn:async()=>(await apiClient.get<Row[]>(`${path}/bancos`)).data,enabled:tab==='bancos'});
  const d=detalle.data,saldo=d?.saldoHoy as Row|undefined;

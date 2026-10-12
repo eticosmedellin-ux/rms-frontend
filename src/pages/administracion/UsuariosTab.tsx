@@ -1,3 +1,4 @@
+import {GestionUsuarios} from '@/features/sicom/GestionUsuarios';
 import { useEffect, useState } from 'react';
 import { Plus, Loader2, Copy, Pencil } from 'lucide-react';
 import {
@@ -33,7 +34,7 @@ export function UsuariosTab() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <GestionUsuarios/><div className="mb-4 mt-5 flex items-center justify-between">
         <p className="text-sm text-ink-400">
           {usuarios?.length ?? 0} usuario{usuarios?.length === 1 ? '' : 's'} registrado
           {usuarios?.length === 1 ? '' : 's'}

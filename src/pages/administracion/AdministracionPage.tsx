@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import { useState } from 'react';
 import { UsuariosTab } from '@/pages/administracion/UsuariosTab';
 import { RolesTab } from '@/pages/administracion/RolesTab';
@@ -16,8 +17,12 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 export default function AdministracionPage() {
-  const [tab, setTab] = useState<TabId>('usuarios');
+  const [seleccion, setTab] = useState<TabId>('usuarios');
+  const permiteTab=usePestanas('USUARIOS');
+  const tabsPermitidas=TABS.filter(t=>permiteTab(t.id));
+  const tab=tabsPermitidas.find(t=>t.id===seleccion)?.id??tabsPermitidas[0]?.id;
 
+  if(!tab)return <p className="rounded border p-3">Tu rol no tiene pestañas habilitadas en este módulo.</p>;
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-ink-800">Administración</h1>
@@ -26,7 +31,7 @@ export default function AdministracionPage() {
       </p>
 
       <div className="mt-5 flex gap-1 border-b border-ink-100">
-        {TABS.map(({ id, label }) => (
+        {tabsPermitidas.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setTab(id)}

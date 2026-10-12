@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import {ImportarComprasXml} from './ImportarComprasXml';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
@@ -16,8 +17,12 @@ type TabId = (typeof TABS)[number]['id'];
 
 export default function ComprasPage() {
   const [url]=useSearchParams();
-  const [tab, setTab] = useState<TabId>(()=>TABS.some(t=>t.id===url.get('tab'))?url.get('tab') as TabId:'proveedores');
+  const [seleccion, setTab] = useState<TabId>(()=>TABS.some(t=>t.id===url.get('tab'))?url.get('tab') as TabId:'proveedores');
+  const permiteTab=usePestanas('COMPRAS');
+  const tabsPermitidas=TABS.filter(t=>permiteTab(t.id));
+  const tab=tabsPermitidas.find(t=>t.id===seleccion)?.id??tabsPermitidas[0]?.id;
 
+  if(!tab)return <p className="rounded border p-3">Tu rol no tiene pestañas habilitadas en este módulo.</p>;
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-ink-800">Compras</h1>
@@ -26,7 +31,7 @@ export default function ComprasPage() {
       </p>
 
       <div className="mt-5 flex gap-1 border-b border-ink-100">
-        {TABS.map(({ id, label }) => (
+        {tabsPermitidas.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setTab(id)}

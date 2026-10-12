@@ -1,3 +1,4 @@
+import {usePestanas} from '@/hooks/usePestanas';
 import { useState, type ReactNode } from 'react';
 import { CentroReportes } from '@/features/reportes/CentroReportes';
 import { useAuthStore } from '@/stores/authStore';
@@ -39,20 +40,24 @@ const TABS = [
 ] as const;
 
 export default function ReportesPage() {
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('detalle');
+  const [seleccion, setTab] = useState<(typeof TABS)[number]['id']>('detalle');
+  const permiteTab=usePestanas('REPORTES');
+  const tabsPermitidas=TABS.filter(t=>permiteTab(t.id));
+  const tab=tabsPermitidas.find(t=>t.id===seleccion)?.id??tabsPermitidas[0]?.id;
   const [desde, setDesde] = useState(primerDiaDelMes());
   const [hasta, setHasta] = useState(hoy());
   const [consultar, setConsultar] = useState(false);
 
-  const tabActual = TABS.find((t) => t.id === tab)!;
+  const tabActual = TABS.find((t) => t.id === tab)??TABS[0];
 
+  if(!tab)return <p className="rounded border p-3">Tu rol no tiene pestañas habilitadas en este módulo.</p>;
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-ink-800">Centro de reportes</h1>
       <p className="mt-1 text-sm text-ink-400">Abre el detalle, aplica filtros y descarga exactamente el resultado consultado. Los informes anteriores siguen disponibles para el administrador.</p>
 
       <div className="mt-4 flex gap-1 overflow-x-auto rounded-lg bg-ink-50 p-1 text-sm font-medium">
-        {TABS.filter(t=>t.id==='detalle'||useAuthStore.getState().esSuperadmin||useAuthStore.getState().esAdministradorTotal).map((t) => (
+        {tabsPermitidas.filter(t=>t.id==='detalle'||useAuthStore.getState().esSuperadmin||useAuthStore.getState().esAdministradorTotal).map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}

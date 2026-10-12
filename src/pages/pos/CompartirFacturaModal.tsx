@@ -1,3 +1,4 @@
+import {useEnvioCliente} from '@/hooks/usePestanas';
 import { useState } from 'react';
 import { Mail, Loader2, Download, X } from 'lucide-react';
 import { useEnviarFacturaPorCorreo } from '@/hooks/usePos';
@@ -11,11 +12,13 @@ import type { Venta } from '@/types/pos';
 export function CompartirFacturaModal({ venta, onClose }: { venta: Venta; onClose: () => void }) {
   const { data: empresa } = useEmpresa();
   const enviar = useEnviarFacturaPorCorreo();
+  const puedeEnviar=useEnvioCliente('VENTAS');
   const [correo, setCorreo] = useState('');
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleEnviar() {
+    if(!puedeEnviar){setError('Tu rol no permite enviar documentos al cliente');return;}
     setError(null);
     setEnviado(false);
     try {
@@ -26,6 +29,7 @@ export function CompartirFacturaModal({ venta, onClose }: { venta: Venta; onClos
     }
   }
 
+  if(!puedeEnviar)return <div role="alert">Tu rol no permite enviar documentos al cliente.<button onClick={onClose}>Cerrar</button></div>;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div

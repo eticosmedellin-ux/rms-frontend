@@ -1,3 +1,4 @@
+import {CambiarPassword} from '@/features/sicom/GestionUsuarios';
 import BuscadorGeneral from './BuscadorGeneral';
 import {useQuery} from '@tanstack/react-query';
 import {apiClient} from '@/api/client';
@@ -37,7 +38,7 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 sm:gap-4"><BuscadorGeneral/>
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4"><BuscadorGeneral/>{a.usuarioId&&<CambiarPassword id={a.usuarioId} nombre={nombreCompleto??'Mi cuenta'} propia/>}
         <span className="hidden text-sm text-ink-600 sm:inline">{nombreCompleto}</span>
         <button
           onClick={handleLogout}

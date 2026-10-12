@@ -25,7 +25,7 @@ export function RolesTab() {
 
   return (
     <div>
-      <p className="mb-4 rounded border p-3 text-sm">Restaurante, Servicios y Préstamos: habilita Consultar y un alcance (propios, sucursales asignadas o empresa). Operar permite registrar; Administrar permite configuración y acciones sensibles. Reportes y Costos se asignan por separado. El empleado debe volver a ingresar después del cambio.</p>
+      <p className="mb-4 rounded border p-3 text-sm">Restaurante, Servicios y Préstamos: habilita Consultar y un alcance (propios, sucursales asignadas o empresa). Operar permite registrar; Administrar permite configuración y acciones sensibles. Reportes y Costos se asignan por separado. Ahora también puedes marcar cada pestaña del módulo y el permiso Enviar comunicaciones al cliente. Si un módulo queda sin pestañas marcadas, no muestra sus secciones. El empleado debe volver a ingresar después del cambio.</p>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-ink-400">
           {roles?.length ?? 0} rol{roles?.length === 1 ? '' : 'es'} configurado{roles?.length === 1 ? '' : 's'}
@@ -114,7 +114,7 @@ function RolFormModal({
   }, [rolEditando, permisos]);
 
   const permisosDelPlan = useMemo(
-    () => permisos?.filter((p) => permisoIncluidoEnPlan(miPlan?.rutasHabilitadas, p.modulo)),
+    () => permisos?.filter((p) => permisoIncluidoEnPlan(miPlan?.rutasHabilitadas, p.modulo)&&p.accion!=='PESTANAS'),
     [permisos, miPlan]
   );
 
@@ -201,7 +201,7 @@ function RolFormModal({
                           checked={permisoIds.includes(p.id)}
                           onChange={() => togglePermiso(p.id)}
                         />
-                        {p.accion}
+                        {p.descripcion||p.accion}
                       </label>
                     ))}
                   </div>
