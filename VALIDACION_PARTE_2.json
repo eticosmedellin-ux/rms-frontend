@@ -1,0 +1,180 @@
+{
+  "entrega": "parte-2",
+  "alcance": "Pagos, restaurante, servicios, préstamos y administración",
+  "backend": {
+    "entorno": "Spring Boot y PostgreSQL PGlite aislado; correo simulado",
+    "tests": 219,
+    "fallos": 0,
+    "errores": 0
+  },
+  "frontend": {
+    "typescript_vite": "aprobado",
+    "dom": {
+      "resultado": "aprobado",
+      "entorno": "JSDOM y API simulada",
+      "comprobaciones": [
+        "Cliente rápido conserva recomendación y selecciona ID",
+        "Voucher muestra cuota y vista interna",
+        "Turnos muestran configuración y fechas",
+        "Soporte obligatorio bloquea sin archivo",
+        "Archivo PDF se adjunta y cierra diálogo",
+        "Cancelar impide continuar"
+      ],
+      "erroresReact": []
+    }
+  },
+  "verificacion_externa_pendiente": [
+    "Despliegue de ambos repositorios en el entorno del usuario",
+    "Aplicación SQL en la base real",
+    "Envío real con credenciales y remitente autorizado de Brevo"
+  ],
+  "detalle_pruebas": [
+    {
+      "name": "com.rms.service.CompraPdfTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RestauranteHorarioTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.PlanPrestamoTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.security.FacturacionAuthorizationTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ComercioServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.AparienciaConfigTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.CalculoVentaTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ServiciosIntegracionTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ContabilidadPagosTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RestauranteIntegracionTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.LotesServiceTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ImpuestosMasivosTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ImpuestosCalculoTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ControlesV2Test",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RespuestaMatiasTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.PrestamosIntegracionTest",
+      "tests": "118",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.ImagenAparienciaTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.PerfilesEmpresaTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.RestauranteContabilidadTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.security.PermisosOperacionRespuestaTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.rms.service.DispensacionServiceTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ]
+}

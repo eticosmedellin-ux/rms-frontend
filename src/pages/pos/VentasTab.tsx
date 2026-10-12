@@ -1,3 +1,4 @@
+import {PreviewPago} from '@/components/ui/PreviewPago';
 import { useState } from 'react';
 import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail, Share2 } from 'lucide-react';
 import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica, useEnviarFacturaPorCorreo, useClientes } from '@/hooks/usePos';
@@ -180,7 +181,7 @@ export function VentasTab() {
                   {new Date(v.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                 </td>
                 <td className="px-4 py-3">
-                  <EstadoDian venta={v} />
+                  <EstadoDian venta={v} /><PreviewPago pagoId={v.id}/>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">

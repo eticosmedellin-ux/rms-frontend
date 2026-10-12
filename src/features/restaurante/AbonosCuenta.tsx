@@ -1,3 +1,4 @@
+import {SoporteAnticipo} from '@/components/ui/SoporteAnticipo';
 import {useState} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {apiClient} from '@/api/client';
@@ -27,6 +28,6 @@ export function AbonosCuenta({comanda,cajaId}:{comanda:Comanda;cajaId:number|nul
  {modo==='PRODUCTO'?<><label>Producto<select className="input" value={itemId} onChange={e=>setItemId(e.target.value)}><option value="">Selecciona</option>{comanda.items.filter(i=>i.estado!=='CANCELADO').map(i=><option key={i.id} value={i.id}>{i.cantidad} × {i.comboNombre||i.productoNombre}</option>)}</select></label><label>Cantidad<input className="input" type="number" min="0.01" step="0.01" value={cantidad} onChange={e=>setCantidad(e.target.value)}/></label><p>Importe con impuestos: {dinero(valor)}</p></>:<label>Importe<input className="input" type="number" min="0.01" step="0.01" value={monto} onChange={e=>setMonto(e.target.value)}/></label>}
  <label>Persona o identificación<input className="input" maxLength={100} value={persona} onChange={e=>setPersona(e.target.value)}/></label><label>Referencia de tarjeta / transferencia<input className="input" maxLength={150} value={referencia} onChange={e=>setReferencia(e.target.value)}/></label></div>
  <button disabled={busy||!cajaId||!navigator.onLine||valor<=0||total.isFetching||total.isError} className="rounded bg-ink-800 px-3 py-2 text-white disabled:opacity-50" onClick={pagar}>Registrar abono {dinero(valor||0)}</button>
- {(abonos??[]).map(a=><div className="flex flex-wrap justify-between gap-2 border-t py-2" key={a.id}><span>#{a.id} · {a.persona||a.usuario} · {a.metodo} · {dinero(Number(a.monto))} {a.revertido_en?'· Reintegrado':''}</span>{!a.revertido_en&&<button disabled={busy} className="text-danger-600" onClick={()=>revertir(a)}>Reintegrar con autorización</button>}</div>)}
+ {(abonos??[]).map(a=><div className="flex flex-wrap justify-between gap-2 border-t py-2" key={a.id}><span>#{a.id} · {a.persona||a.usuario} · {a.metodo} · {dinero(Number(a.monto))} {a.revertido_en?'· Reintegrado':''}</span>{!a.revertido_en&&['TRANSFERENCIA','TARJETA'].includes(a.metodo)&&<SoporteAnticipo url={`/restaurante/operacion/comandas/${comanda.id}/abonos/${a.id}/soporte`}/>} {!a.revertido_en&&<button disabled={busy} className="text-danger-600" onClick={()=>revertir(a)}>Reintegrar con autorización</button>}</div>)}
  </div></details>;
 }

@@ -1,3 +1,4 @@
+import {ClienteRapido} from '@/components/ui/ClienteRapido';
 import { useEffect, useState } from 'react';
 import { Loader2, Ban } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -97,7 +98,7 @@ export function CitaFormModal({ isOpen, onClose, cita, inicio }: { isOpen: boole
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={cita ? 'Editar cita' : 'Nueva cita'} size="md">
-      <div className="space-y-4">
+      <div className="space-y-4">{permisos.operar&&!terminada&&<ClienteRapido modulo="citas" onCreado={id=>setClienteId(String(id))}/>}
         <fieldset disabled={!permisos.operar || terminada || guardando} className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-ink-600">Sucursal</span>

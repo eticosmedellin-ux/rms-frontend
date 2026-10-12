@@ -16,8 +16,8 @@ export function useSuspenderEmpresa() {
 export function useEliminarEmpresa() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => plataformaApi.eliminarEmpresa(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plataforma-empresas'] }),
+    mutationFn: (r:{id:number;confirmacion:string}) => plataformaApi.eliminarEmpresa(r.id,r.confirmacion),
+    onSuccess: async () => {queryClient.removeQueries({predicate:q=>q.queryKey[0]!=='plataforma-empresas'});await queryClient.invalidateQueries({queryKey:['plataforma-empresas']});},
   });
 }
 

@@ -1,6 +1,7 @@
 import EditorApariencia from '@/features/apariencia/EditorApariencia';
 import {DobleFactor} from '@/features/sicom/DobleFactor';
 import {ContadoresPlataforma} from '@/features/sicom/ContadoresPlataforma';
+import {getApiErrorMessage} from '@/api/errors';
 import { useState } from 'react';
 import { Settings2, Trash2 } from 'lucide-react';
 import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa, useEliminarEmpresa } from '@/hooks/usePlataforma';
@@ -181,12 +182,11 @@ function EmpresasTab() {
           <div className="space-y-4">
             <p className="text-sm text-ink-600">
               Vas a eliminar <span className="font-semibold text-ink-800">{empresaEliminar.nombre}</span>. Sus datos
-              (ventas, facturas, historial) NO se borran, pero la empresa desaparece de este listado y queda
-              completamente bloqueada — nadie de ahí podrá volver a entrar.
+              (ventas, facturas, usuarios, archivos e historial) se borrarán definitivamente. Esta acción no puede deshacerse.
             </p>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-ink-600">
-                Escribe <span className="font-mono font-semibold">eliminar empresa</span> para confirmar
+                Escribe <span className="font-mono font-semibold">ELIMINAR EMPRESA {empresaEliminar.id}</span> para confirmar
               </span>
               <input className="input" value={confirmacionTexto} onChange={(e) => setConfirmacionTexto(e.target.value)} />
             </label>
@@ -199,10 +199,10 @@ function EmpresasTab() {
               </button>
               <button
                 onClick={async () => {
-                  await eliminar.mutateAsync(empresaEliminar.id);
+                  try{await eliminar.mutateAsync({id:empresaEliminar.id,confirmacion:confirmacionTexto});}catch(e){window.alert(getApiErrorMessage(e,'No se pudo eliminar la empresa'));return;}
                   setEmpresaEliminar(null);
                 }}
-                disabled={confirmacionTexto.trim().toLowerCase() !== 'eliminar empresa' || eliminar.isPending}
+                disabled={confirmacionTexto !== `ELIMINAR EMPRESA ${empresaEliminar.id}` || eliminar.isPending}
                 className="rounded-lg bg-danger-500 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-600 disabled:opacity-50"
               >
                 Eliminar empresa

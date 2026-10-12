@@ -1,4 +1,5 @@
 import {useSicom,permitido} from '@/features/sicom/api';
+import {PreviewPago} from '@/components/ui/PreviewPago';
 import { useState, useEffect } from 'react';
 import { Lock, Unlock, List, Plus, Loader2, AlertTriangle, Download } from 'lucide-react';
 import { useSucursales } from '@/hooks/useSucursales';
@@ -352,7 +353,7 @@ function CerrarCajaModal({ isOpen, onClose, cajaId }: { isOpen: boolean; onClose
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Cierre de caja" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Cierre de caja" size="md"><PreviewPago pagoId={cajaId} corte/>
       {cargandoResumen ? (
         <LoadingState />
       ) : !resumen ? null : cerrado ? (
