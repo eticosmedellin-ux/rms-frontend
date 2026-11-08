@@ -1,46 +1,108 @@
-import {useState,useEffect,useRef} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import {ArrowLeft,ArrowRight,CheckCircle2,Gamepad2,Lightbulb,RotateCcw,X} from 'lucide-react';
 import {useAuthStore} from '@/stores/authStore';
-import {getApiErrorMessage} from '@/api/errors';
-import {useGuia,coincide,abrirTutorial,type Modulo} from './guia';
-type Progreso={modulo:string;paso:string;vistos:string[]};
-export default function TutorialUso({inicialModulo,inicialPaso}:{inicialModulo?:string;inicialPaso?:string}){
- const a=useAuthStore(),q=useGuia();const [buscar,setBuscar]=useState(''),[progreso,setProgreso]=useState<Progreso>({modulo:inicialModulo??'inicio',paso:inicialPaso??'',vistos:[]}),[listo,setListo]=useState(false);const foco=useRef<HTMLButtonElement>(null);
- const key=`sicom-tutorial:${a.empresaId}:${a.usuarioId}:${q.data?.version}`;
- useEffect(()=>{if(!q.data)return;let p:Progreso={modulo:'inicio',paso:'',vistos:[]};try{const guardado=JSON.parse(localStorage.getItem(key)||'null');if(guardado&&Array.isArray(guardado.vistos)&&typeof guardado.modulo==='string'&&typeof guardado.paso==='string')p=guardado;}catch{}if(inicialModulo){p.modulo=inicialModulo;if(!inicialPaso&&q.data.modulos.find(m=>m.id===inicialModulo)?.pasos.every(x=>x.id!==p.paso))p.paso='';}if(inicialPaso)p.paso=inicialPaso;setProgreso(p);setListo(true);},[key,inicialModulo,inicialPaso]);
- const modulos=q.data?.modulos??[],modulo=modulos.find(m=>m.id===progreso.modulo)??modulos[0],paso=modulo?.pasos.find(p=>p.id===progreso.paso)??modulo?.pasos[0],indice=modulo?.pasos.findIndex(p=>p.id===paso?.id)??0;
- function elegir(m:Modulo,id:string){const n={modulo:m.id,paso:id,vistos:Array.from(new Set([...progreso.vistos,id]))};setProgreso(n);try{localStorage.setItem(key,JSON.stringify(n));}catch{}}
- useEffect(()=>{foco.current?.focus({preventScroll:true});},[paso?.id]);
- if(q.isLoading||!listo&&!q.error)return <p className="p-4 text-sm">Cargando tutorial…</p>;
- if(q.error)return <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{getApiErrorMessage(q.error,'No se pudo cargar el tutorial. Intenta abrirlo de nuevo.')}</p>;
- if(!modulo||!paso)return <p>No hay guías disponibles para tu perfil.</p>;
- const visibles=modulos.filter(m=>coincide(m.nombre+' '+m.pasos.map(p=>p.boton+' '+p.explicacion).join(' '),buscar));const total=modulos.reduce((n,m)=>n+m.pasos.length,0),vistos=modulos.flatMap(m=>m.pasos).filter(p=>progreso.vistos.includes(p.id)).length;
- return <div className="space-y-4"><div className="rounded-xl border bg-ink-50 p-4"><h2 className="font-semibold">Tutorial del sistema</h2><p className="mt-1 text-sm text-ink-600">Pantalla de práctica con ejemplos. Los botones solo muestran explicaciones: no guardan, cobran, anulan ni cambian datos del negocio.</p><div className="mt-2 flex flex-wrap items-center gap-3 text-xs"><span>{vistos} de {total} pasos consultados en este navegador</span><button className="underline" onClick={()=>{setProgreso({modulo:'inicio',paso:'',vistos:[]});try{localStorage.removeItem(key);}catch{}}}>Reiniciar tutorial</button></div></div>
- <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]"><aside className="rounded-xl border bg-white p-3"><label className="text-xs font-medium">Buscar módulo o acción<input aria-label="Buscar módulo del tutorial" className="input mt-1" value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="Cuota, cita, impuestos…"/></label><nav aria-label="Módulos del tutorial" className="mt-3 flex max-h-[45vh] flex-col gap-1 overflow-y-auto">{visibles.map(m=><button key={m.id} aria-current={m.id===modulo.id?'step':undefined} className={`rounded-lg px-3 py-2 text-left text-sm ${m.id===modulo.id?'bg-ink-800 text-white':'hover:bg-ink-50'}`} onClick={()=>elegir(m,m.pasos[0].id)}>{m.nombre}<span className="ml-1 text-xs opacity-60">({m.pasos.length})</span></button>)}{!visibles.length&&<p className="text-sm">No hay una guía que coincida con esa búsqueda y tus permisos.</p>}</nav></aside>
- <div className="min-w-0 space-y-4"><div className="rounded-xl border bg-white p-4"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">{modulo.nombre}</h3><span className="rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">Ejemplo · sin operaciones reales</span></div><p className="mt-1 text-xs text-ink-500">Selecciona un botón de muestra para saber para qué sirve.</p><div className="mt-4 grid gap-3 sm:grid-cols-2">{modulo.pasos.map((p,i)=><button ref={p.id===paso.id?foco:undefined} key={p.id} data-tutorial-target={p.id} aria-describedby={p.id===paso.id?'explicacion-tutorial':undefined} aria-pressed={p.id===paso.id} className={`rounded-xl border p-4 text-left transition-colors ${p.id===paso.id?'border-sicom-green bg-sicom-green/10 ring-2 ring-sicom-green':'border-ink-100 bg-ink-50 hover:border-ink-300'}`} onClick={()=>elegir(modulo,p.id)}><span className="mb-2 block text-xs text-ink-500">{i+1} · {p.seccion}</span><strong className="text-sm">{p.boton}</strong>{progreso.vistos.includes(p.id)&&<span className="ml-2 text-xs">✓ Consultado</span>}</button>)}</div></div>
- <div id="explicacion-tutorial" aria-live="polite" className="rounded-xl border border-sicom-green bg-white p-4"><p className="text-xs font-medium text-sicom-green">Botón señalado · paso {indice+1} de {modulo.pasos.length}</p><h3 className="mt-1 font-semibold">{paso.titulo}</h3><p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-ink-600">{paso.explicacion}</p><p className="mt-3 text-xs text-ink-400">Cuando salgas del tutorial, podrás usar la pantalla real con tus permisos habituales.</p></div>
- <div className="flex flex-wrap justify-between gap-2"><button disabled={indice<=0} className="rounded border px-4 py-2 text-sm disabled:opacity-40" onClick={()=>elegir(modulo,modulo.pasos[indice-1].id)}>Anterior</button><button className="rounded border px-4 py-2 text-sm" onClick={()=>elegir(modulo,modulo.pasos[0].id)}>Volver al primer paso</button><button className="rounded bg-ink-800 px-4 py-2 text-sm text-white" onClick={()=>{if(indice<modulo.pasos.length-1)elegir(modulo,modulo.pasos[indice+1].id);else {const n=modulos.indexOf(modulo);if(n<modulos.length-1)elegir(modulos[n+1],modulos[n+1].pasos[0].id);else elegir(modulo,paso.id);}}}>{indice<modulo.pasos.length-1?'Siguiente':modulos.indexOf(modulo)<modulos.length-1?'Siguiente módulo':'Marcar último paso consultado'}</button></div>
- </div></div></div>;
-}
+import {coincide,abrirTutorial} from './interaccion';
+import {ejercicios,modulos,type ModuloDemo} from './simulador/catalogo';
+import {GuiaDemo} from './simulador/controles';
+import {VentasDemo} from './simulador/VentasDemo';
+import {RegistrosDemo} from './simulador/RegistrosDemo';
+
+const clave=(empresa:unknown,usuario:unknown)=>`sicom-practica-v1:${empresa}:${usuario}`;
+function leer(key:string):string[]{try{const a=JSON.parse(localStorage.getItem(key)??'[]');return Array.isArray(a)?a.filter(x=>typeof x==='string'):[];}catch{return [];}}
 export function CatalogoTutorial(){
- const q=useGuia();
- const [texto,setTexto]=useState('');
- const modulos=(q.data?.modulos??[]).filter(m=>coincide(m.nombre+' '+m.pasos.map(p=>p.boton+' '+p.titulo).join(' '),texto));
- return <section className="space-y-4">
-  <div><h2 className="font-semibold">Aprender a usar SICOM</h2><p className="text-sm text-ink-600">Elige un módulo y pulsa sus botones de ejemplo para saber qué hace cada uno. La práctica no guarda operaciones.</p></div>
-  <input type="search" aria-label="Buscar tutorial" className="input" placeholder="Ej. Abrir caja o ingresar una compra" value={texto} onChange={e=>setTexto(e.target.value)}/>
-  {q.isLoading&&<p role="status">Cargando tutoriales…</p>}
-  {q.isError&&<p role="alert">No se pudieron cargar los tutoriales. <button type="button" className="underline" onClick={()=>void q.refetch()}>Reintentar</button></p>}
-  {q.isSuccess&&!modulos.length&&<p className="text-sm text-ink-600">No hay tutoriales que coincidan.</p>}
-  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{modulos.map(m=><article key={m.id} className="space-y-2 rounded-xl border bg-white p-4">
-   <h3 className="font-semibold">{m.nombre}</h3>
-   <p className="text-xs text-ink-600">{m.pasos.length} acciones explicadas</p>
-   <button type="button" className="sicom-accion sicom-accion-principal" onClick={()=>{const paso=texto?m.pasos.find(p=>coincide(p.boton+' '+p.titulo,texto)):undefined;abrirTutorial(m.id,paso?.id);}}>Abrir tutorial de {m.nombre}</button>
-  </article>)}</div>
+ const a=useAuthStore(),key=clave(a.empresaId,a.usuarioId);
+ const [texto,setTexto]=useState(''),[version,setVersion]=useState(0);
+ useEffect(()=>{const cambiar=()=>setVersion(x=>x+1);window.addEventListener('sicom-practica-progreso',cambiar);return()=>window.removeEventListener('sicom-practica-progreso',cambiar);},[]);
+ const hechos=leer(key),visibles=modulos.filter(m=>coincide(m.nombre+' '+m.acciones.join(' '),texto));
+ return <section className="space-y-4" data-progreso={version}>
+  <div className="rounded-xl bg-ink-800 p-4 text-white"><Gamepad2/><h2 className="text-lg font-semibold">Centro de práctica</h2><p>Elige un módulo y prueba sus controles con datos demo.</p></div>
+  <input type="search" className="input" aria-label="Buscar simulador" placeholder="Ventas, caja, proveedores…" value={texto} onChange={e=>setTexto(e.target.value)}/>
+  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibles.map(m=>{
+   const n=ejercicios(m).length,h=hechos.filter(x=>x.startsWith(m.id+':')).length;
+   return <article key={m.id} className="space-y-2 rounded-xl border bg-white p-4"><h3 className="font-bold">{m.nombre}</h3><p className="text-sm">{h? `${h} de ${n} ejercicios completados`:'Pendiente'}</p><progress className="w-full accent-emerald-600" aria-label={`Progreso de ${m.nombre}`} max={n} value={h}/><button type="button" className="sicom-accion sicom-accion-principal w-full" onClick={()=>abrirTutorial(m.id)}>Abrir tutorial de {m.nombre}</button></article>;
+  })}</div>
+  {!visibles.length&&<p>No hay simuladores que coincidan.</p>}
  </section>;
 }
-export function TutorialGlobal(){const [inicio,setInicio]=useState<{modulo?:string;paso?:string}|null>(null),dialogo=useRef<HTMLDivElement>(null),anterior=useRef<HTMLElement|null>(null);
- useEffect(()=>{const abrir=(e:Event)=>{anterior.current=document.activeElement as HTMLElement;setInicio((e as CustomEvent).detail??{});};window.addEventListener('sicom-abrir-tutorial',abrir);return()=>window.removeEventListener('sicom-abrir-tutorial',abrir);},[]);
- function cerrar(){setInicio(null);anterior.current?.focus();}
- useEffect(()=>{if(!inicio)return;const old=document.body.style.overflow;document.body.style.overflow='hidden';const tecla=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();cerrar();}if(e.key==='Tab'){const elementos=Array.from(dialogo.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,textarea,a[href]')??[]);const first=elementos[0],last=elementos[elementos.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}};window.addEventListener('keydown',tecla);dialogo.current?.focus();return()=>{document.body.style.overflow=old;window.removeEventListener('keydown',tecla);};},[inicio]);
- if(!inicio)return null;return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink-900/60 p-2 sm:p-6"><div ref={dialogo} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="titulo-tutorial-global" className="max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-4 sm:p-6"><div className="mb-4 flex items-center justify-between"><h2 id="titulo-tutorial-global" className="font-semibold">Aprender a usar SICOM</h2><button className="rounded border px-3 py-2 text-sm" onClick={cerrar}>Cerrar tutorial</button></div><TutorialUso inicialModulo={inicio.modulo} inicialPaso={inicio.paso}/></div></div>;
+function EjercicioDemo({modulo:m}:{modulo:ModuloDemo}){
+ const a=useAuthStore(),key=clave(a.empresaId,a.usuarioId),opciones=ejercicios(m);
+ const [elegido,setElegido]=useState(opciones[0].id),[libre,setLibre]=useState(false),[indice,setIndice]=useState(0),[hechos,setHechos]=useState<number[]>([]),[omitidos,setOmitidos]=useState<number[]>([]);
+ const [revision,setRevision]=useState(0),[ayuda,setAyuda]=useState(false),[aviso,setAviso]=useState(''),[error,setError]=useState('');
+ const ejercicio=opciones.find(e=>e.id===elegido)??opciones[0],paso=ejercicio.pasos[indice],total=ejercicio.pasos.length;
+ const completado=hechos.length===total,fin=hechos.length+omitidos.length===total;
+ const lienzo=useRef<HTMLDivElement>(null);
+ function reiniciar(){setIndice(0);setHechos([]);setOmitidos([]);setRevision(x=>x+1);setAyuda(false);setAviso('');setError('');}
+ function ir(i:number){setIndice(Math.max(0,Math.min(total-1,i)));setAyuda(false);setError('');}
+ function orientar(){
+  setAyuda(true);const objetivos=Array.from(lienzo.current?.querySelectorAll<HTMLElement>('[data-demo]')??[]);
+  const elemento=objetivos.find(x=>x.dataset.demo?.split('|').includes(paso.id));
+  elemento?.scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+ }
+ function omitir(){
+  if(hechos.includes(indice)||omitidos.includes(indice)){ir(indice+1);return;}
+  setOmitidos([...omitidos,indice]);ir(indice+1);
+ }
+ function accion(...ids:string[]){
+  setError('');setAviso('');
+  if(libre||completado)return;
+  if(!ids.includes(paso.id)){setAviso('Acción aplicada en la práctica. Continúa con el control señalado.');return;}
+  const nuevos=[...new Set([...hechos,indice])],pendientes=omitidos.filter(x=>x!==indice);setHechos(nuevos);setOmitidos(pendientes);
+  if(nuevos.length===total){
+   try{localStorage.setItem(key,JSON.stringify([...new Set([...leer(key),`${m.id}:${ejercicio.id}`])]));window.dispatchEvent(new Event('sicom-practica-progreso'));}catch{}
+  }else{
+   const siguiente=ejercicio.pasos.findIndex((_,i)=>i>indice&&!nuevos.includes(i)&&!pendientes.includes(i));
+   const destino=siguiente>=0?siguiente:ejercicio.pasos.findIndex((_,i)=>!nuevos.includes(i)&&!pendientes.includes(i));
+   if(destino>=0)ir(destino);
+  }
+ }
+ function mostrarError(s:string){setError(s);setAviso('');}
+ const objetivo=!libre&&!fin?paso.id:libre&&ayuda?(m.id==='pos'?'abrir|buscar|agregar|pago|finalizar':'crear|buscar|consultar'):'';
+ return <div className="space-y-4">
+  <div className="flex flex-wrap items-end gap-3">
+   <label className="min-w-0 flex-1">Ejercicio<select className="input" value={elegido} onChange={e=>{setElegido(e.target.value);setLibre(false);reiniciar();}}>{opciones.map(e=><option key={e.id} value={e.id}>{e.nivel} · {e.nombre}</option>)}</select></label>
+   <button type="button" className="sicom-accion" aria-pressed={libre} onClick={()=>{setLibre(!libre);reiniciar();}}>{libre?'Volver al modo guiado':'Práctica libre'}</button>
+   <button type="button" className="sicom-accion" onClick={reiniciar}><RotateCcw size={16}/> Reiniciar</button>
+  </div>
+  <div className="rounded-xl border bg-white p-3" aria-live="polite">
+   {libre?<p>{ayuda?'Prueba uno de los controles resaltados.':'Práctica libre · Experimenta con los controles.'}</p>:<>
+    <div className="flex flex-wrap justify-between gap-2"><strong>{completado?<span className="inline-flex items-center gap-1 text-emerald-800"><CheckCircle2 size={18}/> Ejercicio completado</span>:fin?'Ejercicio recorrido con pasos omitidos':`Paso ${indice+1} de ${total} · ${paso.instruccion}`}</strong><span>{hechos.length}/{total} realizados{omitidos.length>0&&` · ${omitidos.length} omitidos`}</span></div>
+    <progress aria-label="Progreso del ejercicio" className="w-full accent-emerald-600" max={total} value={hechos.length}/>
+   </>}
+   {error&&<p role="alert" className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-red-800">{error}</p>}
+   {aviso&&<p className="mt-1 text-xs text-amber-800">{aviso}</p>}
+  </div>
+  <div className="flex flex-wrap gap-2">
+   <button type="button" className="sicom-accion" onClick={orientar}><Lightbulb size={16}/> Ayuda visual</button>
+   {!libre&&<>
+    <button type="button" className="sicom-accion" onClick={()=>ir(indice-1)} disabled={indice===0||fin}><ArrowLeft size={16}/> Anterior</button>
+    <button type="button" className="sicom-accion" onClick={orientar} disabled={fin}>Repetir indicación</button>
+    <button type="button" className="sicom-accion" disabled={indice===total-1||fin} onClick={()=>ir(indice+1)}>Siguiente <ArrowRight size={16}/></button>
+    <button type="button" className="sicom-accion" disabled={fin||hechos.includes(indice)||omitidos.includes(indice)} onClick={omitir}>Omitir paso</button>
+   </>}
+  </div>
+  <div ref={lienzo} className={`rounded-xl p-3 sm:p-4 ${objetivo?'bg-slate-200':'bg-ink-50'}`}>
+   <GuiaDemo.Provider value={{objetivo}}>{m.id==='pos'?<VentasDemo key={revision} accion={accion} error={mostrarError} puedeFinalizar={libre||fin||paso.id==='finalizar'}/>:<RegistrosDemo key={revision} modulo={m} accion={accion} error={mostrarError}/>}</GuiaDemo.Provider>
+  </div>
+ </div>;
+}
+const alias:Record<string,string>={inicio:'pos',ventas:'pos',administracion:'usuarios',citas:'servicios',factura:'facturacion'};
+export function TutorialGlobal(){
+ const [modulo,setModulo]=useState<ModuloDemo|null>(null);
+ const dialogo=useRef<HTMLDialogElement>(null);
+ const a=useAuthStore(),sesion=clave(a.empresaId,a.usuarioId);
+ useEffect(()=>{
+  const abrir=(e:Event)=>{const id=(e as CustomEvent<{modulo?:string}>).detail?.modulo??'pos';setModulo(modulos.find(m=>m.id===(alias[id]??id))??modulos[0]);};
+  window.addEventListener('sicom-abrir-tutorial',abrir);return()=>window.removeEventListener('sicom-abrir-tutorial',abrir);
+ },[]);
+ useEffect(()=>{setModulo(null);},[sesion]);
+ useEffect(()=>{const d=dialogo.current;if(modulo&&!d?.open)d?.showModal();else if(!modulo&&d?.open)d.close();},[modulo]);
+ return <dialog ref={dialogo} onClose={()=>setModulo(null)} className="m-auto max-h-[95dvh] w-[min(96vw,1150px)] max-w-none overflow-y-auto rounded-2xl bg-ink-50 p-0 text-ink-800 shadow-2xl backdrop:bg-slate-900/70" aria-labelledby="titulo-simulador">
+  {modulo&&<>
+   <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b bg-white p-3 sm:p-5">
+    <div><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">SICOM · Entorno de práctica</p><h2 id="titulo-simulador" className="text-lg font-bold">{modulo.nombre}</h2></div>
+    <button type="button" className="sicom-accion" autoFocus onClick={()=>dialogo.current?.close()}><X size={18}/> Cerrar tutorial</button>
+   </header>
+   <main className="p-3 sm:p-5"><EjercicioDemo key={modulo.id} modulo={modulo}/></main>
+  </>}
+ </dialog>;
 }
