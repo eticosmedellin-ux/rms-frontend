@@ -1,3 +1,4 @@
+import {useCatalogoAplicaciones} from '@/features/aplicaciones/api';
 import {CambiarPassword} from '@/features/sicom/GestionUsuarios';
 import BuscadorGeneral from './BuscadorGeneral';
 import {useQuery} from '@tanstack/react-query';
@@ -6,11 +7,12 @@ import {usePosStore} from '@/stores/posStore';
 import {useApariencia} from '@/features/apariencia/AparienciaProvider';
 import {fondo} from '@/features/apariencia/tema';
 import {useQueryClient} from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { LogOut, Menu } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bell, LogOut, Menu } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
+  const apps=useCatalogoAplicaciones();
   const apariencia=useApariencia();
   const a=useAuthStore(),sucursalId=usePosStore(x=>x.sucursalId);
   const contexto=useQuery({queryKey:['contexto-cabecera',a.empresaId,a.usuarioId],queryFn:async()=>(await apiClient.get<{sucursales:{id:number;nombre:string}[]}>('/ayuda/contexto')).data,retry:false});
@@ -38,7 +40,10 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 sm:gap-4"><BuscadorGeneral/>{a.usuarioId&&<CambiarPassword id={a.usuarioId} nombre={nombreCompleto??'Mi cuenta'} propia/>}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4"><BuscadorGeneral/>
+        {a.esAdministradorTotal&&!a.esSuperadmin&&<Link to="/aplicaciones?avisos=1" aria-label="Actualizaciones de aplicaciones" title="Actualizaciones de aplicaciones" className="relative rounded-lg border p-2 text-ink-600">
+          <Bell size={17}/>{!!apps.data?.length&&<span className="absolute -right-1 -top-1 rounded-full bg-emerald-700 px-1 text-[10px] text-white">{apps.data.length}</span>}
+        </Link>}{a.usuarioId&&<CambiarPassword id={a.usuarioId} nombre={nombreCompleto??'Mi cuenta'} propia/>}
         <span className="hidden text-sm text-ink-600 sm:inline">{nombreCompleto}</span>
         <button
           onClick={handleLogout}

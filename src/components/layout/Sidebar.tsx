@@ -70,6 +70,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
     items: [
       { to: '/administracion', label: 'Administración', icon: Users },
       { to: '/configuracion', label: 'Configuración', icon: Settings },
+      { to: '/aplicaciones', label: 'Tienda de aplicaciones', icon: Package },
     ],
   },
 ];
@@ -84,6 +85,7 @@ export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolea
   const gruposVisibles = NAV_GROUPS_DEF.map((grupo) => ({
     ...grupo,
     items: grupo.items.filter((item) => {
+      if (item.to === "/aplicaciones") return esAdministradorTotal && !esSuperadmin;
       if (item.to === "/mis-clientes-contables") return useAuthStore.getState().accesoClientesContables === true;
       if (esSuperadmin) return true;
       // "Servicios" son dos módulos independientes (Citas y Órdenes de trabajo/Casos) —

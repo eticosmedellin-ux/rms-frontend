@@ -19,6 +19,7 @@ const PosPage=lazy(()=>import('@/pages/pos/PosPage'));
 const GastosPage=lazy(()=>import('@/pages/gastos/GastosPage'));
 const ReportesPage=lazy(()=>import('@/pages/reportes/ReportesPage'));
 const AlertasPage=lazy(()=>import('@/pages/alertas/AlertasPage'));
+const TiendaAplicaciones=lazy(()=>import('@/features/aplicaciones/TiendaAplicaciones'));
 const ConfiguracionPage=lazy(()=>import('@/pages/configuracion/ConfiguracionPage'));
 const AdministracionPage=lazy(()=>import('@/pages/administracion/AdministracionPage'));
 const PlataformaPage=lazy(()=>import('@/pages/plataforma/PlataformaPage'));
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/reportes" element={<ReportesPage />} />
           <Route path="/alertas" element={<AlertasPage />} />
           <Route path="/administracion" element={<AdministracionPage />} />
+          <Route path="/aplicaciones" element={<TiendaAplicaciones />} />
           <Route path="/configuracion" element={<ConfiguracionPage />} />
           <Route path="/plataforma" element={<PlataformaPage />} />
         </Route>

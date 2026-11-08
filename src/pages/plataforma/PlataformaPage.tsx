@@ -1,3 +1,4 @@
+import {GestionAplicaciones} from '@/features/aplicaciones/GestionAplicaciones';
 import {AbrirEmpresa} from './AbrirEmpresa';
 import {FichaEmpresaPlataforma,Superadministradores} from './OperacionesPlataforma';
 import {PlanesCobrosTab} from './PlanesCobrosTab';
@@ -27,6 +28,7 @@ const TABS = [
   { id: 'apariencia', label: 'Apariencia en vivo' },
   { id: 'contadores', label: 'Contadores' },
   { id: 'empresas', label: 'Empresas' },
+  { id: 'aplicaciones', label: 'Aplicaciones' },
   { id: 'codigos', label: 'Códigos de invitación' },
   { id: 'backups', label: 'Copias de seguridad' },
   { id: 'cobro', label: 'Cobro automático' },
@@ -68,6 +70,7 @@ export default function PlataformaPage() {
         {tab === 'seguridad' && <div className="space-y-4"><DobleFactor /><Superadministradores /></div>}
         {tab === 'apariencia' && <EditorApariencia />}
         {tab === 'contadores' && <ContadoresPlataforma />}
+        {tab === 'aplicaciones' && <GestionAplicaciones />}
         {tab === 'empresas' && <EmpresasTab />}
         {tab === 'codigos' && <CodigosInvitacionTab />}
         {tab === 'backups' && <BackupsTab />}
