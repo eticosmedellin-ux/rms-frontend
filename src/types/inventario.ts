@@ -164,7 +164,7 @@ export interface AjusteInventarioRequest {
 }
 
 // --- Transferencias entre sucursales ---
-export type EstadoTransferencia = 'PENDIENTE' | 'EN_TRANSITO' | 'RECIBIDA' | 'CANCELADA';
+export type EstadoTransferencia = 'PENDIENTE' | 'EN_TRANSITO' | 'RECIBIDA' | 'CANCELADA' | 'REVERTIDA';
 
 export interface DetalleTransferencia {
   productoId: number;

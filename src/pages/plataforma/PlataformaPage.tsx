@@ -1,3 +1,4 @@
+import {FichaEmpresaPlataforma,Superadministradores} from './OperacionesPlataforma';
 import {PlanesCobrosTab} from './PlanesCobrosTab';
 import {GestionUsuarios} from '@/features/sicom/GestionUsuarios';
 import EditorApariencia from '@/features/apariencia/EditorApariencia';
@@ -63,7 +64,7 @@ export default function PlataformaPage() {
       <div className="mt-5">
         {tab === 'usuarios' && <GestionUsuarios plataforma/>}
         {tab === 'dashboard' && <DashboardEjecutivoTab />}
-        {tab === 'seguridad' && <DobleFactor />}
+        {tab === 'seguridad' && <div className="space-y-4"><DobleFactor /><Superadministradores /></div>}
         {tab === 'apariencia' && <EditorApariencia />}
         {tab === 'contadores' && <ContadoresPlataforma />}
         {tab === 'empresas' && <EmpresasTab />}
@@ -80,6 +81,7 @@ export default function PlataformaPage() {
 }
 
 function EmpresasTab() {
+  const [fichaEmpresa,setFichaEmpresa]=useState<number|null>(null);
   const { data: empresas, isLoading } = useEmpresasPlataforma();
   const suspender = useSuspenderEmpresa();
   const activar = useActivarEmpresa();
@@ -90,6 +92,7 @@ function EmpresasTab() {
 
   return (
     <div>
+      {fichaEmpresa!==null&&<FichaEmpresaPlataforma id={fichaEmpresa} cerrar={()=>setFichaEmpresa(null)}/>}
 
       {isLoading ? (
         <div className="mt-6">
@@ -131,6 +134,7 @@ function EmpresasTab() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
+                      <button type="button" className="text-xs underline" onClick={()=>setFichaEmpresa(e.id)}>Ver ficha</button>
                       <button
                         onClick={() => setEmpresaPlan({ id: e.id, nombre: e.nombreComercial ?? e.nombre })}
                         title="Gestionar plan y licencia"

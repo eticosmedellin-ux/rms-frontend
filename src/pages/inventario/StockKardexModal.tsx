@@ -97,6 +97,10 @@ export function StockKardexModal({ isOpen, onClose, producto }: StockKardexModal
             <LoadingState label="Cargando stock…" />
           ) : stocks && stocks.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="col-span-full rounded-lg border bg-ink-50 p-3">
+                <p className="text-xs text-ink-600">Total en sucursales autorizadas</p>
+                <strong>{stocks.reduce((total,s)=>total+Number(s.stockActual),0).toLocaleString('es-CO',{maximumFractionDigits:2})}</strong>
+              </div>
               {stocks.map((s) => (
                 <div
                   key={s.sucursalId}

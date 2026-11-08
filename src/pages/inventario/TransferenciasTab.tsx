@@ -1,3 +1,6 @@
+import {useQuery,useQueryClient} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
+import {useAuthStore} from '@/stores/authStore';
 import {useStockSucursal} from '@/hooks/useInventario';
 import { useState } from 'react';
 import { Plus, Send, PackageCheck, XCircle, Loader2 } from 'lucide-react';
@@ -18,12 +21,15 @@ import type { EstadoTransferencia } from '@/types/inventario';
 const ESTADO_STYLES: Record<EstadoTransferencia, string> = {
   PENDIENTE: 'bg-ink-100 text-ink-600',
   EN_TRANSITO: 'bg-amber-100 text-amber-700',
+  REVERTIDA: 'bg-ink-100 text-ink-600',
   RECIBIDA: 'bg-success-50 text-success-600',
   CANCELADA: 'bg-danger-50 text-danger-600',
 };
 
 export function TransferenciasTab() {
   const { data: transferencias, isLoading } = useTransferencias();
+  const [reversion,setReversion]=useState<number|null>(null);
+  const administra=useAuthStore(s=>s.esSuperadmin||s.esAdministradorTotal);
   const enviar = useEnviarTransferencia();
   const recibir = useRecibirTransferencia();
   const cancelar = useCancelarTransferencia();
@@ -91,7 +97,8 @@ export function TransferenciasTab() {
                           </button>
                         </>
                       )}
-                      {t.estado === 'EN_TRANSITO' && (
+                      {administra&&t.estado==='RECIBIDA'&&<button type="button" className="text-sm underline" onClick={()=>setReversion(t.id)}>Revertir traslado</button>}
+                      {t.estado === 'EN_TRANSITO'  && (
                         <button
                           onClick={() => recibir.mutate(t.id)}
                           title="Recibir (aumenta stock del destino)"
@@ -114,6 +121,7 @@ export function TransferenciasTab() {
         />
       )}
 
+      {reversion!==null&&<RevertirTraslado id={reversion} cerrar={()=>setReversion(null)}/>}
       <TransferenciaFormModal isOpen={modalAbierto} onClose={() => setModalAbierto(false)} />
     </div>
   );
@@ -213,4 +221,27 @@ function TransferenciaFormModal({ isOpen, onClose }: { isOpen: boolean; onClose:
       </div>
     </Modal>
   );
+}
+
+
+function RevertirTraslado({id,cerrar}:{id:number;cerrar:()=>void}){
+ const qc=useQueryClient(),[motivo,setMotivo]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const ruta=`/transferencias-inventario/${id}/reversion`;
+ const vista=useQuery({queryKey:['vista-reversion',id],queryFn:async()=>(await apiClient.get<{permitida:boolean;impedimentos:string[]}>(ruta)).data, retry:false});
+ async function revertir(){
+  setBusy(true);setError('');
+  try{await apiClient.post(ruta,{motivo});await qc.invalidateQueries();cerrar();}
+  catch(e){setError(getApiErrorMessage(e));void vista.refetch();}finally{setBusy(false);}
+ }
+ return <Modal isOpen onClose={()=>{if(!busy)cerrar();}} title={`Revertir traslado #${id}`}>
+  {vista.isLoading&&<p>Comprobando existencias…</p>}
+  {vista.isError&&<p role="alert">No se pudo consultar si el traslado se puede revertir.</p>}
+  {vista.data?.impedimentos.map(x=><p key={x} className="mb-2 text-sm text-danger-600">{x}</p>)}
+  {vista.data?.permitida&&<form onSubmit={e=>{e.preventDefault();void revertir();}} className="space-y-3">
+    <p>Las unidades regresarán a su sucursal de origen. El traslado original y los movimientos del reverso quedarán en el historial.</p>
+    <label>Motivo<textarea className="input" required maxLength={500} value={motivo} onChange={e=>setMotivo(e.target.value)}/></label>
+    <button type="submit" disabled={busy||!motivo.trim()} className="rounded bg-ink-800 px-4 py-2 text-white">Confirmar reversión</button>
+  </form>}
+  {error&&<p role="alert" className="text-danger-600">{error}</p>}
+ </Modal>;
 }
