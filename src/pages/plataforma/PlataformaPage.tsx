@@ -1,3 +1,4 @@
+import {PlanesCobrosTab} from './PlanesCobrosTab';
 import {GestionUsuarios} from '@/features/sicom/GestionUsuarios';
 import EditorApariencia from '@/features/apariencia/EditorApariencia';
 import {DobleFactor} from '@/features/sicom/DobleFactor';
@@ -27,6 +28,7 @@ const TABS = [
   { id: 'codigos', label: 'Códigos de invitación' },
   { id: 'backups', label: 'Copias de seguridad' },
   { id: 'cobro', label: 'Cobro automático' },
+  { id: 'cobros-manuales', label: 'Planes y cobros' },
   { id: 'noticias', label: 'Noticias del login' },
   { id: 'tipos-negocio', label: 'Tipos de negocio' },
   { id: 'ayuda', label: 'Asistente de ayuda' },
@@ -67,6 +69,7 @@ export default function PlataformaPage() {
         {tab === 'empresas' && <EmpresasTab />}
         {tab === 'codigos' && <CodigosInvitacionTab />}
         {tab === 'backups' && <BackupsTab />}
+        {tab === 'cobros-manuales' && <PlanesCobrosTab />}
         {tab === 'cobro' && <CobroAutomaticoTab />}
         {tab === 'noticias' && <NoticiasLoginTab />}
         {tab === 'tipos-negocio' && <TiposNegocioTab />}
