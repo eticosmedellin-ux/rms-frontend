@@ -12,7 +12,7 @@ const reglas:[RegExp,string][]=[
 ];
 const omitidas=new Set('como que hago para puedo quiero donde cual necesito saber no se un una el la los las de del en al mi me con por registrar hacer consultar ver sicom'.split(' '));
 const tokens=(s:string)=>new Set(normal(s).split(' ').filter(w=>w.length>2&&!omitidas.has(w)).map(w=>w.replace(/(?:es|s)$/,'')));
-export type Respuesta={texto:string;datoVivo?:boolean;fuente?:string;pendiente?:Consulta;opciones?:{id:string;titulo:string;nota?:string}[];sinGuia?:boolean;aclarar?:boolean};
+export type Respuesta={texto:string;datoVivo?:boolean;fuente?:string;pendiente?:Consulta;contexto?:Consulta;opciones?:{id:string;titulo:string;nota?:string}[];sinGuia?:boolean;aclarar?:boolean};
 export function resolver(pregunta:string,publicadas:Guia[],anterior=''):Respuesta{
  const q=normal(pregunta),contexto=normal(anterior+' '+pregunta);
  if(/^(hola|buenas|buenos dias|buenas tardes)( bot| sicom)?$/.test(q))return {texto:'Hola. Cuéntame qué estás intentando hacer en SICOM y buscaré una práctica que te ayude.'};

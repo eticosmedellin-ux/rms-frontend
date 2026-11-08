@@ -1,6 +1,6 @@
 import {Link} from 'react-router-dom';
-import {usePosStore} from '@/stores/posStore';
-import {consultar,detectar} from './consultas';
+import {entender} from './lenguaje';
+import {consultar,cargarSedes,cargarConocimiento} from './consultas';
 import {useEffect,useRef,useState} from 'react';
 import {Bot,Minus,Send,Trash2,X} from 'lucide-react';
 import {useGuias,urlPractica} from '../tutorial/practica/bibliotecaApi';
@@ -10,7 +10,6 @@ import {apiClient} from '@/api/client';
 type Turno={pregunta:string;respuesta:Respuesta;enviada?:boolean};
 function leer(k:string):Turno[]{try{const v=JSON.parse(localStorage.getItem(k)??'[]');return Array.isArray(v)?v.filter(x=>typeof x?.pregunta==='string'&&typeof x?.respuesta?.texto==='string').slice(-30):[];}catch{return [];}}
 export function SicomBot({identidad}:{identidad:string}){
- const sede=usePosStore(s=>s.sucursalId);
  const solicitud=useRef<AbortController|null>(null);
  const [consultando,setConsultando]=useState(false);
  useEffect(()=>()=>solicitud.current?.abort(),[]);
@@ -25,20 +24,24 @@ export function SicomBot({identidad}:{identidad:string}){
  function cerrar(modo:'cerrado'|'minimizado'){setEstado(modo);boton.current?.focus();}
  async function enviar(){
   const pregunta=texto.trim();if(!pregunta||solicitud.current)return;
-  const ultimo=historial.at(-1),consulta=detectar(pregunta,ultimo?.respuesta.pendiente);
-  setTexto('');setAviso('');
-  if(consulta){
-   const ac=new AbortController();solicitud.current=ac;setConsultando(true);
-   try{
-    const respuesta=await consultar(consulta,sede,ac.signal);
-    if(!ac.signal.aborted&&usePosStore.getState().sucursalId===sede)setHistorial(prev=>[...prev,{pregunta,respuesta}].slice(-30));
-   }finally{if(solicitud.current===ac){solicitud.current=null;setConsultando(false);}}
-   return;
-  }
-  const respuesta=resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');
-  setHistorial(prev=>[...prev,{pregunta,respuesta}].slice(-30));
+  const ultimo=historial.at(-1),contexto=ultimo?.respuesta.contexto;
+  const ac=new AbortController();solicitud.current=ac;setConsultando(true);setTexto('');setAviso('');
+  try{
+   const pistas=entender(pregunta,[],contexto);
+   const reglas=await cargarConocimiento(ac.signal).catch(()=>[]);
+   const previa=entender(pregunta,[],contexto,reglas);
+   const sedes=(previa.consulta||previa.aclarar||pistas.consulta)?await cargarSedes(ac.signal):[];
+   const analisis=entender(pregunta,sedes,contexto,reglas);
+   let respuesta=analisis.consulta?await consultar(analisis.consulta,ac.signal):analisis.aclarar?
+    {texto:analisis.aclarar,datoVivo:true,contexto}:resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');
+   if(analisis.guia&&analisis.consulta){
+    const g=resolver(analisis.guia,guias.data??[]);respuesta={...respuesta,texto:respuesta.texto+'\n\n'+g.texto,opciones:g.opciones};
+   }
+   if(!ac.signal.aborted)setHistorial(prev=>[...prev,{pregunta,respuesta}].slice(-30));
+  }catch{
+   if(!ac.signal.aborted)setHistorial(prev=>[...prev,{pregunta,respuesta:{texto:'No pude consultar las sucursales autorizadas. Revisa tus permisos de Reportes o inténtalo de nuevo.',datoVivo:true}}].slice(-30));
+  }finally{if(solicitud.current===ac){solicitud.current=null;setConsultando(false);}}
  }
- useEffect(()=>{solicitud.current?.abort();setHistorial(prev=>prev.filter(t=>!t.respuesta.datoVivo));},[sede]);
  async function reportar(){
   const t=historial.at(-1);if(!t||t.enviada||enviando||t.respuesta.datoVivo)return;
   setEnviando(true);setAviso('');
@@ -66,7 +69,7 @@ export function SicomBot({identidad}:{identidad:string}){
     </div>)}<div ref={final}/>
    </div>
    {guias.isError&&<p className="px-3 text-xs text-ink-600">Las guías adicionales no cargaron. Puedes usar el catálogo base.</p>}
-   {consultando&&<p role="status" className="px-3 text-xs">Consultando la sucursal…</p>}
+   {consultando&&<p role="status" className="px-3 text-xs">Interpretando la pregunta…</p>}
    {aviso&&<p role="status" className="px-3 text-xs">{aviso}</p>}
    <form className="flex gap-2 border-t p-3" onSubmit={e=>{e.preventDefault();enviar();}}>
     <input ref={campo} className="input min-w-0" aria-label="Escribe tu pregunta" placeholder="Ej. Puse dos cafés y solo era uno" maxLength={400} value={texto} onChange={e=>setTexto(e.target.value)}/>

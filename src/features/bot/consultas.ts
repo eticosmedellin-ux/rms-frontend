@@ -1,45 +1,37 @@
 import {apiClient} from '@/api/client';
-import type {StockPorSucursal} from '@/types/inventario';
-import {normal,type Respuesta} from './resolver';
-
-export type Consulta={tipo:'ventas'|'stock'|'cxp'|'cxc';nombre:string;periodo?:'ayer'|'hoy'|'mes'};
-export function detectar(pregunta:string,pendiente?:Consulta):Consulta|undefined{
- const q=normal(pregunta);
- if(/^(como|donde|pasos para|quiero aprender)\b/.test(q)&&!/^(como nos fue)\b/.test(q))return;
- if(/\b(vendimos|vendi|se vendio|total de ventas|ventas de hoy|ventas de ayer|ventas del mes|ventas de este mes|como nos fue)\b/.test(q)){
-  if(/\b(otra sucursal|todas|empresa|semana|mes pasado|ano|desde|hasta)\b|\b\d{4}\b/.test(q))return;
-  return {tipo:'ventas',nombre:'',periodo:/\bayer\b/.test(q)?'ayer':/\bmes\b/.test(q)?'mes':'hoy'};
- }
- const saldo=q.match(/^(?:cuanto (?:le debo|debemos pagar|debemos)\s*(?:a |al )?|(?:saldo|deuda) (?:del |de )?proveedor\s*)(.*)$/);
- if(saldo)return {tipo:'cxp',nombre:saldo[1].replace(/^proveedor\s*/,'')};
- const cliente=q.match(/^(?:cuanto (?:me debe|nos debe)\s*|(?:saldo|deuda) (?:del |de )?cliente\s*)(.*)$/);
- if(cliente)return {tipo:'cxc',nombre:cliente[1].replace(/^cliente\s*/,'')};
- const stock=q.match(/^(?:stock(?: de)?|existencias(?: de)?|cuantas? (?:unidades |unidades de )?(?:quedan|hay|tenemos)(?: de)?)\s*(.*)$/);
- if(stock)return {tipo:'stock',nombre:stock[1]};
- if(pendiente&&q.length<=160&&!/\b(ventas|cancelar|anular)\b/.test(q))return {...pendiente,nombre:q};
-}
-const dinero=(n:number)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(n);
-type Informe={sucursal:string;desde:string;hasta:string;total?:number;registros?:number;nombre?:string;requiereNombre?:boolean;ambiguo?:boolean;opciones?:string[]};
-export async function consultar(c:Consulta,sucursal:number|null,signal:AbortSignal):Promise<Respuesta>{
- const vivo={datoVivo:true};
- if(!sucursal)return {...vivo,texto:'Selecciona tu sucursal de trabajo en Punto de venta y vuelve a preguntar.'};
- if(c.tipo!=='ventas'&&c.nombre.trim().length<2)return {...vivo,texto:`¿Cuál es el nombre del ${c.tipo==='stock'?'producto':c.tipo==='cxp'?'proveedor':'cliente'}?`,pendiente:c};
+import type {Respuesta} from './resolver';
+import type {Consulta,Regla,Sede} from './lenguaje';
+export type {Consulta} from './lenguaje';
+const ruta='/reportes/vista/bot';
+export const cargarSedes=async(signal:AbortSignal)=>(await apiClient.get<Sede[]>(ruta+'/sucursales',{signal})).data;
+export const cargarConocimiento=async(signal:AbortSignal)=>(await apiClient.get<Regla[]>('/ayuda/bot/conocimiento',{signal})).data;
+const dinero=(n:unknown)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(Number(n));
+type Informe={alcance:string;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
+const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
+export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta>{
  try{
-  if(c.tipo==='stock'){
-   const {data}=await apiClient.get<StockPorSucursal[]>(`/inventario/stock/sucursal/${sucursal}`,{signal});
-   const n=normal(c.nombre),exactos=data.filter(f=>normal(f.productoNombre)===n);
-   const filas=exactos.length?exactos:data.filter(f=>normal(f.productoNombre).includes(n));
-   if(!filas.length)return {...vivo,texto:'No encontré ese producto en las existencias de la sucursal seleccionada.',pendiente:c};
-   if(filas.length!==1)return {...vivo,texto:`Especifica el producto: ${[...new Set(filas.map(f=>f.productoNombre))].slice(0,5).join(', ')}.`,pendiente:c};
-   const f=filas[0];return {...vivo,texto:`${f.productoNombre}: ${f.stockActual} unidades en ${f.sucursalNombre}.`,fuente:'/inventario'};
+  const {data:d}=await apiClient.get<Informe>(ruta+'/'+c.tipo,{params:{desde:c.desde,hasta:c.hasta,sucursalId:c.sucursalId,nombre:c.nombre||undefined},signal});
+  if(c.comparar&&c.tipo==='ventas'){
+   const {data:b}=await apiClient.get<Informe>(ruta+'/ventas',{params:{desde:c.comparar[0],hasta:c.comparar[1],sucursalId:c.sucursalId},signal});
+   if(d.alcance!==b.alcance)throw new Error('Alcance distinto');
+   return {datoVivo:true,contexto:c,texto:`Ventas completadas · ${d.alcance}\n• ${d.desde} a ${d.hasta}: ${dinero(d.total)} · ${d.registros} ventas\n• ${b.desde} a ${b.hasta}: ${dinero(b.total)} · ${b.registros} ventas\nDiferencia del primer período frente al segundo: ${dinero(Number(d.total)-Number(b.total))}.`};
   }
-  const {data:d}=await apiClient.get<Informe>(`/reportes/vista/bot/${c.tipo}`,{params:{sucursalId:sucursal,periodo:c.periodo,nombre:c.nombre},signal});
-  const fuente='/reportes?'+new URLSearchParams({tipo:c.tipo,sucursalId:String(sucursal),desde:d.desde,hasta:d.hasta,usuarioId:'',estado:''});
-  if(c.tipo==='ventas'&&d.total!=null)return {...vivo,texto:`Ventas completadas en ${d.sucursal}, ${d.desde} a ${d.hasta}: ${dinero(d.total)} en ${d.registros} ventas. El total no equivale al efectivo recaudado y no resta devoluciones posteriores.`,fuente};
-  if(d.ambiguo)return {...vivo,texto:`Encontré más de una coincidencia. Especifica el nombre: ${d.opciones?.join(', ')}.`,pendiente:c};
-  if(d.total!=null)return {...vivo,texto:`${d.nombre}: ${dinero(d.total)} de saldo pendiente en ${d.sucursal}. Solo incluye documentos vinculados a esta sucursal.`,fuente};
-  return {...vivo,texto:'No encontré saldos pendientes con ese nombre en la sucursal seleccionada. Esto no confirma que el saldo en otras sucursales sea cero.',pendiente:c};
- }catch{
-  return {...vivo,texto:'No pude consultar esa información. Verifica tu acceso al módulo y a la sucursal o vuelve a intentarlo. No se puede confirmar un total.'};
- }
+  const actual=['inventario','agotados','bajos','valor','cxp','cxc'].includes(c.tipo);
+  const total=['ventas','cxp','cxc','valor','compras','gastos','utilidad'].includes(c.tipo);
+  const detalle=d.filas.slice(0,10).map(f=>{
+   const titulo=f.nombre??f.producto??f.proveedor??f.cliente??f.numero??f.sucursal??'Registro';
+   const montos=[['total','Total'],['saldo','Saldo'],['monto','Importe'],['diferencia','Diferencia']].filter(([k])=>f[k]!=null).map(([k,t])=>`${t}: ${dinero(f[k])}`);
+   return `• ${titulo}${f.sucursal&&titulo!==f.sucursal?' · '+f.sucursal:''}${f.cantidad!=null?' · Cantidad: '+f.cantidad:''}${f.pendiente!=null?' · Pendiente: '+f.pendiente:''}${montos.length?' · '+montos.join(' · '):''}`;
+  });
+  const tipoFuente=({ranking:'ventas',productos:'ventas',pagos:'ventas',vendedores:'ventas',clientesVentas:'ventas',rotacion:'ventas',agotados:'inventario',bajos:'inventario',valor:'inventario'} as Record<string,string>)[c.tipo]??c.tipo;
+  const fuente=d.sucursalId?'/reportes?'+new URLSearchParams({tipo:tipoFuente,sucursalId:String(d.sucursalId),desde:d.desde,hasta:d.hasta,usuarioId:'',estado:''}):undefined;
+  const nota=c.tipo==='ventas'?'Incluye ventas completadas; no equivale al efectivo ni resta devoluciones posteriores.':
+   c.tipo==='utilidad'?'Estimación según costos registrados, antes de gastos.':
+   c.tipo==='cxp'||c.tipo==='cxc'?'Incluye únicamente documentos vinculados a las sedes consultadas.':
+   c.tipo==='productos'||c.tipo==='rotacion'?'Cantidades por línea de venta. Hasta 20 resultados ordenados por unidades.':'';
+  return {datoVivo:true,fuente,contexto:c,texto:[`${titulos[c.tipo]} · ${d.alcance} · ${actual?'saldo o existencias actuales':d.desde+' a '+d.hasta}`,
+    c.nombre?'Filtro: '+c.nombre:'',d.registros?total?`Total: ${dinero(d.total)} · ${d.registros} registros`:c.tipo==='caja'?`Ingresos: ${dinero(d.INGRESO)} · Egresos: ${dinero(d.EGRESO)}`:'':'No hay registros que coincidan con este alcance.',
+    d.resumenVentas?`Total vendido: ${dinero(d.resumenVentas.vendido)} · ${d.resumenVentas.ventas} ventas completadas`:'',
+    ...detalle,d.medios?.length?'Pagos registrados: '+d.medios.map(p=>p.nombre+' '+dinero(p.total)).join(' · '):'',d.filas.length>10?'Se muestran los primeros 10 resultados.':'',nota].filter(Boolean).join('\n')};
+ }catch{return {datoVivo:true,texto:'No pude consultar los datos. Verifica el permiso de Reportes, la sede y el período. No se puede confirmar un total.'};}
 }

@@ -1,3 +1,4 @@
+import {ConocimientoBot} from '@/features/bot/ConocimientoBot';
 import {AdminBiblioteca} from '@/features/tutorial/practica/AdminBiblioteca';
 import {ProblemasAyuda} from '@/components/ayuda/ProblemasAyuda';
 import { useEffect, useState } from 'react';
@@ -33,6 +34,7 @@ export function AyudaAdminTab() {
   return (
     <div className="space-y-8">
       <AdminBiblioteca />
+      <ConocimientoBot />
       <ProblemasAyuda admin />
       <section>
         <div className="mb-3 flex items-center justify-between">
