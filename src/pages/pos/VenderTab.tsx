@@ -1,3 +1,4 @@
+import { EscanerBarras } from '@/components/busqueda/EscanerBarras';
 import {useQuery} from '@tanstack/react-query';
 import {apiClient} from '@/api/client';
 import {useCalculoVenta} from '@/features/sicom/useCalculoVenta';
@@ -100,6 +101,13 @@ export function VenderTab() {
   }
 
   const [busqueda, setBusqueda] = useState('');
+  const [avisoStock, setAvisoStock] = useState<{productoId:number; sede:number|null; texto:string; consultar:boolean}|null>(null);
+  const disponibilidad = useQuery({
+    queryKey: ['disponibilidad-venta', sucursalId, avisoStock?.productoId],
+    enabled: Boolean(avisoStock?.consultar && sucursalId && avisoStock.sede === sucursalId),
+    queryFn: async () => (await apiClient.get<string[]>(`/sicom/disponibilidad/${avisoStock!.productoId}`, {params:{sucursalId}})).data,
+    retry:false,
+  });
   const busquedaInputRef = useRef<HTMLInputElement>(null);
   const [carrito, setCarrito] = useState<LineaCarrito[]>([]);
   const [pagos, setPagos] = useState<LineaPago[]>([{ metodoPago: 'EFECTIVO', monto: '' }]);
@@ -196,7 +204,7 @@ export function VenderTab() {
           manejaInventario: p.manejaInventario,
           codigoInterno: p.codigoInterno,
           codigoBarras:p.codigoBarras,
-          stock: stockInfo ? stockInfo.stock : null,
+          stock: p.manejaInventario && stockSucursal ? (stockInfo?.stock ?? 0) : null,
           stockBajo: stockInfo?.bajo ?? false,
         };
       });
@@ -214,7 +222,7 @@ export function VenderTab() {
         stockBajo: false,
       }));
     return [...productosItems, ...combosItems];
-  }, [productos, combos, stockPorProducto]);
+  }, [productos, combos, stockPorProducto, stockSucursal]);
 
   const itemsVisibles = useMemo(() => {
     if (!busqueda.trim()) return itemsVendibles;
@@ -242,6 +250,13 @@ export function VenderTab() {
   const requiereCredito = pagos.some((p) => p.metodoPago === 'CREDITO');
 
   function agregarItem(item: ItemVendible,cantidadAgregar=1) {
+    const enCarrito = carrito.find(l => l.tipo === item.tipo && l.itemId === item.id)?.cantidad ?? 0;
+    if (item.manejaInventario && (item.stock === null || enCarrito + cantidadAgregar > item.stock)) {
+      setAvisoStock({productoId:item.id,sede:sucursalId,consultar:item.stock === 0,
+        texto:item.stock === null ? 'Selecciona una sucursal y espera a que cargue el stock.' : `${item.nombre}: no hay existencias suficientes en esta sucursal.`});
+      return false;
+    }
+    setAvisoStock(null);
     setCarrito((prev) => {
       const existente = prev.find((l) => l.tipo === item.tipo && l.itemId === item.id);
       if (existente) {
@@ -254,6 +269,7 @@ export function VenderTab() {
         { tipo: item.tipo, itemId: item.id, nombre: item.nombre, cantidad: cantidadAgregar, precioUnitario: item.precioVenta, tipoDescuentoId: null },
       ];
     });
+    return true;
   }
 
   /** Con un lector de código de barras (o al escribir un código exacto y dar Enter), si
@@ -262,8 +278,7 @@ export function VenderTab() {
     if (e.key !== 'Enter' || itemsVisibles.length !== 1) return;
     const item=itemsVisibles[0];
     const presentacion=item.tipo==='PRODUCTO'?productos?.find(p=>p.id===item.id)?.presentaciones?.find(p=>p.codigo_barras===busqueda.trim()):undefined;
-    agregarItem(item,presentacion?.unidades??1);
-    setBusqueda('');
+    if (agregarItem(item,presentacion?.unidades??1)) setBusqueda('');
     busquedaInputRef.current?.focus();
   }
 
@@ -403,13 +418,22 @@ export function VenderTab() {
           <input
             ref={busquedaInputRef}
             autoFocus
-            className="input pl-10"
+            className="input pl-10 pr-12"
             placeholder="Escanea o escribe un código, o busca por nombre…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={manejarEnterBusqueda}
           />
+          <div className="absolute right-1 top-1/2 -translate-y-1/2">
+            <EscanerBarras alLeer={codigo => { setBusqueda(codigo); setAvisoStock(null); busquedaInputRef.current?.focus(); }} />
+          </div>
         </div>
+        {avisoStock?.sede === sucursalId && avisoStock && <div role="status" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+          {avisoStock.texto}
+          {avisoStock.consultar && disponibilidad.data && <p>{disponibilidad.data.length
+            ? `Disponible en: ${disponibilidad.data.join(', ')}.`
+            : 'Sin disponibilidad registrada en otras sucursales.'}</p>}
+        </div>}
 
         {itemsVisibles.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">

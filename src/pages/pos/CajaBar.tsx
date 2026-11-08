@@ -19,8 +19,8 @@ export function CajaBar() {
   const [modalMovimientos, setModalMovimientos] = useState(false);
 
   useEffect(() => {
-    if (sucursalId === null && sucursales && sucursales.length > 0) {
-      setSucursalId(sucursales[0].id);
+    if (sucursales && !sucursales.some(s => s.id === sucursalId)) {
+      setSucursalId(sucursales[0]?.id ?? null);
     }
   }, [sucursalId, sucursales, setSucursalId]);
 

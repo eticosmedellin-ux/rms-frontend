@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 interface PosState {
   sucursalId: number | null;
-  setSucursalId: (id: number) => void;
+  setSucursalId: (id: number | null) => void;
   reset: () => void;
 }
 

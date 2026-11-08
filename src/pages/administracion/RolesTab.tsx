@@ -1,3 +1,4 @@
+import ConfiguracionSicom from '@/features/sicom/ConfiguracionSicom';
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, Loader2, Pencil } from 'lucide-react';
 import { useRoles, useCrearRol, useActualizarRol, usePermisos } from '@/hooks/useNucleo';
@@ -9,6 +10,7 @@ import { getApiErrorMessage } from '@/api/errors';
 import type { Rol } from '@/types/nucleo';
 
 export function RolesTab() {
+  const [facturadores, mostrarFacturadores] = useState(false);
   const { data: roles, isLoading } = useRoles();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [rolEditando, setRolEditando] = useState<Rol | null>(null);
@@ -25,6 +27,11 @@ export function RolesTab() {
 
   return (
     <div>
+      <div className="mb-4">
+        <button type="button" aria-expanded={facturadores} className="rounded-lg border px-4 py-2 font-semibold"
+          onClick={() => mostrarFacturadores(v => !v)}>Usuarios de facturación</button>
+        {facturadores && <div className="mt-3"><ConfiguracionSicom seccion="facturadores" /></div>}
+      </div>
       <p className="mb-4 rounded border p-3 text-sm">Restaurante, Servicios y Préstamos: habilita Consultar y un alcance (propios, sucursales asignadas o empresa). Operar permite registrar; Administrar permite configuración y acciones sensibles. Reportes y Costos se asignan por separado. Ahora también puedes marcar cada pestaña del módulo y el permiso Enviar comunicaciones al cliente. Si un módulo queda sin pestañas marcadas, no muestra sus secciones. El empleado debe volver a ingresar después del cambio.</p>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-ink-400">
