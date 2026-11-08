@@ -1,3 +1,4 @@
+import {AdminBiblioteca} from '@/features/tutorial/practica/AdminBiblioteca';
 import {ProblemasAyuda} from '@/components/ayuda/ProblemasAyuda';
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
@@ -31,6 +32,7 @@ export function AyudaAdminTab() {
 
   return (
     <div className="space-y-8">
+      <AdminBiblioteca />
       <ProblemasAyuda admin />
       <section>
         <div className="mb-3 flex items-center justify-between">

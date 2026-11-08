@@ -1,3 +1,4 @@
+import {Escenario} from './Escenario';
 import {useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {MemoryRouter} from 'react-router-dom';
@@ -15,6 +16,8 @@ import '@/index.css';
 
 const params=new URLSearchParams(location.search);
 const caso=biblioteca.find(x=>x.id===params.get('caso')&&x.pasos);
+const personalizacion=new URLSearchParams(location.hash.slice(1));
+const titulo=personalizacion.get('titulo')?.slice(0,160),nota=personalizacion.get('nota')?.slice(0,600);
 const eventos=new EventTarget();
 if(enPractica&&caso){
  apiClient.defaults.adapter=motorDemo(caso.cajaCerrada,op=>eventos.dispatchEvent(new CustomEvent('demo',{detail:op})));
@@ -53,19 +56,20 @@ function Practica(){
   <style>{'.practica-objetivo{outline:3px solid #059669!important;outline-offset:3px;box-shadow:0 0 0 6px #6ee7b760!important;scroll-margin:9rem}'}</style>
   <header className="sticky top-0 z-30 space-y-2 border-b border-amber-300 bg-amber-50 p-3 sm:px-6">
    <p className="text-xs font-bold uppercase tracking-wide text-amber-900">SICOM · Práctica aislada · Datos ficticios</p>
-   <h1 className="font-semibold">{caso.titulo}</h1>
-   {!libre&&<progress aria-label="Progreso de la guía" max={total} value={hecho?total:indice+1} className="w-full max-w-xs accent-emerald-700"/>}
-   {hecho?<p role="status" className="font-semibold text-emerald-800">✓ Ejercicio completado en la práctica.</p>:!libre&&<p aria-live="polite" className="text-sm"><strong>Paso {indice+1} de {total}</strong> · {paso?.[0]}</p>}
+   <h1 className="font-semibold">{titulo||caso.titulo}</h1>
+   {nota&&<p className="text-sm">{nota}</p>}
+   {!libre&&!caso.acciones&&<progress aria-label="Progreso de la guía" max={total} value={hecho?total:indice+1} className="w-full max-w-xs accent-emerald-700"/>}
+   {hecho?<p role="status" className="font-semibold text-emerald-800">✓ Ejercicio completado en la práctica.</p>:!libre&&!caso.acciones&&<p aria-live="polite" className="text-sm"><strong>Paso {indice+1} de {total}</strong> · {paso?.[0]}</p>}
    <div className="flex flex-wrap gap-2">
-    {!libre&&!hecho&&<><button className="sicom-accion" disabled={indice===0} onClick={()=>setIndice(i=>i-1)}>Anterior</button><button className="sicom-accion" disabled={indice+1>=total} onClick={()=>{setIndice(i=>i+1);setDestacar(true);}}>Siguiente paso</button><button className="sicom-accion" onClick={()=>{setDestacar(true);requestAnimationFrame(()=>eventos.dispatchEvent(new Event('enfocar')));}}>Señalar control</button></>}
+    {!caso.acciones&&!libre&&!hecho&&<><button className="sicom-accion" disabled={indice===0} onClick={()=>setIndice(i=>i-1)}>Anterior</button><button className="sicom-accion" disabled={indice+1>=total} onClick={()=>{setIndice(i=>i+1);setDestacar(true);}}>Siguiente paso</button><button className="sicom-accion" onClick={()=>{setDestacar(true);requestAnimationFrame(()=>eventos.dispatchEvent(new Event('enfocar')));}}>Señalar control</button></>}
     <button className="sicom-accion" onClick={()=>{setLibre(v=>!v);setDestacar(true);}}>{libre?'Ver solución':'Practicar sin guía'}</button>
     <button className="sicom-accion" onClick={()=>location.reload()}>Repetir</button>
-    {!hecho&&!caso.meta&&!libre&&indice+1===total&&<button className="sicom-accion sicom-accion-principal" onClick={()=>setHecho(true)}>Terminar recorrido</button>}
+    {!caso.acciones&&!hecho&&!caso.meta&&!libre&&indice+1===total&&<button className="sicom-accion sicom-accion-principal" onClick={()=>setHecho(true)}>Terminar recorrido</button>}
     <button className="sicom-accion" onClick={()=>window.close()}>Cerrar práctica</button>
    </div>
   </header>
   <div className="mx-auto max-w-7xl p-3 sm:p-6" ref={zona}>
-   <MemoryRouter initialEntries={[`/${caso.pantalla??'pos'}?tab=${caso.tab??''}`]}><Pantalla/></MemoryRouter>
+   {caso.acciones?<Escenario acciones={caso.acciones} libre={libre} terminar={()=>setHecho(true)}/>:<MemoryRouter initialEntries={[`/${caso.pantalla??'pos'}?tab=${caso.tab??''}`]}><Pantalla/></MemoryRouter>}
   </div>
  </>;
 }

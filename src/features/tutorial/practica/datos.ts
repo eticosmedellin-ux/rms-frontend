@@ -12,6 +12,7 @@ export function motorDemo(cerrada=false,evento:(op:string)=>void=()=>{}):AxiosAd
  let productos=baseProductos.map(p=>({...p,precioCompra:2500,costoPromedio:2500,unidadMedida:'UN',impuestoTipo:'EXCLUIDO',impuestoTarifa:0,presentaciones:[]}));
  let proveedores=[{id:1,nombre:'Distribuidora Demo',nit:'900000001',estado:true,diasCredito:30},{id:2,nombre:'Suministros Demo',nit:'900000002',estado:true,diasCredito:0}];
  let ordenes=[{id:1,numero:'OC-DEMO-001',facturas:'F-DEMO-01',proveedorId:1,proveedor:'Distribuidora Demo',sucursalId:1,sucursal:sede,estado:'RECIBIDA',fecha:ahora(),detalles:[]}];
+ let ajustes:{id:number;fecha:string;motivo:string;sucursal:string;usuario:string;detalles:unknown[]}[]=[];
  let clientes=[{...clienteBase,id:1,nombre:'Ana Demo',documento:'10001',saldoPendiente:12000},{...clienteBase,id:2,nombre:'Luis Demo',documento:'10002'}];
  let caja=cerrada?null:{id:1,montoApertura:50000,fechaApertura:ahora()};
  let secuencia=2,stock=[20,15,10];
@@ -41,6 +42,7 @@ export function motorDemo(cerrada=false,evento:(op:string)=>void=()=>{}):AxiosAd
     case '/sucursales':return ok([{id:1,nombre:sede,estado:true},{id:2,nombre:'Sucursal norte demo',estado:true}]);
     case '/productos':return ok(productos);
     case '/categorias':case '/marcas':return ok([]);
+    case '/ajustes-inventario':return ok(ajustes);
     case '/proveedores':return ok(proveedores);
     case '/ordenes-compra':return ok(ordenes);
     case '/clientes':return ok(clientes);
@@ -83,6 +85,19 @@ export function motorDemo(cerrada=false,evento:(op:string)=>void=()=>{}):AxiosAd
    if(!proveedor||!Array.isArray(body.detalles)||!body.detalles.length||body.detalles.some((l: {cantidadPedida:number;productoId:number})=>!(l.cantidadPedida>0)||!productos.some(p=>p.id===l.productoId)))return fallo('Selecciona un proveedor y al menos un producto con cantidad válida.');
    const id=ordenes.length+1,nueva={...body,id,numero:'OC-DEMO-'+String(id).padStart(3,'0'),facturas:'',proveedor:proveedor.nombre,sucursal:sede,estado:'BORRADOR',fecha:ahora(),detalles:body.detalles.map((l:{productoId:number})=>({...l,producto:productos.find(p=>p.id===l.productoId)?.nombre,cantidadRecibida:0,cantidadFacturada:0}))};
    ordenes=[nueva,...ordenes];evento('orden');return ok(nueva,201);
+  }
+  if(metodo==='post'&&path==='/ajustes-inventario'){
+   const detalle=body.detalles as {productoId:number;tipo:string;cantidad:number}[];
+   if(!String(body.motivo??'').trim()||!Array.isArray(detalle)||!detalle.length)return fallo('Indica el motivo y agrega un producto.');
+   const nuevos=[...stock];
+   for(const l of detalle){
+    const i=productos.findIndex(p=>p.id===l.productoId);
+    if(i<0||!Number.isFinite(l.cantidad)||l.cantidad<=0||!['POSITIVO','NEGATIVO'].includes(l.tipo))return fallo('Revisa el producto, tipo y cantidad.');
+    nuevos[i]+=(l.tipo==='POSITIVO'?1:-1)*l.cantidad;
+    if(nuevos[i]<0)return fallo('No hay existencias suficientes en esta práctica.');
+   }
+   const ajuste={id:ajustes.length+1,fecha:ahora(),motivo:body.motivo,sucursal:sede,usuario,detalles:detalle.map(l=>({...l,producto:productos.find(p=>p.id===l.productoId)?.nombre}))};
+   stock=nuevos;ajustes=[ajuste,...ajustes];evento('ajuste');return ok(ajuste,201);
   }
   if(metodo==='post'&&path==='/ventas/calcular')return ok(calcular(body.detalles,!!body.tipoDescuentoFacturaId));
   if(metodo==='post'&&path==='/ventas'){

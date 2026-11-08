@@ -1,5 +1,6 @@
+import {ampliacion,type Accion} from './ampliacion';
 export type PasoReal=[texto:string,control:string];
-export type CasoReal={id:string;grupo:string;titulo:string;tab?:string;pantalla?:'inventario'|'compras';pasos?:PasoReal[];cajaCerrada?:boolean;meta?:string};
+export type CasoReal={id:string;grupo:string;titulo:string;tab?:string;pantalla?:'inventario'|'compras';pasos?:PasoReal[];cajaCerrada?:boolean;meta?:string;acciones?:Accion[]};
 const p=(texto:string,control:string):PasoReal=>[texto,control];
 const buscar=p('Escribe Café o el código DEMO-001 en el buscador.','Escanea o escribe');
 const agregar=p('Selecciona Café demo en los resultados.','Café demo');
@@ -54,8 +55,13 @@ const casos:Record<string,Partial<CasoReal>>={
  '4-7':{pantalla:'compras',tab:'ordenes',pasos:[p('Usa el buscador de órdenes para localizar OC-DEMO-001.','Buscar orden'),p('Identifica el proveedor y el estado.','OC-DEMO-001')]},
  '5-0':{pantalla:'compras',tab:'proveedores',meta:'proveedor',pasos:[p('Abre Nuevo proveedor.','Nuevo proveedor'),p('Completa el nombre y un NIT ficticio.','Nombre'),p('Guarda y comprueba que aparezca en el directorio.','Guardar')]},
  '5-1':{pantalla:'compras',tab:'proveedores',pasos:[p('Busca Distribuidora Demo o el NIT 900000001.','Buscar proveedor'),p('Comprueba los datos en la fila.','Distribuidora Demo')]},
+ '3-6':{pantalla:'inventario',tab:'ajustes',meta:'ajuste',pasos:[p('Café demo tiene 20 unidades. El conteo verificado dio 18. Abre un ajuste.','Nuevo ajuste'),p('Selecciona Café demo, registra un ajuste negativo de 2 unidades y escribe el motivo.','Motivo'),p('Registra el ajuste para corregir la diferencia.','Registrar ajuste')]},
+ '3-7':{pantalla:'inventario',tab:'ajustes',meta:'ajuste',pasos:[p('Para practicar una entrada por ajuste, abre un ajuste de inventario. Si proviene de una orden, usa su recepción.','Nuevo ajuste'),p('Selecciona Café demo y registra 5 unidades como ajuste positivo. Indica el motivo.','Positivo'),p('Registra y comprueba el movimiento.','Registrar ajuste')]},
+ '3-8':{pantalla:'inventario',tab:'ajustes',meta:'ajuste',pasos:[p('Se retiraron 3 unidades de Café demo por daño. Abre un ajuste.','Nuevo ajuste'),p('Selecciona Café demo, ajuste negativo y cantidad 3. Escribe el motivo.','Negativo'),p('Registra el movimiento.','Registrar ajuste')]},
+ '4-3':{pantalla:'compras',tab:'ordenes',meta:'orden',pasos:[p('Abre Nueva orden y selecciona sucursal, proveedor y Pan demo.','Nueva orden'),p('Quita Pan demo de la orden.','Quitar'),p('Añade Café demo y guarda el borrador.','Añadir producto')]},
+ '4-4':{pantalla:'compras',tab:'ordenes',meta:'orden',pasos:[p('Abre Nueva orden y selecciona sucursal, proveedor y Café demo.','Nueva orden'),p('Corrige la cantidad a 6 antes de crear la orden.','Cantidad pedida'),p('Comprueba el costo total y crea la orden.','Crear orden')]},
  '8-4':{tab:'vender',pasos:[p('Abre el selector Sucursal y elige Sucursal norte demo.','Sucursal norte demo')]},
 };
 export const biblioteca=Object.entries(grupos).flatMap(([grupo,titulos],g)=>titulos.map((titulo,i):CasoReal=>{
- const id=`${g}-${i}`;return {id,grupo,titulo,...casos[id]};
+ const id=`${g}-${i}`;const acciones=casos[id]?undefined:ampliacion[id];return {id,grupo,titulo,...casos[id],...(acciones?{acciones,pasos:acciones.map(x=>p(x.campo,x.boton))}:{})};
 }));

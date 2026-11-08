@@ -1,3 +1,5 @@
+import {enPractica} from '@/stores/pestanaEmpresa';
+import {useSearchParams} from 'react-router-dom';
 import {usePestanas} from '@/hooks/usePestanas';
 import Comercio from '@/features/sicom/Comercio';
 import Drogueria from '@/features/sicom/Drogueria';
@@ -23,7 +25,8 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 export default function InventarioPage() {
-  const [seleccion, setTab] = useState<TabId>('productos');
+  const [params]=useSearchParams();
+  const [seleccion, setTab] = useState<TabId>(()=>enPractica&&params.get('tab')==='ajustes'?'ajustes':'productos');
   const permiteTab=usePestanas('INVENTARIO');
   const tabsPermitidas=TABS.filter(t=>permiteTab(t.id));
   const tab=tabsPermitidas.find(t=>t.id===seleccion)?.id??tabsPermitidas[0]?.id;
