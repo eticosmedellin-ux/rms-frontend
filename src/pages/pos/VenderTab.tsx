@@ -1,3 +1,5 @@
+import {enPractica,almacenamientoPestana} from '@/stores/pestanaEmpresa';
+const almacenVenta = () => enPractica ? almacenamientoPestana() : window.localStorage;
 import { EscanerBarras } from '@/components/busqueda/EscanerBarras';
 import {useQuery} from '@tanstack/react-query';
 import {apiClient} from '@/api/client';
@@ -128,7 +130,7 @@ export function VenderTab() {
     if (!sucursalId || restauradoRef.current) return;
     restauradoRef.current = true;
     try {
-      const guardado = window.localStorage.getItem(claveVentaEnProceso(sucursalId));
+      const guardado = almacenVenta().getItem(claveVentaEnProceso(sucursalId));
       if (guardado) {
         const datos: VentaEnProceso = JSON.parse(guardado);
         if (datos.carrito?.length > 0) {
@@ -151,10 +153,10 @@ export function VenderTab() {
     if (!sucursalId || !restauradoRef.current) return;
     try {
       if (carrito.length === 0) {
-        window.localStorage.removeItem(claveVentaEnProceso(sucursalId));
+        almacenVenta().removeItem(claveVentaEnProceso(sucursalId));
       } else {
         const datos: VentaEnProceso = { carrito, pagos, clienteId, modoDescuento, tipoDescuentoFacturaId, facturarVenta };
-        window.localStorage.setItem(claveVentaEnProceso(sucursalId), JSON.stringify(datos));
+        almacenVenta().setItem(claveVentaEnProceso(sucursalId), JSON.stringify(datos));
       }
     } catch {
       // si el navegador bloquea localStorage, simplemente no persiste — no rompe la venta actual
@@ -168,7 +170,7 @@ export function VenderTab() {
     cambiarModoDescuento('NINGUNO');
     setError(null);
     setRecuperada(false);
-    if (sucursalId) window.localStorage.removeItem(claveVentaEnProceso(sucursalId));
+    if (sucursalId) almacenVenta().removeItem(claveVentaEnProceso(sucursalId));
   }
 
   const catalogo = tiposDescuento ?? [];
@@ -373,11 +375,11 @@ export function VenderTab() {
       const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(payload)));
       const firma=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
       const claveLocal=claveVentaEnProceso(sucursalId)+'-operacion';
-      const previa=JSON.parse(window.localStorage.getItem(claveLocal)||'null') as {firma:string;clave:string}|null;
+      const previa=JSON.parse(almacenVenta().getItem(claveLocal)||'null') as {firma:string;clave:string}|null;
       const clave=previa?.firma===firma?previa.clave:crypto.randomUUID();
-      window.localStorage.setItem(claveLocal,JSON.stringify({firma,clave}));
+      almacenVenta().setItem(claveLocal,JSON.stringify({firma,clave}));
       const venta = await registrarVenta.mutateAsync({...payload,claveOperacion:clave});
-      window.localStorage.removeItem(claveLocal);
+      almacenVenta().removeItem(claveLocal);
       setFormulaBase64(undefined);
       setReservaId('');
       const mensajeCambio = venta.cambio > 0 ? ` — vuelto: $${venta.cambio.toLocaleString('es-CO')}` : '';
@@ -389,7 +391,7 @@ export function VenderTab() {
       setPagos([{ metodoPago: 'EFECTIVO', monto: '' }]);
       cambiarModoDescuento('NINGUNO');
       setRecuperada(false);
-      if (sucursalId) window.localStorage.removeItem(claveVentaEnProceso(sucursalId));
+      if (sucursalId) almacenVenta().removeItem(claveVentaEnProceso(sucursalId));
       busquedaInputRef.current?.focus();
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo registrar la venta'));
@@ -552,6 +554,7 @@ export function VenderTab() {
                 <input
                   type="number"
                   min={1}
+                  aria-label={`Cantidad de ${l.nombre}`}
                   value={l.cantidad}
                   onChange={(e) => actualizarCantidad(l.tipo, l.itemId, Number(e.target.value))}
                   className="w-16 rounded-lg border border-ink-200 px-2 py-1 text-center text-sm"
@@ -559,7 +562,7 @@ export function VenderTab() {
                 <span className="w-20 text-right font-medium text-ink-700">
                   ${(calculo.data?.detalles[indice]?.total??0).toLocaleString('es-CO')}
                 </span>
-                <button onClick={() => quitarLinea(l.tipo, l.itemId)} className="text-ink-300 hover:text-danger-500">
+                <button aria-label={`Retirar ${l.nombre}`} onClick={() => quitarLinea(l.tipo, l.itemId)} className="text-ink-300 hover:text-danger-500">
                   <Trash2 size={16} />
                 </button>
               </div>

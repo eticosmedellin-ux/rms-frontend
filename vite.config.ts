@@ -4,6 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  build: { rollupOptions: { input: { app: path.resolve(__dirname, 'index.html'), practica: path.resolve(__dirname, 'practica.html') } } },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

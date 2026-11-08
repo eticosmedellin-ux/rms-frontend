@@ -1,3 +1,4 @@
+import {enPractica} from '@/stores/pestanaEmpresa';
 import {adjuntarSoportes,solicitarSoporte} from '@/lib/soportePago';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
@@ -6,10 +7,12 @@ import type { LoginResponse } from '@/types/auth';
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
   headers: { 'Content-Type': 'application/json' },
+  ...(enPractica ? {adapter: async () => {throw new Error('Conexión deshabilitada en la práctica');}} : {}),
 });
 
 // Adjunta el access token vigente a cada petición saliente.
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  if(enPractica){config.headers.delete('Authorization');return config;}
   if(config.method==='post'){await adjuntarSoportes(config.data);const r=config.data as Record<string,unknown>|undefined;if(r&&/\/(anticipos|anticipar|abonos|anticipo)$/.test(config.url??'')&&['TRANSFERENCIA','TARJETA'].includes(String(r.metodo))&&!r.soporte)r.soporte=await solicitarSoporte(String(r.metodo));}
   const { accessToken } = useAuthStore.getState();
   const publica = config.url?.startsWith('/auth/') || config.url === '/noticias-login/activas' || config.url === '/apariencia/publica';
@@ -43,7 +46,7 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest.url?.startsWith('/auth/') && originalRequest.url !== '/noticias-login/activas' && originalRequest.url !== '/apariencia/publica' && !originalRequest._retry) {
+    if (!enPractica && error.response?.status === 401 && originalRequest && !originalRequest.url?.startsWith('/auth/') && originalRequest.url !== '/noticias-login/activas' && originalRequest.url !== '/apariencia/publica' && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         refreshPromise ??= refreshAccessToken().finally(() => {
