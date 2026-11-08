@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore';
 
 export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
   const apps=useCatalogoAplicaciones();
+  const avisosApps=apps.data?.filter(a=>a.novedadDesde).length??0;
   const apariencia=useApariencia();
   const a=useAuthStore(),sucursalId=usePosStore(x=>x.sucursalId);
   const contexto=useQuery({queryKey:['contexto-cabecera',a.empresaId,a.usuarioId],queryFn:async()=>(await apiClient.get<{sucursales:{id:number;nombre:string}[]}>('/ayuda/contexto')).data,retry:false});
@@ -42,7 +43,7 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-4"><BuscadorGeneral/>
         {a.esAdministradorTotal&&!a.esSuperadmin&&<Link to="/aplicaciones?avisos=1" aria-label="Actualizaciones de aplicaciones" title="Actualizaciones de aplicaciones" className="relative rounded-lg border p-2 text-ink-600">
-          <Bell size={17}/>{!!apps.data?.length&&<span className="absolute -right-1 -top-1 rounded-full bg-emerald-700 px-1 text-[10px] text-white">{apps.data.length}</span>}
+          <Bell size={17}/>{avisosApps>0&&<span className="absolute -right-1 -top-1 rounded-full bg-emerald-700 px-1 text-[10px] text-white">{avisosApps}</span>}
         </Link>}{a.usuarioId&&<CambiarPassword id={a.usuarioId} nombre={nombreCompleto??'Mi cuenta'} propia/>}
         <span className="hidden text-sm text-ink-600 sm:inline">{nombreCompleto}</span>
         <button

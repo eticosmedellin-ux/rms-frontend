@@ -61,6 +61,7 @@ export function puedeVerRuta(permisos: string[], ruta: string): boolean {
  *  evita mostrar en el menú una página cuyo plan claramente no la incluye. */
 export const RUTA_A_PLAN: Record<string, string> = {
   '/pos': 'ventas',
+  '/documentos': 'documentos-caja',
   '/descuentos': 'tipos-descuento',
   '/inventario': 'productos',
   '/compras': 'proveedores',

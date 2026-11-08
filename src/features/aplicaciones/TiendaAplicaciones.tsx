@@ -32,7 +32,7 @@ export default function TiendaAplicaciones(){
   <header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-900 p-6 text-white">
    <div><div className="mb-2 inline-flex items-center gap-2 text-sm text-emerald-300"><Boxes size={18}/> SICOM · Catálogo de empresa</div>
     <h1 className="text-2xl font-semibold">Tienda de aplicaciones</h1>
-    <p className="mt-1 text-sm text-slate-300">Activa los módulos que tu empresa tiene autorizados y encuéntralos en el menú.</p>
+    <p className="mt-1 text-sm text-slate-300">Consulta todos los módulos de SICOM y activa los que tu empresa tiene autorizados.</p>
    </div>
    <button type="button" className="flex items-center gap-2 rounded-lg border border-slate-500 px-3 py-2 text-sm" onClick={()=>setParams(avisos?{}:{avisos:'1'},{replace:true})} aria-expanded={avisos}><Bell size={16}/> Actualizaciones <span className="rounded bg-white/15 px-1.5">{novedades.length}</span></button>
   </header>
@@ -51,13 +51,13 @@ export default function TiendaAplicaciones(){
   {consulta.isLoading&&<p>Cargando catálogo…</p>}
   {consulta.isError&&<p role="alert">{getApiErrorMessage(consulta.error,'No se pudo cargar la tienda.')}</p>}
   {mensaje&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-emerald-800">{mensaje}</p>}
-  {consulta.isSuccess&&!visibles.length&&<p className="rounded-xl border bg-white p-6 text-center">{apps.length?'No hay coincidencias con esos filtros.':'Tu empresa aún no tiene aplicaciones publicadas y autorizadas.'}</p>}
+  {consulta.isSuccess&&!visibles.length&&<p className="rounded-xl border bg-white p-6 text-center">{apps.length?'No hay coincidencias con esos filtros.':'El catálogo de aplicaciones está vacío.'}</p>}
   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{visibles.map(a=><article key={a.app.codigo} className="flex flex-col gap-3 rounded-xl border bg-white p-4 shadow-sm">
    <div className="flex items-start justify-between"><Boxes className="h-10 w-10 rounded-lg bg-emerald-50 p-2 text-emerald-700"/><span className="rounded bg-ink-50 px-2 py-1 text-xs">{a.app.categoria}</span></div>
    <div><h2 className="font-semibold">{a.app.nombre}</h2><p className="mt-1 text-sm text-ink-600">{a.app.descripcion}</p></div>
-   <div className="mt-auto flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-ink-500">Versión {a.version}</span>
+   <div className="mt-auto flex flex-wrap items-center justify-between gap-2"><div><p className={`text-xs font-semibold ${a.instalada?'text-emerald-700':'text-ink-600'}`}>{a.instalada?'Instalada':'No instalada'}</p>{a.version&&<p className="text-xs text-ink-500">Versión {a.version}</p>}</div>
     {a.instalada?<Link className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800" to={a.app.ruta}><CheckCircle2 size={15}/> Abrir</Link>
-     :<button type="button" className="flex items-center gap-1 rounded-lg bg-ink-800 px-3 py-2 text-sm text-white" onClick={()=>{setError('');setElegida(a);}}><Download size={15}/> Instalar</button>}
+     :a.publicada&&a.autorizada?<button type="button" className="flex items-center gap-1 rounded-lg bg-ink-800 px-3 py-2 text-sm text-white" onClick={()=>{setError('');setElegida(a);}}><Download size={15}/> Instalar</button>:<span className="rounded bg-ink-50 px-2 py-1 text-xs text-ink-600">{a.publicada?'Requiere autorización':'Sin publicar'}</span>}
    </div>
   </article>)}</div>
   {elegida&&<Modal isOpen onClose={()=>{if(!ocupado)setElegida(null);}} title={`Instalar ${elegida.app.nombre}`}>
