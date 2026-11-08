@@ -1,8 +1,8 @@
 import {useEnvioCliente} from '@/hooks/usePestanas';
 import {PreviewPago} from '@/components/ui/PreviewPago';
 import { useState } from 'react';
-import { Undo2, FileText, Send, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail, Share2 } from 'lucide-react';
-import { useVentasPaginado, useFacturaElectronica, useEnviarFacturaElectronica, useEnviarFacturaPorCorreo, useClientes } from '@/hooks/usePos';
+import { Undo2, FileText, Loader2, CircleDollarSign, ChevronLeft, ChevronRight, Download, Mail, Share2 } from 'lucide-react';
+import { useVentasPaginado, useEnviarFacturaPorCorreo, useClientes } from '@/hooks/usePos';
 import { useEmpresa } from '@/hooks/useGestion';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useUsuarios } from '@/hooks/useNucleo';
@@ -14,25 +14,7 @@ import { abrirFactura } from '@/lib/factura';
 import { getApiErrorMessage } from '@/api/errors';
 import { descargarArchivo } from '@/lib/descargarArchivo';
 import type { Venta } from '@/types/pos';
-import type { EstadoFacturaElectronica } from '@/types/gestion';
-
-const ESTADO_DIAN_LABEL: Record<EstadoFacturaElectronica, string> = {
-  PENDIENTE: 'Pendiente de enviar',
-  ENVIADA: 'Enviada',
-  ACEPTADA: 'Aceptada DIAN',
-  RECHAZADA: 'Rechazada',
-  SIN_PROVEEDOR: 'Sin proveedor',
-  NO_APLICA: 'No aplica',
-};
-
-const ESTADO_DIAN_TONO: Record<EstadoFacturaElectronica, string> = {
-  PENDIENTE: 'bg-ink-100 text-ink-500',
-  ENVIADA: 'bg-amber-50 text-amber-700',
-  ACEPTADA: 'bg-success-50 text-success-600',
-  RECHAZADA: 'bg-danger-50 text-danger-600',
-  SIN_PROVEEDOR: 'bg-ink-100 text-ink-400',
-  NO_APLICA: 'bg-ink-50 text-ink-300',
-};
+import { EstadoDian } from '@/components/EstadoDian';
 
 const TAMANO_PAGINA = 25;
 
@@ -183,7 +165,7 @@ export function VentasTab() {
                   {new Date(v.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                 </td>
                 <td className="px-4 py-3">
-                  <EstadoDian venta={v} /><PreviewPago pagoId={v.id}/>
+                  <EstadoDian venta={v} permitirEnvio /><PreviewPago pagoId={v.id}/>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
@@ -278,64 +260,6 @@ export function VentasTab() {
 
 /** Muestra el estado de la factura electrónica de una venta y permite enviarla (o
  *  reintentarla) a la DIAN a través del proveedor configurado en Configuración. */
-function EstadoDian({ venta }: { venta: Venta }) {
-  const { data: estado } = useFacturaElectronica(venta.facturar ? venta.id : null);
-  const [verRechazo,setVerRechazo]=useState(false);
-  const enviar = useEnviarFacturaElectronica();
-  const [error, setError] = useState<string | null>(null);
-
-  if (!venta.facturar) {
-    return <span className="text-xs text-ink-300">No facturada</span>;
-  }
-  if (!estado) {
-    return <span className="text-xs text-ink-300">—</span>;
-  }
-
-  const puedeEnviar = estado.estado === 'PENDIENTE' || estado.estado === 'RECHAZADA' || estado.estado === 'SIN_PROVEEDOR';
-
-  async function handleEnviar() {
-    setError(null);
-    try {
-      await enviar.mutateAsync(venta.id);
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'No se pudo enviar a la DIAN'));
-    }
-  }
-
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_DIAN_TONO[estado.estado]}`}>
-          {ESTADO_DIAN_LABEL[estado.estado]}
-        </span>
-        {puedeEnviar && (
-          <button
-            onClick={handleEnviar}
-            disabled={enviar.isPending}
-            title="Enviar a la DIAN"
-            className="rounded-lg p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
-          >
-            {enviar.isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          </button>
-        )}
-      </div>
-      {estado.estado === 'RECHAZADA' && <>
-        <button type="button" className="text-xs underline" onClick={()=>setVerRechazo(v=>!v)} aria-expanded={verRechazo}>Ver rechazo</button>
-        {verRechazo && <div className="mt-1 max-w-xs space-y-1 rounded border p-2 text-xs">
-          <p><strong>Respuesta recibida:</strong> {estado.mensaje || 'El proveedor no entregó el motivo.'}</p>
-          <p><strong>Qué revisar:</strong> {/HTTP (401|403)/i.test(estado.mensaje??'') ? 'Revisa las credenciales y el ambiente del proveedor.'
-            : /resoluci|prefijo|consecutivo/i.test(estado.mensaje??'') ? 'Verifica la resolución, el prefijo y el consecutivo autorizado.'
-            : /tax|impuesto|tribut|total/i.test(estado.mensaje??'') ? 'Revisa los impuestos y que el total coincida con las líneas y descuentos.'
-            : /customer|adquirente|identifica/i.test(estado.mensaje??'') ? 'Revisa la identificación y los datos fiscales del comprador.'
-            : 'Consulta el detalle de validación en el portal del proveedor antes de corregir y reenviar.'}</p>
-        </div>}
-      </>}
-      {estado.estado !== 'RECHAZADA' && estado.mensaje && <p className="mt-0.5 max-w-[220px] text-[11px] text-ink-400">{estado.mensaje}</p>}
-      {error && <p className="mt-0.5 text-[11px] text-danger-500">{error}</p>}
-    </div>
-  );
-}
-
 /** Manda por correo la factura (o el comprobante, si no se facturó) al cliente de la venta. */
 function BotonEnviarCorreo({ venta }: { venta: Venta }) {
   const puedeEnviar=useEnvioCliente('VENTAS');

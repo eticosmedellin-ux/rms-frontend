@@ -242,7 +242,7 @@ export interface ConfiguracionFacturacionElectronicaRequest {
   activa: boolean;
 }
 
-export type EstadoFacturaElectronica = 'PENDIENTE' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'SIN_PROVEEDOR' | 'NO_APLICA';
+export type EstadoFacturaElectronica = 'PENDIENTE' | 'ENVIADA' | 'POR_CONFIRMAR' | 'ACEPTADA' | 'RECHAZADA' | 'SIN_PROVEEDOR' | 'NO_APLICA';
 
 export interface FacturaElectronicaEstado {
   ventaId: number;
