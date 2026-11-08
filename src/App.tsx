@@ -1,4 +1,5 @@
 import {lazy,Suspense} from 'react';
+const EntradaEmpresa=lazy(()=>import('@/pages/plataforma/EntradaEmpresa'));
 const AppFacturacion=lazy(()=>import('@/features/sicom/AppFacturacion'));
 const LoginGeneralPage=lazy(()=>import('@/pages/LoginGeneralPage'));
 const PerfilesLogin=lazy(()=>import('@/features/sicom/PerfilesLogin'));
@@ -36,6 +37,7 @@ const AppCocinaPage=lazy(()=>import('@/pages/restaurante/AppCocinaPage'));
 export default function App() {
   return (
     <Suspense fallback={<p className="p-6">Cargando módulo…</p>}><Routes>
+      <Route path="/entrada-empresa" element={<EntradaEmpresa />} />
       <Route path="/empresa/:acceso" element={<PerfilesLogin />} />
       <Route path="/login" element={<LoginPage />} /><Route path="/acceso-general" element={<LoginGeneralPage />} />
       <Route path="/registro" element={<RegistroEmpresaPage />} />

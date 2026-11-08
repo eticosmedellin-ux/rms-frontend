@@ -1,3 +1,5 @@
+import {createJSONStorage} from 'zustand/middleware';
+import {almacenamientoPestana} from './pestanaEmpresa';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { LoginResponse } from '@/types/auth';
@@ -77,6 +79,6 @@ export const useAuthStore = create<AuthState>()(
         });
       },
     }),
-    { name: 'rms-auth' }
+    { name: 'rms-auth', storage: createJSONStorage(almacenamientoPestana) }
   )
 );

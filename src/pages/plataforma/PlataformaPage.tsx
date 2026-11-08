@@ -1,3 +1,4 @@
+import {AbrirEmpresa} from './AbrirEmpresa';
 import {FichaEmpresaPlataforma,Superadministradores} from './OperacionesPlataforma';
 import {PlanesCobrosTab} from './PlanesCobrosTab';
 import {GestionUsuarios} from '@/features/sicom/GestionUsuarios';
@@ -134,6 +135,7 @@ function EmpresasTab() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
+                      <AbrirEmpresa id={e.id} nombre={e.nombre} activa={e.estado}/>
                       <button type="button" className="text-xs underline" onClick={()=>setFichaEmpresa(e.id)}>Ver ficha</button>
                       <button
                         onClick={() => setEmpresaPlan({ id: e.id, nombre: e.nombreComercial ?? e.nombre })}

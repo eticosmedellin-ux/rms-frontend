@@ -1,3 +1,5 @@
+import {createJSONStorage} from 'zustand/middleware';
+import {almacenamientoPestana} from './pestanaEmpresa';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -14,6 +16,6 @@ export const usePosStore = create<PosState>()(
       setSucursalId: (id) => set({ sucursalId: id }),
       reset: () => set({ sucursalId: null }),
     }),
-    { name: 'rms-pos' }
+    { name: 'rms-pos', storage: createJSONStorage(almacenamientoPestana) }
   )
 );
