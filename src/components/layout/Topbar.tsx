@@ -1,3 +1,4 @@
+import {SicomBot} from '@/features/bot/SicomBot';
 import {useCatalogoAplicaciones} from '@/features/aplicaciones/api';
 import {CambiarPassword} from '@/features/sicom/GestionUsuarios';
 import BuscadorGeneral from './BuscadorGeneral';
@@ -42,6 +43,7 @@ export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-4"><BuscadorGeneral/>
+        {a.empresaId&&a.usuarioId&&<SicomBot key={`${a.empresaId}:${a.usuarioId}`} identidad={`${a.empresaId}:${a.usuarioId}`}/>}
         {a.esAdministradorTotal&&!a.esSuperadmin&&<Link to="/aplicaciones?avisos=1" aria-label="Actualizaciones de aplicaciones" title="Actualizaciones de aplicaciones" className="relative rounded-lg border p-2 text-ink-600">
           <Bell size={17}/>{avisosApps>0&&<span className="absolute -right-1 -top-1 rounded-full bg-emerald-700 px-1 text-[10px] text-white">{avisosApps}</span>}
         </Link>}{a.usuarioId&&<CambiarPassword id={a.usuarioId} nombre={nombreCompleto??'Mi cuenta'} propia/>}

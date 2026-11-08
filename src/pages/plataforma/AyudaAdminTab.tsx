@@ -138,7 +138,7 @@ export function AyudaAdminTab() {
                   <tr key={c.id} className={`hover:bg-ink-50/60 ${c.atendida ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3 text-ink-700">{c.empresaNombre}</td>
                     <td className="px-4 py-3 text-ink-500">{c.usuario}</td>
-                    <td className="px-4 py-3 text-ink-600">{c.rutaResumen}</td>
+                    <td className="px-4 py-3 text-ink-600">{c.rutaResumen}{c.comentarioAdicional&&<p className="mt-1 whitespace-pre-wrap break-words text-sm">{c.comentarioAdicional}</p>}</td>
                     <td className="px-4 py-3 text-ink-400">{new Date(c.fecha).toLocaleString('es-CO')}</td>
                     <td className="px-4 py-3 text-right">
                       {!c.atendida && (
