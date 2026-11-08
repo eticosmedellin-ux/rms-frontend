@@ -1,3 +1,4 @@
+import {EscanerBarras} from '@/components/busqueda/EscanerBarras';
 import {normalizar,concordancia} from '@/components/busqueda/BuscarSeleccion';
 import {ProductoFicha} from '@/features/inventario/ProductoFicha';
 import { useSearchParams } from 'react-router-dom';
@@ -16,7 +17,7 @@ export function ProductosTab() {
   const { data: todos, isLoading } = useProductos();
   const [busqueda,setBusqueda]=useState(''),[categoria,setCategoria]=useState('');
   const [ficha,setFicha]=useState<Producto|null>(null);
-  const productos=(referencia?todos?.filter(p=>String(p.id)===referencia):todos)?.filter(p=>(!categoria||p.categoria===categoria)&&normalizar([p.nombre,p.codigoInterno,p.codigoBarras,p.categoria,p.marca,p.descripcion,p.ubicacion].join(' ')).includes(normalizar(busqueda))).sort((a,b)=>concordancia(a.nombre,busqueda)-concordancia(b.nombre,busqueda));
+  const productos=(referencia?todos?.filter(p=>String(p.id)===referencia):todos)?.filter(p=>(!categoria||p.categoria===categoria)&&normalizar([p.nombre,p.codigoInterno,p.codigoBarras,...(p.presentaciones??[]).map(x=>x.codigo_barras),p.categoria,p.marca,p.descripcion,p.ubicacion].join(' ')).includes(normalizar(busqueda))).sort((a,b)=>concordancia(a.nombre,busqueda)-concordancia(b.nombre,busqueda));
   const [modalFormAbierto, setModalFormAbierto] = useState(false);
   const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
   const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
@@ -59,7 +60,7 @@ export function ProductosTab() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-3"><input aria-label="Buscar producto" type="search" className="input" placeholder="Nombre, código, barras, categoría, marca o ubicación" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/><select className="input max-w-48" aria-label="Filtrar categoría" value={categoria} onChange={e=>setCategoria(e.target.value)}><option value="">Todas las categorías</option>{Array.from(new Set(todos?.map(p=>p.categoria).filter(Boolean))).map(c=><option key={c} value={c??''}>{c}</option>)}</select></div>
+      <div className="flex gap-2 mb-3"><input aria-label="Buscar producto" type="search" className="input" placeholder="Nombre, código, barras, categoría, marca o ubicación" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/><EscanerBarras alLeer={setBusqueda}/><select className="input max-w-48" aria-label="Filtrar categoría" value={categoria} onChange={e=>setCategoria(e.target.value)}><option value="">Todas las categorías</option>{Array.from(new Set(todos?.map(p=>p.categoria).filter(Boolean))).map(c=><option key={c} value={c??''}>{c}</option>)}</select></div>
       {isLoading ? (
         <LoadingState label="Cargando productos…" />
       ) : productos && productos.length > 0 ? (

@@ -1,3 +1,4 @@
+import {CampoPassword} from '@/components/ui/CampoPassword';
 import {MarcaSicom} from '@/features/apariencia/MarcaSicom';
 import {useApariencia} from '@/features/apariencia/AparienciaProvider';
 import {fondo,variables,imagenUrl} from '@/features/apariencia/tema';
@@ -157,7 +158,7 @@ export default function LoginGeneralPage() {
             </div>
             <div className="relative">
               <Lock size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-              <input
+              <CampoPassword
                 id="password"
                 type="password"
                 autoComplete="current-password"

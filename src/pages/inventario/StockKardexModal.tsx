@@ -1,3 +1,6 @@
+import {useQuery} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
+type RechazoRecepcion = {recepcionId:number;fecha:string;cantidad:number;motivo:string};
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useSucursales } from '@/hooks/useSucursales';
@@ -32,6 +35,12 @@ export function StockKardexModal({ isOpen, onClose, producto }: StockKardexModal
 
   const { data: stocks, isLoading: cargandoStock } = useStockPorProducto(producto?.id ?? null);
   const { data: kardex, isLoading: cargandoKardex } = useKardex(producto?.id ?? null, sucursalId);
+  const rechazos = useQuery({
+    queryKey: ['kardex', producto?.id, sucursalId, 'rechazos'],
+    enabled: Boolean(isOpen && producto?.id && sucursalId),
+    queryFn: async () => (await apiClient.get<RechazoRecepcion[]>('/inventario/kardex/rechazos',
+      {params:{productoId:producto?.id,sucursalId}})).data,
+  });
   const registrarEntrada = useRegistrarEntrada();
 
   const sucursalActiva = sucursalId ?? sucursales?.[0]?.id ?? null;
@@ -157,6 +166,14 @@ export function StockKardexModal({ isOpen, onClose, producto }: StockKardexModal
           </div>
         )}
 
+        {rechazos.isError && <p className="text-xs text-ink-500">No se pudo consultar el registro de rechazos.</p>}
+        {!!rechazos.data?.length && <section className="rounded-lg border p-3">
+          <h3 className="font-semibold">Recepciones rechazadas</h3>
+          <p className="text-xs text-ink-500">Registro informativo: no cambia el saldo del inventario.</p>
+          <ul className="mt-2 space-y-1 text-sm">{rechazos.data.map((r,i)=><li key={`${r.recepcionId}-${i}`}>
+            {new Date(r.fecha).toLocaleString('es-CO')} · Recepción #{r.recepcionId} · {r.cantidad} rechazadas · {r.motivo}
+          </li>)}</ul>
+        </section>}
         {/* Kardex */}
         <div>
           <h3 className="mb-2 text-sm font-semibold text-ink-700">Kardex (movimientos)</h3>

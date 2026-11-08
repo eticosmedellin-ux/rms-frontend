@@ -136,7 +136,7 @@ function IniciarConteoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               Seleccionar todos
             </button>
           </div>
-          <BuscarSeleccion label="Buscar productos por coincidencia" multiple opciones={(productos??[]).filter(p=>p.manejaInventario).map(p=>({id:p.id,nombre:p.nombre,buscar:[p.codigoInterno,p.codigoBarras,p.categoria].join(' ')}))} valor={productoIds} onChange={setProductoIds}/>
+          <BuscarSeleccion escaner label="Buscar productos por coincidencia" multiple opciones={(productos??[]).filter(p=>p.manejaInventario).map(p=>({id:p.id,nombre:p.nombre,buscar:[p.codigoInterno,p.codigoBarras,...(p.presentaciones??[]).map(x=>x.codigo_barras),p.categoria].join(' ')}))} valor={productoIds} onChange={setProductoIds}/>
 
         </div>
 

@@ -280,6 +280,7 @@ export function VentasTab() {
  *  reintentarla) a la DIAN a través del proveedor configurado en Configuración. */
 function EstadoDian({ venta }: { venta: Venta }) {
   const { data: estado } = useFacturaElectronica(venta.facturar ? venta.id : null);
+  const [verRechazo,setVerRechazo]=useState(false);
   const enviar = useEnviarFacturaElectronica();
   const [error, setError] = useState<string | null>(null);
 
@@ -318,7 +319,18 @@ function EstadoDian({ venta }: { venta: Venta }) {
           </button>
         )}
       </div>
-      {estado.mensaje && <p className="mt-0.5 max-w-[220px] text-[11px] text-ink-400">{estado.mensaje}</p>}
+      {estado.estado === 'RECHAZADA' && <>
+        <button type="button" className="text-xs underline" onClick={()=>setVerRechazo(v=>!v)} aria-expanded={verRechazo}>Ver rechazo</button>
+        {verRechazo && <div className="mt-1 max-w-xs space-y-1 rounded border p-2 text-xs">
+          <p><strong>Respuesta recibida:</strong> {estado.mensaje || 'El proveedor no entregó el motivo.'}</p>
+          <p><strong>Qué revisar:</strong> {/HTTP (401|403)/i.test(estado.mensaje??'') ? 'Revisa las credenciales y el ambiente del proveedor.'
+            : /resoluci|prefijo|consecutivo/i.test(estado.mensaje??'') ? 'Verifica la resolución, el prefijo y el consecutivo autorizado.'
+            : /tax|impuesto|tribut|total/i.test(estado.mensaje??'') ? 'Revisa los impuestos y que el total coincida con las líneas y descuentos.'
+            : /customer|adquirente|identifica/i.test(estado.mensaje??'') ? 'Revisa la identificación y los datos fiscales del comprador.'
+            : 'Consulta el detalle de validación en el portal del proveedor antes de corregir y reenviar.'}</p>
+        </div>}
+      </>}
+      {estado.estado !== 'RECHAZADA' && estado.mensaje && <p className="mt-0.5 max-w-[220px] text-[11px] text-ink-400">{estado.mensaje}</p>}
       {error && <p className="mt-0.5 text-[11px] text-danger-500">{error}</p>}
     </div>
   );

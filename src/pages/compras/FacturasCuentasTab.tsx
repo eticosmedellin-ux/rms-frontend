@@ -20,7 +20,7 @@ export function FacturasCuentasTab() {
   const { data: todasFacturas, isLoading: cargandoFacturas } = useFacturasPorProveedor(proveedorId);
   const { data: cuentas, isLoading: cargandoCuentas } = useCuentasPorPagar(proveedorId);
 
-  const facturas=todasFacturas?.filter(f=>textoFactura(f).includes(busqueda.toLocaleLowerCase()));
+  const facturas=todasFacturas?.filter(f=>textoFactura(f).includes(busqueda.toLocaleLowerCase())).sort((a,b)=>b.fechaEmision.localeCompare(a.fechaEmision)||b.id-a.id);
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-4">

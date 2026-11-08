@@ -56,6 +56,7 @@ export function useRegistrarRecepcion() {
       queryClient.invalidateQueries({ queryKey: ['ordenes-compra'] });
       queryClient.invalidateQueries({ queryKey: ['productos'] });
       queryClient.invalidateQueries({ queryKey: ['stock'] });
+      queryClient.invalidateQueries({ queryKey: ['kardex'] });
     },
   });
 }
