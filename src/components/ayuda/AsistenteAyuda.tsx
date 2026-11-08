@@ -1,3 +1,4 @@
+import {ProblemasAyuda} from './ProblemasAyuda';
 import GuiaAyuda from './GuiaAyuda';
 import {getApiErrorMessage} from '@/api/errors';
 import { useState } from 'react';
@@ -13,7 +14,7 @@ function urlIncrustable(url: string): string | null {
 }
 
 export function AsistenteAyuda() {
-  const [modo,setModo]=useState<'guia'|'preguntas'>('guia');
+  const [modo,setModo]=useState<'guia'|'preguntas'|'problemas'>('guia');
   const [error,setError]=useState('');
   const [abierto, setAbierto] = useState(false);
   const [nodoActualId, setNodoActualId] = useState<number | null>(null);
@@ -104,8 +105,8 @@ export function AsistenteAyuda() {
             </div>
           </div>
 
-          <div className="flex gap-2 border-b px-4 py-2"><button className={`rounded px-2 py-1 text-xs ${modo==='guia'?'bg-ink-800 text-white':'bg-ink-50'}`} onClick={()=>{setModo('guia');setNodoActualId(null);}}>Guía rápida</button><button className={`rounded px-2 py-1 text-xs ${modo==='preguntas'?'bg-ink-800 text-white':'bg-ink-50'}`} onClick={()=>setModo('preguntas')}>Preguntas configuradas</button></div><div className="flex-1 overflow-y-auto p-4">
-            {modo==='guia'?<GuiaAyuda/>:<>{error&&<p role="alert" className="mb-2 text-xs text-red-700">{error}</p>}{(errorRaiz||errorNodo)&&<p role="alert" className="mb-2 text-sm text-red-700">{getApiErrorMessage(errorRaiz||errorNodo,'No se pudieron cargar las preguntas configuradas. Consulta Guía rápida.')}</p>}
+          <div className="flex flex-wrap gap-2 border-b px-4 py-2"><button className={`rounded px-2 py-1 text-xs ${modo==='guia'?'bg-ink-800 text-white':'bg-ink-50'}`} onClick={()=>{setModo('guia');setNodoActualId(null);}}>Guía rápida</button><button className={`rounded px-2 py-1 text-xs ${modo==='preguntas'?'bg-ink-800 text-white':'bg-ink-50'}`} onClick={()=>setModo('preguntas')}>Preguntas configuradas</button><button aria-pressed={modo==='problemas'} className={`rounded px-2 py-1 text-xs ${modo==='problemas'?'bg-ink-800 text-white':'bg-ink-50'}`} onClick={()=>{setModo('problemas');reiniciar();}}>Problemas frecuentes</button></div><div className="flex-1 overflow-y-auto p-4">
+            {modo==='guia'?<GuiaAyuda/>:modo==='problemas'?<ProblemasAyuda/>:<>{error&&<p role="alert" className="mb-2 text-xs text-red-700">{error}</p>}{(errorRaiz||errorNodo)&&<p role="alert" className="mb-2 text-sm text-red-700">{getApiErrorMessage(errorRaiz||errorNodo,'No se pudieron cargar las preguntas configuradas. Consulta Guía rápida.')}</p>}
             {cargando ? (
               <LoadingState />
             ) : !nodo ? (<p className="text-sm text-ink-500">No hay preguntas disponibles. Puedes usar Guía rápida.</p>) : nodo.tipo === 'PREGUNTA' ? (

@@ -1,12 +1,12 @@
 import {useState,useEffect,useRef} from 'react';
 import {useAuthStore} from '@/stores/authStore';
 import {getApiErrorMessage} from '@/api/errors';
-import {useGuia,coincide,type Modulo} from './guia';
+import {useGuia,coincide,abrirTutorial,type Modulo} from './guia';
 type Progreso={modulo:string;paso:string;vistos:string[]};
 export default function TutorialUso({inicialModulo,inicialPaso}:{inicialModulo?:string;inicialPaso?:string}){
  const a=useAuthStore(),q=useGuia();const [buscar,setBuscar]=useState(''),[progreso,setProgreso]=useState<Progreso>({modulo:inicialModulo??'inicio',paso:inicialPaso??'',vistos:[]}),[listo,setListo]=useState(false);const foco=useRef<HTMLButtonElement>(null);
  const key=`sicom-tutorial:${a.empresaId}:${a.usuarioId}:${q.data?.version}`;
- useEffect(()=>{if(!q.data)return;let p:Progreso={modulo:'inicio',paso:'',vistos:[]};try{const guardado=JSON.parse(localStorage.getItem(key)||'null');if(guardado&&Array.isArray(guardado.vistos)&&typeof guardado.modulo==='string'&&typeof guardado.paso==='string')p=guardado;}catch{}if(inicialModulo)p.modulo=inicialModulo;if(inicialPaso)p.paso=inicialPaso;setProgreso(p);setListo(true);},[key,inicialModulo,inicialPaso]);
+ useEffect(()=>{if(!q.data)return;let p:Progreso={modulo:'inicio',paso:'',vistos:[]};try{const guardado=JSON.parse(localStorage.getItem(key)||'null');if(guardado&&Array.isArray(guardado.vistos)&&typeof guardado.modulo==='string'&&typeof guardado.paso==='string')p=guardado;}catch{}if(inicialModulo){p.modulo=inicialModulo;if(!inicialPaso&&q.data.modulos.find(m=>m.id===inicialModulo)?.pasos.every(x=>x.id!==p.paso))p.paso='';}if(inicialPaso)p.paso=inicialPaso;setProgreso(p);setListo(true);},[key,inicialModulo,inicialPaso]);
  const modulos=q.data?.modulos??[],modulo=modulos.find(m=>m.id===progreso.modulo)??modulos[0],paso=modulo?.pasos.find(p=>p.id===progreso.paso)??modulo?.pasos[0],indice=modulo?.pasos.findIndex(p=>p.id===paso?.id)??0;
  function elegir(m:Modulo,id:string){const n={modulo:m.id,paso:id,vistos:Array.from(new Set([...progreso.vistos,id]))};setProgreso(n);try{localStorage.setItem(key,JSON.stringify(n));}catch{}}
  useEffect(()=>{foco.current?.focus({preventScroll:true});},[paso?.id]);
@@ -20,6 +20,23 @@ export default function TutorialUso({inicialModulo,inicialPaso}:{inicialModulo?:
  <div id="explicacion-tutorial" aria-live="polite" className="rounded-xl border border-sicom-green bg-white p-4"><p className="text-xs font-medium text-sicom-green">Botón señalado · paso {indice+1} de {modulo.pasos.length}</p><h3 className="mt-1 font-semibold">{paso.titulo}</h3><p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-ink-600">{paso.explicacion}</p><p className="mt-3 text-xs text-ink-400">Cuando salgas del tutorial, podrás usar la pantalla real con tus permisos habituales.</p></div>
  <div className="flex flex-wrap justify-between gap-2"><button disabled={indice<=0} className="rounded border px-4 py-2 text-sm disabled:opacity-40" onClick={()=>elegir(modulo,modulo.pasos[indice-1].id)}>Anterior</button><button className="rounded border px-4 py-2 text-sm" onClick={()=>elegir(modulo,modulo.pasos[0].id)}>Volver al primer paso</button><button className="rounded bg-ink-800 px-4 py-2 text-sm text-white" onClick={()=>{if(indice<modulo.pasos.length-1)elegir(modulo,modulo.pasos[indice+1].id);else {const n=modulos.indexOf(modulo);if(n<modulos.length-1)elegir(modulos[n+1],modulos[n+1].pasos[0].id);else elegir(modulo,paso.id);}}}>{indice<modulo.pasos.length-1?'Siguiente':modulos.indexOf(modulo)<modulos.length-1?'Siguiente módulo':'Marcar último paso consultado'}</button></div>
  </div></div></div>;
+}
+export function CatalogoTutorial(){
+ const q=useGuia();
+ const [texto,setTexto]=useState('');
+ const modulos=(q.data?.modulos??[]).filter(m=>coincide(m.nombre+' '+m.pasos.map(p=>p.boton+' '+p.titulo).join(' '),texto));
+ return <section className="space-y-4">
+  <div><h2 className="font-semibold">Aprender a usar SICOM</h2><p className="text-sm text-ink-600">Elige un módulo y pulsa sus botones de ejemplo para saber qué hace cada uno. La práctica no guarda operaciones.</p></div>
+  <input type="search" aria-label="Buscar tutorial" className="input" placeholder="Ej. Abrir caja o ingresar una compra" value={texto} onChange={e=>setTexto(e.target.value)}/>
+  {q.isLoading&&<p role="status">Cargando tutoriales…</p>}
+  {q.isError&&<p role="alert">No se pudieron cargar los tutoriales. <button type="button" className="underline" onClick={()=>void q.refetch()}>Reintentar</button></p>}
+  {q.isSuccess&&!modulos.length&&<p className="text-sm text-ink-600">No hay tutoriales que coincidan.</p>}
+  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{modulos.map(m=><article key={m.id} className="space-y-2 rounded-xl border bg-white p-4">
+   <h3 className="font-semibold">{m.nombre}</h3>
+   <p className="text-xs text-ink-600">{m.pasos.length} acciones explicadas</p>
+   <button type="button" className="sicom-accion sicom-accion-principal" onClick={()=>{const paso=texto?m.pasos.find(p=>coincide(p.boton+' '+p.titulo,texto)):undefined;abrirTutorial(m.id,paso?.id);}}>Abrir tutorial de {m.nombre}</button>
+  </article>)}</div>
+ </section>;
 }
 export function TutorialGlobal(){const [inicio,setInicio]=useState<{modulo?:string;paso?:string}|null>(null),dialogo=useRef<HTMLDivElement>(null),anterior=useRef<HTMLElement|null>(null);
  useEffect(()=>{const abrir=(e:Event)=>{anterior.current=document.activeElement as HTMLElement;setInicio((e as CustomEvent).detail??{});};window.addEventListener('sicom-abrir-tutorial',abrir);return()=>window.removeEventListener('sicom-abrir-tutorial',abrir);},[]);
