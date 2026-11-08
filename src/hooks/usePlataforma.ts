@@ -1,3 +1,4 @@
+import {useAuthStore} from '@/stores/authStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as plataformaApi from '@/api/plataforma';
 
@@ -68,7 +69,8 @@ export function useActualizarPlanEmpresa() {
 }
 
 export function useMiPlan() {
-  return useQuery({ queryKey: ['mi-plan'], queryFn: plataformaApi.obtenerMiPlan, staleTime: 5 * 60 * 1000 });
+  const empresa=useAuthStore(s=>s.empresaId),usuario=useAuthStore(s=>s.usuarioId);
+  return useQuery({ queryKey: ['mi-plan',empresa,usuario], queryFn: plataformaApi.obtenerMiPlan, enabled:!!empresa&&!!usuario, staleTime: 5 * 60 * 1000 });
 }
 
 // --- Noticias del login ---

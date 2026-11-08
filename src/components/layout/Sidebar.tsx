@@ -1,7 +1,9 @@
+import {useMenuAplicaciones} from '@/features/aplicaciones/api';
+import {LogoAplicacion} from '@/features/aplicaciones/iconos';
 import {MarcaSicom} from '@/features/apariencia/MarcaSicom';
 import {useApariencia} from '@/features/apariencia/AparienciaProvider';
 import {fondo} from '@/features/apariencia/tema';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
@@ -28,7 +30,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { puedeVerRuta, incluidaEnPlan, puedeVerServiciosCitas, puedeVerServiciosOrdenes, incluidaEnPlanDirecta } from '@/lib/permisos';
 import { useMiPlan } from '@/hooks/usePlataforma';
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean };
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; fichaIcono?:string };
 
 const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
   {
@@ -76,10 +78,12 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
 ];
 
 export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolean; onCerrar: () => void;ocultoPC?:boolean }) {
+  const ubicacion=useLocation();
   const apariencia=useApariencia();
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
   const permisos = useAuthStore((state) => state.permisos);
+  const { data: fichas } = useMenuAplicaciones();
   const { data: miPlan } = useMiPlan();
 
   const gruposVisibles = NAV_GROUPS_DEF.map((grupo) => ({
@@ -88,6 +92,7 @@ export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolea
       if (item.to === "/aplicaciones") return esAdministradorTotal && !esSuperadmin;
       if (item.to === "/mis-clientes-contables") return useAuthStore.getState().accesoClientesContables === true;
       if (esSuperadmin) return true;
+      if (!miPlan) return false;
       // "Servicios" son dos módulos independientes (Citas y Órdenes de trabajo/Casos) —
       // el enlace se muestra si tiene al menos uno de los dos habilitados en su plan,
       // y (salvo que sea administrador total) el permiso de rol correspondiente.
@@ -103,6 +108,20 @@ export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolea
       // sin depender de si el permiso puntual quedó bien sincronizado en su rol.
       const tienePermiso = esAdministradorTotal || puedeVerRuta(permisos, item.to);
       return tienePermiso && incluidaEnPlan(miPlan?.rutasHabilitadas, item.to);
+    }).flatMap(item=>{
+      if(item.to==='/servicios'&&(fichas?.['/servicios?tab=citas']||fichas?.['/servicios?tab=ordenes'])){
+        const servicios=[
+          {to:'/servicios?tab=citas',label:'Citas',visible:esSuperadmin||puedeVerServiciosCitas(permisos,miPlan?.rutasHabilitadas)||
+            esAdministradorTotal&&incluidaEnPlanDirecta(miPlan?.rutasHabilitadas,'servicios-citas')},
+          {to:'/servicios?tab=ordenes',label:'Órdenes de trabajo',visible:esSuperadmin||puedeVerServiciosOrdenes(permisos,miPlan?.rutasHabilitadas)||
+            esAdministradorTotal&&incluidaEnPlanDirecta(miPlan?.rutasHabilitadas,'servicios-ordenes')},
+        ];
+        return servicios.filter(s=>s.visible).map(s=>({...item,to:s.to,label:fichas?.[s.to]?.nombre??s.label,fichaIcono:fichas?.[s.to]?.icono}));
+      }
+      return [item];
+    }).map(item=>{
+      const ficha=fichas?.[item.to];
+      return ficha?{...item,label:ficha.nombre||item.label,fichaIcono:ficha.icono}:item;
     }),
   })).filter((grupo) => grupo.items.length > 0);
 
@@ -141,7 +160,7 @@ export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolea
                 </p>
               )}
               <div className="space-y-1">
-                {grupo.items.map(({ to, label, icon: Icon, end }) => (
+                {grupo.items.map(({ to, label, icon: Icon, end, fichaIcono }) => (
                   <NavLink
                     key={to}
                     to={to}
@@ -149,13 +168,13 @@ export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolea
                     onClick={onCerrar}
                     className={({ isActive }) =>
                       `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                        isActive
+                        isActive && (!to.includes("?") || to.endsWith(ubicacion.search) && !!ubicacion.search)
                           ? 'bg-ink-700 text-white'
                           : 'text-ink-300 hover:bg-ink-700/60 hover:text-white'
                       }`
                     }
                   >
-                    <Icon size={18} strokeWidth={2} />
+                    <LogoAplicacion codigo={fichaIcono} alternativo={Icon} size={18} className="shrink-0"/>
                     {label}
                   </NavLink>
                 ))}

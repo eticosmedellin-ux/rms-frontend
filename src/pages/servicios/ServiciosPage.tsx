@@ -1,6 +1,6 @@
 import {usePestanas} from '@/hooks/usePestanas';
 import { OperacionServicios } from '@/pages/servicios/OperacionServicios';
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CitasTab } from '@/pages/servicios/CitasTab';
 import { OrdenesTrabajoTab } from '@/pages/servicios/OrdenesTrabajoTab';
 import { TiposServicioTab } from '@/pages/servicios/TiposServicioTab';
@@ -44,11 +44,9 @@ export default function ServiciosPage() {
     return puedeCitas&&tabCitas(t.id) || puedeOrdenes&&tabOrdenes(t.id); // historial respeta los módulos habilitados
   });
 
-  const [seleccion, setTab] = useState<(typeof TODOS_LOS_TABS)[number]['id']>(()=>{
-    const solicitada=new URLSearchParams(window.location.search).get('tab');
-    return TABS.find(t=>t.id===solicitada)?.id ?? TABS[0]?.id ?? 'historial';
-  });
-  const tab=TABS.find(t=>t.id===seleccion)?.id??TABS[0]?.id;
+  const [params,setParams]=useSearchParams();
+  const tab=TABS.find(t=>t.id===params.get('tab'))?.id??TABS[0]?.id;
+  const setTab=(id:string)=>setParams(prev=>{const next=new URLSearchParams(prev);next.set('tab',id);return next;},{replace:true});
   if(!tab)return <p>Tu rol no tiene pestañas de servicios habilitadas.</p>;
 
   return (

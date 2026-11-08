@@ -1,13 +1,15 @@
+import {useMiPlan} from '@/hooks/usePlataforma';
 import {useSicom} from '@/features/sicom/api';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { puedeVerRuta } from '@/lib/permisos';
+import { puedeVerRuta, incluidaEnPlan, incluidaEnPlanDirecta } from '@/lib/permisos';
 
 export function ProtectedRoute() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const permisos = useAuthStore((state) => state.permisos);
   const location = useLocation();
+  const {data:plan}=useMiPlan();
   const {data:cfg,isLoading,isError}=useSicom();
 
   if (!isAuthenticated) {
@@ -21,6 +23,15 @@ export function ProtectedRoute() {
   const rutaActual = '/' + location.pathname.split('/')[1];
   if (!esSuperadmin && !puedeVerRuta(permisos, rutaActual)) {
     return <Navigate to="/" replace />;
+  }
+
+  if (!esSuperadmin && plan?.estadoLicencia==='ACTIVA') {
+    const rutaPlan=['/app/mesero','/app/cocina'].includes(location.pathname)?'/restaurante':rutaActual;
+    const rutas=plan.rutasHabilitadas;
+    const permitido=rutaPlan==='/servicios'
+      ? incluidaEnPlanDirecta(rutas,'servicios-citas')||incluidaEnPlanDirecta(rutas,'servicios-ordenes')
+      : incluidaEnPlan(rutas,rutaPlan);
+    if(!permitido)return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

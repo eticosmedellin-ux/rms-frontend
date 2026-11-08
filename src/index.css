@@ -97,3 +97,35 @@
  .sicom-login-personalizado form {transform:none!important;max-width:100%!important;}
  .sicom-login-personalizado h1>div {transform:none!important;}
 }
+
+/* Refuerza los estados de interacción sin cambiar tamaño ni distribución de controles existentes. */
+@layer base {
+  button:not(:disabled), [role="button"]:not([aria-disabled="true"]) {
+    @apply cursor-pointer transition-colors;
+  }
+  button:disabled, [role="button"][aria-disabled="true"] {
+    @apply cursor-not-allowed;
+  }
+  button:not(:disabled):hover {
+    filter: brightness(.96);
+  }
+  button[class*="bg-ink-800"], button[class*="bg-sicom-green"] {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22), 0 1px 2px rgb(15 23 42 / .18);
+  }
+}
+@layer components {
+  .sicom-accion {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-semibold text-ink-800 shadow-sm hover:bg-ink-50 disabled:opacity-50;
+  }
+  .sicom-accion-principal {
+    @apply border-emerald-800 bg-emerald-700 text-white hover:bg-emerald-800;
+  }
+  .sicom-accion-peligro {
+    @apply border-red-300 bg-red-50 text-red-800 hover:bg-red-100;
+  }
+}
+.sicom-personalizado .sicom-accion-principal {
+  background-color: var(--ap-primario);
+  color: var(--ap-primario-texto);
+  border-color: var(--ap-borde);
+}

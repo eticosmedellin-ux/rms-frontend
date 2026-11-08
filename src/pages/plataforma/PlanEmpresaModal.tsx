@@ -159,7 +159,8 @@ export function PlanEmpresaModal({
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-medium text-ink-700">Funciones habilitadas</p>
+            <p className="mb-2 text-sm font-medium text-ink-700">Funciones autorizadas para instalar</p>
+            <p className="mb-2 text-xs text-ink-600">Cambiar el plan no instala ni desinstala aplicaciones. La empresa gestiona sus instalaciones en la tienda.</p>
             <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-ink-100 p-3">
               {Array.from(categorias.entries()).map(([categoria, items]) => (
                 <div key={categoria}>
