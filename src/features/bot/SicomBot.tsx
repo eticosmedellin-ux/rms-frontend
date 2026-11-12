@@ -69,6 +69,7 @@ export function SicomBot({identidad}:{identidad:string}){
   const pregunta=texto.trim();if(!pregunta||solicitud.current||gestion||voz.dictado!=='inactivo')return;
   const ultimo=historial.at(-1),contexto=ultimo?.respuesta.pendiente??ultimo?.respuesta.contexto,periodoPendiente=ultimo?.respuesta.periodoPendiente;
   const ac=new AbortController();solicitud.current=ac;setConsultando(true);setTexto('');setAviso('');setSugerencia('');
+  let recuperarContexto=contexto;
   try{
    const recuperar=pregunta.match(/^\s*(?:retoma|busca en mis chats)\s+(.+)/i);
    if(recuperar){
@@ -92,6 +93,7 @@ export function SicomBot({identidad}:{identidad:string}){
    }
    const reglas=await cargarConocimiento(ac.signal).catch(()=>[]);
    const previa=entender(pregunta,[],contexto,reglas,undefined,periodoPendiente);
+   recuperarContexto=previa.consulta??contexto??previa.pendiente;
    const sedes=(previa.consulta||previa.pendiente||contexto)?await cargarSedes(ac.signal):[];
    let analisis=entender(pregunta,sedes,contexto,reglas,undefined,periodoPendiente);
    let respuesta:Respuesta=analisis.consulta?await consultar(analisis.consulta,ac.signal):analisis.aclarar?
@@ -110,15 +112,16 @@ export function SicomBot({identidad}:{identidad:string}){
     const g=resolver(analisis.guia,guias.data??[]);respuesta={...respuesta,texto:respuesta.texto+'\n\n'+g.texto,opciones:g.opciones};
    }
    if(!ac.signal.aborted){
-    setHistorial(prev=>[...prev,{pregunta,respuesta}].slice(chat===null?-30:-100));
+    const turno=respuesta.sinGuia&&contexto?{...respuesta,contexto,datoVivo:true}:respuesta;
+    setHistorial(prev=>[...prev,{pregunta,respuesta:turno}].slice(chat===null?-30:-100));
     if(!analisis.consulta&&!analisis.aclarar&&respuesta.sinGuia&&estadoWeb.data?.activo)setSugerencia(pregunta);
-    if(chat!==null&&!respuesta.datoVivo){
+    if(chat!==null&&!turno.datoVivo){
      try{await apiClient.post(ruta+'/'+chat,{pregunta,respuesta},{signal:ac.signal});void chats.refetch();}
      catch{if(!ac.signal.aborted)setAviso('La respuesta se muestra, pero no se pudo guardar en el chat.');}
     }
    }
   }catch{
-   if(!ac.signal.aborted)setHistorial(prev=>[...prev,{pregunta,respuesta:{texto:'No pude consultar las sucursales autorizadas. Revisa tus permisos de Reportes o inténtalo de nuevo.',datoVivo:true}}].slice(-30));
+   if(!ac.signal.aborted)setHistorial(prev=>[...prev,{pregunta,respuesta:{texto:'No pude consultar las sucursales autorizadas. Puedes escribir «reintenta» o indicar una sucursal. Si persiste, verifica tus permisos de Reportes.',contexto:recuperarContexto,datoVivo:true}}].slice(-30));
   }finally{if(solicitud.current===ac){solicitud.current=null;setConsultando(false);}}
  }
  async function reportar(){
@@ -180,6 +183,11 @@ export function SicomBot({identidad}:{identidad:string}){
     <button className="sicom-accion sicom-accion-principal" disabled={!confirmada||!publica.trim()||consultando||gestion}>Consultar web</button>
     <button type="button" className="sicom-accion ml-2" onClick={()=>setPublica(null)}>Cancelar</button>
    </form>}
+   {voz.voces.length>1&&<label className="mx-3 my-1 flex items-center gap-2 text-xs">Voz de lectura
+    <select className="input min-w-0 flex-1" value={voz.vozElegida} onChange={e=>{voz.cancelarVoz();voz.setVozElegida(e.target.value);}}>
+     <option value="">Automática · preferir narradora</option>{voz.voces.map(v=><option key={v.voiceURI} value={v.voiceURI}>{v.name}</option>)}
+    </select>
+   </label>}
    {voz.puedeDictar&&voz.dictado==='inactivo'&&<p className="px-3 pt-1 text-xs text-ink-600">El dictado usa el servicio de voz del navegador.</p>}
    {voz.dictado!=='inactivo'&&<p role="status" className="px-3 pt-1 text-xs">{voz.dictado==='escuchando'?'Escuchando… habla y revisa el texto antes de enviarlo.':'Terminando el dictado…'}</p>}
    <form className="flex gap-2 border-t p-3" onSubmit={e=>{e.preventDefault();enviar();}}>

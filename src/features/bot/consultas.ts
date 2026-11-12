@@ -8,7 +8,7 @@ export const cargarSedes=async(signal:AbortSignal)=>(await apiClient.get<Sede[]>
 export const cargarConocimiento=async(signal:AbortSignal)=>(await apiClient.get<Regla[]>('/ayuda/bot/conocimiento',{signal})).data;
 const dinero=(n:unknown)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(Number(n));
 type Informe={alcance:string;sedes?:string[];evaluados?:number;omitidos?:number;conteosCompras?:{ordenes?:number;recepciones?:number;facturas?:number;pendientes?:number};unidades?:number;porSede?:Record<string,number>;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;facturas?:number;otros?:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
-const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',comprasResumen:'Resumen de compras',ordenesCompra:'Órdenes de compra',recepcionesCompra:'Recepciones registradas',comprasPendientes:'Órdenes pendientes de recibir',reposicion:'Prioridades de reposición',margenProducto:'Margen bruto por producto',margenBajo:'Productos más vendidos con margen bajo',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
+const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',comprasResumen:'Resumen de compras',ordenesCompra:'Órdenes de compra',recepcionesCompra:'Recepciones registradas',comprasPendientes:'Órdenes pendientes de recibir',sugerenciaCompra:'Cantidad sugerida de compra',reposicion:'Prioridades de reposición',margenProducto:'Margen bruto por producto',margenBajo:'Productos más vendidos con margen bajo',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
 export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta>{
  try{
   const {data:d}=await apiClient.get<Informe>(ruta+'/'+c.tipo,{params:{desde:c.desde,hasta:c.hasta,sucursalId:c.sucursalId,nombre:c.nombre||undefined,soloFacturas:c.soloFacturas,ultimo:c.ultimo},signal});
@@ -34,6 +34,17 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
    return {...base,texto:[`El valor estimado del inventario actual es ${dinero(d.total)}.`,alcance,
     ...Object.entries(d.porSede).map(([s,v])=>`• ${s}: ${dinero(v)}`),'Estimación al costo registrado por producto; el precio de venta no se usa en este cálculo.'].join('\n')};
   }
+  if(c.tipo==='sugerenciaCompra'){
+   return {...base,texto:[`Cantidad sugerida de compra · ${alcance}`,`Objetivo: 14 días de cobertura. Ventas de referencia: ${periodo}.`,
+    d.registros?`Productos por sucursal con sugerencia positiva: ${cantidad(d.registros)}.`:'No encontré sugerencias positivas entre los productos con ventas directas y stock registrado en este alcance.',
+    ...d.filas.map(f=>`• ${f.nombre}${f.codigo?' ('+f.codigo+')':''} · ${f.sucursal}: pedir ${cantidad(Number(f.cantidad_sugerida))} unidades · stock ${cantidad(Number(f.stock))} · vendidas ${cantidad(Number(f.unidades))} · pendientes descontadas por fecha prevista ${cantidad(Number(f.entregas_contadas))}`
+     +(Number(f.unidades_vencidas)>0?` · vencidas sin descontar: ${cantidad(Number(f.unidades_vencidas))}`:'')
+     +(Number(f.unidades_sin_fecha)>0?` · sin fecha sin descontar: ${cantidad(Number(f.unidades_sin_fecha))}`:'')
+     +(f.fecha_esperada?' · primera fecha registrada: '+fecha(String(f.fecha_esperada)):'') ),
+    d.registros>10?'Se muestran 10 prioridades.':'',
+    'Estimación en unidades, redondeada hacia arriba. Solo descuenta entregas previstas desde hoy hasta dentro de 14 días. La fecha no garantiza la entrega. No crea órdenes ni convierte unidades a cajas.',
+   ].filter(Boolean).join('\n')};
+  }
   if(c.tipo==='reposicion'){
    if(typeof d.registros!=='number'||!Array.isArray(d.filas))throw new Error('Respuesta de reposición incompleta');
    const compraPendiente=(f:Informe['filas'][number])=>{
@@ -47,7 +58,7 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
    return {...base,texto:[`Prioridades de reposición · ${alcance}`,
     `Ventas usadas para estimar el ritmo: ${periodo}. Las existencias corresponden al momento de la consulta.`,
     d.registros?`Encontré ${cantidad(d.registros)} combinaciones de producto y sucursal para revisar.`:'No encontré productos con ventas directas y señales de reposición en ese período y alcance.',
-    ...d.filas.map(f=>`• ${f.nombre}${f.codigo?' ('+f.codigo+')':''} · ${f.sucursal}: stock ${cantidad(Number(f.stock))} · mínimo ${cantidad(Number(f.minimo))} · vendidas ${cantidad(Number(f.unidades))} · ${Number(f.stock)<=0?'agotado':cantidad(Number(f.cobertura))+' días de cobertura estimada'}${compraPendiente(f)}`),
+    ...d.filas.map(f=>`• ${f.nombre}${f.codigo?' ('+f.codigo+')':''} · ${f.sucursal}: stock ${cantidad(Number(f.stock))} · mínimo ${cantidad(Number(f.minimo))} · vendidas ${cantidad(Number(f.unidades))} · ${Number(f.stock)<=0?'agotado':cantidad(Number(f.cobertura_redondeada??f.cobertura))+' días de cobertura estimada'}${compraPendiente(f)}`),
     d.registros>10?'Se muestran las 10 prioridades principales.':'',
     'Incluye productos con ventas directas que están agotados, por debajo del mínimo o con cobertura de hasta 7 días. La cobertura se calcula con stock actual; las órdenes pendientes se muestran aparte. La fecha esperada no confirma la entrega. Las ventas no incluyen componentes de combos ni descuentan devoluciones posteriores.',
    ].filter(Boolean).join('\n')};
