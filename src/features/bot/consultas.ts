@@ -36,12 +36,20 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
   }
   if(c.tipo==='reposicion'){
    if(typeof d.registros!=='number'||!Array.isArray(d.filas))throw new Error('Respuesta de reposición incompleta');
+   const compraPendiente=(f:Informe['filas'][number])=>{
+    if(f.pendiente_compra==null)return ' · Pendientes de compra no disponibles';
+    if(Number(f.pendiente_compra)<=0)return ' · Sin unidades pendientes en órdenes enviadas o parciales';
+    const ordenes=Number(f.ordenes_compra),sinFecha=Number(f.ordenes_sin_fecha);
+    return ` · Pendientes: ${cantidad(Number(f.pendiente_compra))} unidades en ${cantidad(ordenes)} ${ordenes===1?'orden':'órdenes'}`
+     +(f.fecha_esperada?' · Primera fecha registrada: '+fecha(String(f.fecha_esperada)):'')
+     +(sinFecha?` · ${cantidad(sinFecha)} ${sinFecha===1?'orden sin fecha':'órdenes sin fecha'}`:'');
+   };
    return {...base,texto:[`Prioridades de reposición · ${alcance}`,
     `Ventas usadas para estimar el ritmo: ${periodo}. Las existencias corresponden al momento de la consulta.`,
     d.registros?`Encontré ${cantidad(d.registros)} combinaciones de producto y sucursal para revisar.`:'No encontré productos con ventas directas y señales de reposición en ese período y alcance.',
-    ...d.filas.map(f=>`• ${f.nombre}${f.codigo?' ('+f.codigo+')':''} · ${f.sucursal}: stock ${cantidad(Number(f.stock))} · mínimo ${cantidad(Number(f.minimo))} · vendidas ${cantidad(Number(f.unidades))} · ${Number(f.stock)<=0?'agotado':cantidad(Number(f.cobertura))+' días de cobertura estimada'}`),
+    ...d.filas.map(f=>`• ${f.nombre}${f.codigo?' ('+f.codigo+')':''} · ${f.sucursal}: stock ${cantidad(Number(f.stock))} · mínimo ${cantidad(Number(f.minimo))} · vendidas ${cantidad(Number(f.unidades))} · ${Number(f.stock)<=0?'agotado':cantidad(Number(f.cobertura))+' días de cobertura estimada'}${compraPendiente(f)}`),
     d.registros>10?'Se muestran las 10 prioridades principales.':'',
-    'Incluye productos con ventas directas que están agotados, por debajo del mínimo o con cobertura de hasta 7 días. No incorpora componentes de combos, devoluciones ni pedidos en tránsito. No genera órdenes.',
+    'Incluye productos con ventas directas que están agotados, por debajo del mínimo o con cobertura de hasta 7 días. La cobertura se calcula con stock actual; las órdenes pendientes se muestran aparte. La fecha esperada no confirma la entrega. Las ventas no incluyen componentes de combos ni descuentan devoluciones posteriores.',
    ].filter(Boolean).join('\n')};
   }
   if(c.tipo==='margenProducto'||c.tipo==='margenBajo'){
