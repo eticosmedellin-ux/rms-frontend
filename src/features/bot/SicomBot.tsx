@@ -4,10 +4,11 @@ import {consultar,cargarSedes,cargarConocimiento} from './consultas';
 import {useEffect,useRef,useState} from 'react';
 import {Bot,Mic,Minus,Send,Square,Trash2,Volume2,X} from 'lucide-react';
 import {useGuias,urlPractica} from '../tutorial/practica/bibliotecaApi';
-import {resolver,type Respuesta} from './resolver';
+import {normal,resolver,type Respuesta} from './resolver';
 import {apiClient} from '@/api/client';
 import {getApiErrorMessage} from '@/api/errors';
 import {useQuery} from '@tanstack/react-query';
+import {buscarCasoBot,consultaDelCaso,orientarCasoBot} from './cobertura';
 import {unirDictado,useVozBot} from './voz';
 
 type Fuente={titulo:string;url:string};
@@ -92,13 +93,17 @@ export function SicomBot({identidad}:{identidad:string}){
     setHistorial(prev=>[...prev,{pregunta,respuesta}].slice(-100));if(activa)setSugerencia(pregunta);return;
    }
    const reglas=await cargarConocimiento(ac.signal).catch(()=>[]);
-   const previa=entender(pregunta,[],contexto,reglas,undefined,periodoPendiente);
+   const caso=reglas.some(r=>normal(r.expresion)===normal(pregunta))?undefined:buscarCasoBot(pregunta,false);
+   const interpretar=(sedes:Awaited<ReturnType<typeof cargarSedes>>)=>caso
+    ?consultaDelCaso(caso,pregunta,sedes,contexto)??{}
+    :entender(pregunta,sedes,contexto,reglas,undefined,periodoPendiente);
+   const previa=interpretar([]);
    recuperarContexto=previa.consulta??contexto??previa.pendiente;
    const sedes=(previa.consulta||previa.pendiente||contexto)?await cargarSedes(ac.signal):[];
-   let analisis=entender(pregunta,sedes,contexto,reglas,undefined,periodoPendiente);
+   let analisis=interpretar(sedes);
    let respuesta:Respuesta=analisis.consulta?await consultar(analisis.consulta,ac.signal):analisis.aclarar?
-    {texto:analisis.aclarar,datoVivo:true,pendiente:analisis.pendiente,contexto,periodoPendiente:analisis.periodoPendiente}:resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');
-   if(!analisis.consulta&&(respuesta.sinGuia||analisis.periodoPendiente&&pregunta.trim().split(/\s+/).length>=4)&&permitirInterpretacion&&estadoIntencion.data?.activa){
+    {texto:analisis.aclarar,datoVivo:true,pendiente:analisis.pendiente,contexto,periodoPendiente:analisis.periodoPendiente}:caso?orientarCasoBot(caso):resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');
+   if(!caso&&!analisis.consulta&&(respuesta.sinGuia||analisis.periodoPendiente&&pregunta.trim().split(/\s+/).length>=4)&&permitirInterpretacion&&estadoIntencion.data?.activa){
     const i=await apiClient.post<Intencion>(intencion,{pregunta,anterior:contexto?.tipo,autorizada:true},{signal:ac.signal}).then(r=>r.data).catch(()=>null);
     if(i&&i.tipo!=='ninguna'&&!ac.signal.aborted){
      const autorizadas=i.filtro==='no_disponible'?[]:sedes.length?sedes:await cargarSedes(ac.signal);
@@ -108,6 +113,7 @@ export function SicomBot({identidad}:{identidad:string}){
      else if(interpretada.aclarar)respuesta={texto:interpretada.aclarar,datoVivo:true,pendiente:interpretada.pendiente,contexto};
     }
    }
+   if(!caso&&!analisis.consulta&&!analisis.aclarar&&respuesta.sinGuia){const sugerido=buscarCasoBot(pregunta);if(sugerido)respuesta=orientarCasoBot(sugerido);}
    if(analisis.guia&&analisis.consulta){
     const g=resolver(analisis.guia,guias.data??[]);respuesta={...respuesta,texto:respuesta.texto+'\n\n'+g.texto,opciones:g.opciones};
    }
@@ -125,7 +131,8 @@ export function SicomBot({identidad}:{identidad:string}){
   }finally{if(solicitud.current===ac){solicitud.current=null;setConsultando(false);}}
  }
  async function reportar(){
-  const t=historial.at(-1);if(!t||t.enviada||enviando||t.respuesta.datoVivo)return;
+  const t=historial.at(-1);if(!t||t.enviada||enviando )return;
+  if(!window.confirm('Se enviará solo tu pregunta al equipo que revisa SICOM BOT. No compartas datos privados. ¿Continuar?'))return;
   setEnviando(true);setAviso('');
   try{
    await apiClient.post('/ayuda/consulta-sin-respuesta',{rutaResumen:'SICOM BOT',comentarioAdicional:t.pregunta});
@@ -197,7 +204,7 @@ export function SicomBot({identidad}:{identidad:string}){
    </form>
    {!!historial.length&&<div className="flex justify-between gap-2 px-3 pb-3 text-xs">
     {chat===null&&<button type="button" className="inline-flex items-center gap-1 underline" disabled={enviando||consultando} onClick={()=>{voz.cancelarVoz();setHistorial([]);setAviso('');}}><Trash2 size={13}/> Borrar historial</button>}
-    <button type="button" className="underline" disabled={enviando||consultando||historial.at(-1)?.enviada||historial.at(-1)?.respuesta.datoVivo} onClick={()=>void reportar()}>{historial.at(-1)?.enviada?'Duda enviada':enviando?'Enviando…':'No me resolvió · enviar duda'}</button>
+    <button type="button" className="underline" disabled={enviando||consultando||historial.at(-1)?.enviada} onClick={()=>void reportar()}>{historial.at(-1)?.enviada?'Duda enviada':enviando?'Enviando…':'No me resolvió · enviar duda'}</button>
    </div>}
   </section>}
  </>;

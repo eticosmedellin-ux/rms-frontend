@@ -1,7 +1,7 @@
 import {normal} from './resolver';
 export type Sede={id:number;nombre:string;principal:boolean};
 export type Regla={expresion:string;intencion:string};
-export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes','margenProducto','margenBajo','reposicion','sugerenciaCompra'] as const;
+export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes','margenProducto','margenBajo','reposicion','sugerenciaCompra','citas'] as const;
 type Tipo=typeof tipos[number];
 export type Intencion={tipo:Tipo|'ninguna';filtro:'ninguno'|'sede'|'no_disponible';contar:boolean;ultimo:boolean;porMonto:boolean;soloFacturas:boolean;retomar:boolean;requierePeriodo:boolean};
 
@@ -74,6 +74,7 @@ const reglas:[Tipo,RegExp][]=[
  ['recepciones',/compras? pendientes|pendiente de recibir|mercancia pendiente/],
  ['compras',/compramos|compras?|proveedores?/],
  ['arqueos',/cierres? de caja|cerr(?:ar|o|aron) (?:la )?caja|dejo cerrada (?:la )?caja|diferencia.*caja|arqueos?/],
+ ['citas',/\b(?:citas programadas|agenda de citas)\b/],
  ['gastos',/gastos?|gastamos/],
  ['utilidad',/ganancias?|rentabilidad|utilidad|costos/],
  ['caja',/caja|ingresos?|egresos?|dinero entro|dinero salio|recibimos dinero/],
