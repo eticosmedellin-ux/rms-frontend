@@ -79,7 +79,7 @@ export function SicomBot({identidad}:{identidad:string}){
    const pistas=entender(pregunta,[],contexto);
    const reglas=await cargarConocimiento(ac.signal).catch(()=>[]);
    const previa=entender(pregunta,[],contexto,reglas);
-   const sedes=(previa.consulta||previa.aclarar||pistas.consulta)?await cargarSedes(ac.signal):[];
+   const sedes=(previa.consulta||previa.aclarar||pistas.consulta||contexto)?await cargarSedes(ac.signal):[];
    const analisis=entender(pregunta,sedes,contexto,reglas);
    let respuesta=analisis.consulta?await consultar(analisis.consulta,ac.signal):analisis.aclarar?
     {texto:analisis.aclarar,datoVivo:true,contexto}:resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');

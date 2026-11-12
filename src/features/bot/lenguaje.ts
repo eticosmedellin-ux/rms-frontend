@@ -1,9 +1,9 @@
 import {normal} from './resolver';
 export type Sede={id:number;nombre:string;principal:boolean};
 export type Regla={expresion:string;intencion:string};
-export const tipos=['ventas','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion'] as const;
+export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion'] as const;
 type Tipo=typeof tipos[number];
-export type Consulta={tipo:Tipo;nombre:string;desde:string;hasta:string;sucursalId?:number;comparar?:[string,string]};
+export type Consulta={tipo:Tipo;nombre:string;desde:string;hasta:string;sucursalId?:number;comparar?:[string,string];soloFacturas?:boolean;contar?:boolean};
 const meses='enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre'.split(' ');
 export const hoy=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const iso=(d:Date)=>d.toISOString().slice(0,10);
@@ -13,7 +13,7 @@ export function fechas(texto:string,actual=hoy()):[string,string]|undefined{
  const q=normal(texto),[y,m]=actual.split('-').map(Number),dia=new Date(actual+'T00:00:00Z').getUTCDay(),lunes=sumar(actual,-((dia+6)%7));
  const explicitas=[...texto.matchAll(/\b(\d{4})-(\d{2})-(\d{2})\b|\b(\d{1,2})[/.](\d{1,2})(?:[/.](\d{4}))?\b/g)].map(a=>a[1]?construir(+a[1],+a[2],+a[3]):construir(+(a[6]||y),+a[5],+a[4]));
  if(explicitas.length)return [explicitas[0],explicitas[1]??(/\bdesde\b/.test(q)?actual:explicitas[0])];
- const mes=meses.findIndex(n=>q.includes(n));
+ const mes=meses.findIndex(n=>q.split(' ').includes(n));
  const dias=q.match(/\b(?:entre|del|desde(?: el)?) (\d{1,2}) (?:y|al|hasta(?: el)?) (\d{1,2})\b/);
  const diaMes=q.match(new RegExp(`\\b(\\d{1,2}) de (${meses.join('|')})(?: de (\\d{4}))?\\b`));
  const yy=Number(q.match(/\b(20\d{2})\b/)?.[1]??y);
@@ -37,6 +37,7 @@ export function fechas(texto:string,actual=hoy()):[string,string]|undefined{
  if(/\b(desde|hasta|entre|semana|mes|ano|fecha|trimestre)\b/.test(q))return ['',''];
 }
 const reglas:[Tipo,RegExp][]=[
+ ['documentos',/documentos? (?:de )?ventas?|(?:cuantas?|cantidad de|numero de|total de|cuantos) facturas?(?: de venta)?\b(?!.*(?:por pagar|por cobrar|proveedor|compras?))/],
  ['ranking',/\b(sucursal|sede)\b.*\b(vendio mas|mas vendio|mayor venta|vendieron mas)\b/],
  ['pagos',/metodos? de pago|formas? de pago|cuanto.*(tarjeta|transferencia)/],
  ['rotacion',/rotacion|se (mueven|movieron) poco|menos vendidos/],
@@ -63,7 +64,9 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  const partes=texto.split(/\s+y\s+(?=[¿¡]?(?:c[oó]mo|d[oó]nde)\s+(?:hago|puedo|registro|creo|abro))/i);
  const q=normal(partes[0]),guia=partes[1];
  if(/^(como|donde|pasos para|quiero aprender)\b/.test(q)&&!/^como (nos fue|estuvieron|van|vamos|estuvo)\b/.test(q))return {};
- const continuidad=/^(y\b|en\b|ayer$|hoy$|este mes$|la semana pasada$)/.test(q);
+ const alias=(n:string)=>normal(n).replace(/^(?:sucursal|sede|punto) (?:de )?/,'');
+ const sedeSola=sedes.some(s=>q===normal(s.nombre)||alias(q)===alias(s.nombre));
+ const continuidad=/^(y\b|en\b|ayer$|hoy$|este mes$|la semana pasada$|cuantas?$)/.test(q)||!!anterior&&(sedeSola||meses.includes(q));
  const candidata=conocimiento.find(r=>(' '+q+' ').includes(' '+normal(r.expresion)+' ')&&(tipos as readonly string[]).includes(r.intencion));
  let tipo=(candidata?.intencion as Tipo|undefined)??reglas.find(([,r])=>r.test(q))?.[0];
  if(!tipo&&continuidad)tipo=anterior?.tipo;
@@ -75,16 +78,18 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  if(segmentos.length>1&&(!f||!comparar||!comparar[0]||!comparar[1]||comparar[0]>comparar[1]||tipo!=='ventas'))
   return {aclarar:'Para comparar ventas, indica dos períodos claros, por ejemplo «ventas de este mes contra el mes pasado».'};
  if(f&&(!f[0]||!f[1]||f[0]>f[1]))return {aclarar:'No pude identificar el período. Indica una fecha o un rango, por ejemplo «del 1 al 15 de octubre».'};
- const rango=f??(continuidad&&anterior?[anterior.desde,anterior.hasta]:tipo==='rotacion'?[sumar(actual,-29),actual]:[actual,actual]);
+ const rango=f??(continuidad&&anterior?[anterior.desde,anterior.hasta]:tipo==='rotacion'?[sumar(actual,-29),actual]:tipo==='documentos'?[actual.slice(0,7)+'-01',actual]:[actual,actual]);
  const sitio=q.match(/\b(?:en (?:la |el )?|sede |sucursal |punto de trabajo )([a-z0-9 ]+)$/)?.[1]
   ?.replace(/^(?:sede |sucursal |punto de trabajo )(?:de )?/,'')
   .replace(/\b(?:hoy|ayer|antier|anteayer|durante|este mes|esta semana|como nos fue|la semana pasada|desde|del)\b.*$/,'').trim();
- const ubicacionExplicita=!!sitio&&!/^(?:todas|general|efectivo|tarjeta|transferencia|total|que|vendio|vendieron)\b/.test(sitio)&&!/^\d/.test(sitio)&&!meses.includes(sitio);
+ const sitioTemporal=!!sitio&&(meses.some(m=>new RegExp(`^(?:el |la )?(?:mes de )?${m}(?: |$)`).test(sitio))||
+  /^(?:el |la )?(?:mes pasado|ano pasado|este ano|ultimos |semana pasada|periodo )/.test(sitio));
+ const ubicacionExplicita=!!sitio&&!sitioTemporal&&!/^(?:todas|general|efectivo|tarjeta|transferencia|total|que|vendio|vendieron)\b/.test(sitio)&&!/^\d/.test(sitio)&&!meses.includes(sitio);
  const todas=/\b(todas las|consolidado|toda la empresa)\b/.test(q)||tipo==='ranking';
  const coincidencias=todas?[]:sedes.map(s=>{
-  const n=normal(s.nombre),alias=n.replace(/^(?:sucursal|sede|punto) (?:de )?/,'');
-  const exacta=(' '+q+' ').includes(' '+n+' ')||(' '+q+' ').includes(' '+alias+' ');
-  return {s,p:exacta?alias.length+5:s.principal&&/\b(?:sede|sucursal) principal\b/.test(q)?4:ubicacionExplicita&&sitio&&cerca(sitio,alias)?3:0};
+  const n=normal(s.nombre),corto=alias(s.nombre);
+  const exacta=(' '+q+' ').includes(' '+n+' ')||(' '+q+' ').includes(' '+corto+' ');
+  return {s,p:exacta?corto.length+5:s.principal&&/\b(?:sede|sucursal) principal\b/.test(q)?4:ubicacionExplicita&&sitio&&cerca(sitio,corto)?3:0};
  }).filter(x=>x.p>0).sort((a,b)=>b.p-a.p);
  if(coincidencias.length>1)return {aclarar:'Hay más de una sucursal posible. Indica el nombre completo de la sede.'};
  if(!todas&&ubicacionExplicita&&!coincidencias.length)return {aclarar:'No identifiqué una sucursal autorizada con ese nombre. Escribe el nombre registrado de la sede.'};
@@ -96,5 +101,7 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  tipo==='inventario'?resto.match(/(?:stock de|existencias de|quedan de|quedan|unidades de)\s+(.+)/)?.[1]:
  tipo==='compras'?resto.match(/(?:compras (?:al proveedor|a|del proveedor|de)|compramos a)\s+(.+)/)?.[1]:undefined;
  const nombre=n?.replace(/^(?:proveedor|cliente)\s+/,'').replace(/\s+(?:en (?:la )?(?:sucursal|sede)|en|durante|desde)\s*$/,'').trim()??(continuidad&&tipo===anterior?.tipo?anterior.nombre:'');
- return {consulta:{tipo,nombre,desde:rango[0],hasta:rango[1],sucursalId,comparar},guia};
+ return {consulta:{tipo,nombre,desde:rango[0],hasta:rango[1],sucursalId,comparar,
+  soloFacturas:tipo==='documentos'&&(/\bfacturas?\b/.test(q)||continuidad&&anterior?.soloFacturas),
+  contar:/\b(?:cuantos?|cuantas?|cantidad|numero de)\b/.test(q)||continuidad&&anterior?.contar},guia};
 }

@@ -6,16 +6,35 @@ const ruta='/reportes/vista/bot';
 export const cargarSedes=async(signal:AbortSignal)=>(await apiClient.get<Sede[]>(ruta+'/sucursales',{signal})).data;
 export const cargarConocimiento=async(signal:AbortSignal)=>(await apiClient.get<Regla[]>('/ayuda/bot/conocimiento',{signal})).data;
 const dinero=(n:unknown)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(Number(n));
-type Informe={alcance:string;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
-const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
+type Informe={alcance:string;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;facturas?:number;otros?:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
+const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
 export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta>{
  try{
-  const {data:d}=await apiClient.get<Informe>(ruta+'/'+c.tipo,{params:{desde:c.desde,hasta:c.hasta,sucursalId:c.sucursalId,nombre:c.nombre||undefined},signal});
+  const {data:d}=await apiClient.get<Informe>(ruta+'/'+c.tipo,{params:{desde:c.desde,hasta:c.hasta,sucursalId:c.sucursalId,nombre:c.nombre||undefined,soloFacturas:c.soloFacturas},signal});
+  const fecha=(f:string)=>new Intl.DateTimeFormat('es-CO',{dateStyle:'long',timeZone:'UTC'}).format(new Date(f+'T00:00:00Z'));
+  const periodo=d.desde===d.hasta?fecha(d.desde):`del ${fecha(d.desde)} al ${fecha(d.hasta)}`;
+  const cantidad=(n:number)=>n.toLocaleString('es-CO');
+  if(c.tipo==='documentos'){
+   if(typeof d.facturas!=='number'||typeof d.otros!=='number')throw new Error('Respuesta de documentos incompleta');
+   const tipo=c.soloFacturas?(d.registros===1?'factura de venta':'facturas de venta'):(d.registros===1?'documento de venta':'documentos de venta');
+   const filas=d.filas.slice(0,10).filter(f=>Number(c.soloFacturas?f.facturas:f.cantidad)>0)
+    .map(f=>`• ${f.sucursal}: ${cantidad(Number(c.soloFacturas?f.facturas:f.cantidad))}`);
+   return {datoVivo:true,contexto:c,texto:[
+    `${d.registros?'Encontré':'No encontré'} ${d.registros?cantidad(d.registros)+' ':''}${d.registros?tipo:tipo+' en ese período'}.`,
+    `Período: ${periodo} · Alcance: ${d.alcance}.`,
+    !c.soloFacturas&&d.registros?`Desglose: ${cantidad(d.facturas)} con número de factura y ${cantidad(d.otros)} sin número de factura.`:'',
+    ...(d.sucursalId?[]:filas),
+    'Conteo sobre ventas completadas. No confirma el estado de emisión electrónica ni incluye notas crédito.',
+   ].filter(Boolean).join('\n')};
+  }
   if(c.comparar&&c.tipo==='ventas'){
    const {data:b}=await apiClient.get<Informe>(ruta+'/ventas',{params:{desde:c.comparar[0],hasta:c.comparar[1],sucursalId:c.sucursalId},signal});
    if(d.alcance!==b.alcance)throw new Error('Alcance distinto');
    return {datoVivo:true,contexto:c,texto:`Ventas completadas · ${d.alcance}\n• ${d.desde} a ${d.hasta}: ${dinero(d.total)} · ${d.registros} ventas\n• ${b.desde} a ${b.hasta}: ${dinero(b.total)} · ${b.registros} ventas\nDiferencia del primer período frente al segundo: ${dinero(Number(d.total)-Number(b.total))}.`};
   }
+  if(c.tipo==='ventas'&&c.contar)return {datoVivo:true,contexto:c,
+   fuente:d.sucursalId?'/reportes?'+new URLSearchParams({tipo:'ventas',sucursalId:String(d.sucursalId),desde:d.desde,hasta:d.hasta,usuarioId:'',estado:''}):undefined,
+   texto:`${d.registros?`Se completaron ${cantidad(d.registros)} ${d.registros===1?'venta':'ventas'}.`:'No se registraron ventas completadas en ese período.'}\nPeríodo: ${periodo} · Alcance: ${d.alcance}.${d.registros?'\nTotal vendido: '+dinero(d.total)+'.':''}`};
   const actual=['inventario','agotados','bajos','valor','cxp','cxc'].includes(c.tipo);
   const total=['ventas','cxp','cxc','valor','compras','gastos','utilidad'].includes(c.tipo);
   const detalle=d.filas.slice(0,10).map(f=>{
@@ -33,5 +52,5 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
     c.nombre?'Filtro: '+c.nombre:'',d.registros?total?`Total: ${dinero(d.total)} · ${d.registros} registros`:c.tipo==='caja'?`Ingresos: ${dinero(d.INGRESO)} · Egresos: ${dinero(d.EGRESO)}`:'':'No hay registros que coincidan con este alcance.',
     d.resumenVentas?`Total vendido: ${dinero(d.resumenVentas.vendido)} · ${d.resumenVentas.ventas} ventas completadas`:'',
     ...detalle,d.medios?.length?'Pagos registrados: '+d.medios.map(p=>p.nombre+' '+dinero(p.total)).join(' · '):'',d.filas.length>10?'Se muestran los primeros 10 resultados.':'',nota].filter(Boolean).join('\n')};
- }catch{return {datoVivo:true,texto:'No pude consultar los datos. Verifica el permiso de Reportes, la sede y el período. No se puede confirmar un total.'};}
+ }catch{return {datoVivo:true,contexto:c,texto:'No pude consultar los datos. Verifica el permiso de Reportes, la sede y el período. No se puede confirmar un total.'};}
 }
