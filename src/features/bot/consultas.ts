@@ -6,8 +6,8 @@ const ruta='/reportes/vista/bot';
 export const cargarSedes=async(signal:AbortSignal)=>(await apiClient.get<Sede[]>(ruta+'/sucursales',{signal})).data;
 export const cargarConocimiento=async(signal:AbortSignal)=>(await apiClient.get<Regla[]>('/ayuda/bot/conocimiento',{signal})).data;
 const dinero=(n:unknown)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(Number(n));
-type Informe={alcance:string;sedes?:string[];unidades?:number;porSede?:Record<string,number>;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;facturas?:number;otros?:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
-const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
+type Informe={alcance:string;sedes?:string[];conteosCompras?:{ordenes?:number;recepciones?:number;facturas?:number;pendientes?:number};unidades?:number;porSede?:Record<string,number>;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;facturas?:number;otros?:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
+const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',comprasResumen:'Resumen de compras',ordenesCompra:'Órdenes de compra',recepcionesCompra:'Recepciones registradas',comprasPendientes:'Órdenes pendientes de recibir',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
 export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta>{
  try{
   const {data:d}=await apiClient.get<Informe>(ruta+'/'+c.tipo,{params:{desde:c.desde,hasta:c.hasta,sucursalId:c.sucursalId,nombre:c.nombre||undefined,soloFacturas:c.soloFacturas,ultimo:c.ultimo},signal});
@@ -32,6 +32,16 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
   if(c.tipo==='valor'&&d.porSede){
    return {...base,texto:[`El valor estimado del inventario actual es ${dinero(d.total)}.`,alcance,
     ...Object.entries(d.porSede).map(([s,v])=>`• ${s}: ${dinero(v)}`),'Estimación al costo registrado por producto; el precio de venta no se usa en este cálculo.'].join('\n')};
+  }
+  if(['comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes'].includes(c.tipo)){
+   const r=d.conteosCompras;if(!r)throw new Error('Conteo de compras incompleto');
+   return {...base,fuente:'/compras',texto:[`${titulos[c.tipo]} · ${periodo}. ${alcance}`,
+    r.ordenes!=null?`• Órdenes enviadas, parciales o recibidas: ${cantidad(r.ordenes)} (según fecha de creación).`:'',
+    r.recepciones!=null?`• Recepciones registradas: ${cantidad(r.recepciones)} (según fecha de recepción; una orden puede tener varias).`:'',
+    r.facturas!=null?`• Facturas no anuladas: ${cantidad(r.facturas)} (según fecha de emisión; solo las vinculadas a una sede consultada).`:'',
+    r.pendientes!=null?`• Órdenes creadas en ese período que hoy siguen pendientes de recibir: ${cantidad(r.pendientes)}.`:'',
+    'Cada registro se cuenta en la sucursal de su encabezado. Los conteos no se suman entre sí.',
+   ].filter(Boolean).join('\n')};
   }
   if(c.tipo==='compras'&&c.contar)return {...base,texto:[
    `Encontré ${cantidad(d.registros)} ${d.registros===1?'factura de compra no anulada':'facturas de compra no anuladas'}.`,
