@@ -1,7 +1,7 @@
 import {normal} from './resolver';
 export type Sede={id:number;nombre:string;principal:boolean};
 export type Regla={expresion:string;intencion:string};
-export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes','margenProducto','margenBajo'] as const;
+export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes','margenProducto','margenBajo','reposicion'] as const;
 type Tipo=typeof tipos[number];
 export type Intencion={tipo:Tipo|'ninguna';filtro:'ninguno'|'sede'|'no_disponible';contar:boolean;ultimo:boolean;porMonto:boolean;soloFacturas:boolean;retomar:boolean;requierePeriodo:boolean};
 
@@ -59,6 +59,7 @@ const reglas:[Tipo,RegExp][]=[
  ['productos',/que vendi\b|que vendimos\b|que (productos? )?(salio|salieron|se vendieron)|productos? mas vendido|producto.*mas (salio|vendio)|mas se movio|unidades vendidas|ingresos por producto/],
  ['vendedores',/ventas? por (vendedor|empleado)|vendedor.*vendio/],
  ['clientesVentas',/clientes?.*(compraron|compraron mas|mayor volumen)|clientes? de la sede|quien compro/],
+ ['reposicion',/\b(?:que (?:debo|toca|necesito|hay que|conviene) (?:reponer|resurtir)|(?:productos?|articulos?) (?:debo |hay que |necesito )?(?:reponer|resurtir)|sugerencias? de reposicion|prioridad(?:es)? de reposicion|riesgo de agotarse|por agotarse|se van a agotar|reponer inventario)\b/],
  ['agotados',/agotad[oa]s?|sin existencias|sin stock/],
  ['bajos',/bajo stock|poc[oa]s? existencias|quedan poc[oa]s?|reposicion/],
  ['valor',/valor (?:del|de) inventario|cuanto vale (?:el |mi )?inventario|(?:dinero|plata|capital|valor|costos?).*\b(?:inventario|mercancia|stock)\b/],
@@ -111,13 +112,13 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  const ultimo=tipo==='arqueos'&&(forzada?.ultimo||/\b(?:ultim[oa]|reciente|mas reciente)\b/.test(q)||continuidad&&anterior?.ultimo);
  const grupoCompra=['compras','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes'];
  const retomaCompra=!!anterior&&grupoCompra.includes(tipo)&&grupoCompra.includes(anterior.tipo)&&/^(?:y |cuantas? (?:recibi|recibimos|se recibieron|quedaron|siguen|estan)|facturas)/.test(q);
- const rango=f??(periodoSuelo?periodoPendiente:undefined)??((continuidad||retomaCompra)&&anterior?[anterior.desde,anterior.hasta]:(tipo==='rotacion'||ultimo)?[sumar(actual,-29),actual]:tipo==='pagos'&&!f?[actual.slice(0,7)+'-01',actual]:(tipo==='documentos'||grupoCompra.includes(tipo)||tipo==='margenProducto'||tipo==='margenBajo')?[actual.slice(0,7)+'-01',actual]:[actual,actual]);
+ const rango=f??(periodoSuelo?periodoPendiente:undefined)??((continuidad||retomaCompra)&&anterior?[anterior.desde,anterior.hasta]:(tipo==='rotacion'||tipo==='reposicion'||ultimo)?[sumar(actual,-29),actual]:tipo==='pagos'&&!f?[actual.slice(0,7)+'-01',actual]:(tipo==='documentos'||grupoCompra.includes(tipo)||tipo==='margenProducto'||tipo==='margenBajo')?[actual.slice(0,7)+'-01',actual]:[actual,actual]);
  const sitio=q.match(/\b(?:en (?:la |el )?|sede |sucursal |punto de trabajo )([a-z0-9 ]+)$/)?.[1]
   ?.replace(/^(?:sede |sucursal |punto de trabajo )(?:de )?/,'')
   .replace(/\b(?:hoy|ayer|antier|anteayer|durante|este mes|esta semana|como nos fue|la semana pasada|desde|del)\b.*$/,'').trim();
  const sitioTemporal=!!sitio&&(meses.some(m=>new RegExp(`^(?:el |la )?(?:mes de )?${m}(?: |$)`).test(sitio))||
   /^(?:el |la )?(?:mes pasado|ano pasado|este ano|ultimos |semana pasada|periodo )/.test(sitio));
- const ubicacionExplicita=!!sitio&&!sitioTemporal&&!/^(?:todas|general|efectivo|tarjeta|transferencia|total|que|cerrar|cerrarse|abrir|vendio|vendieron|inventario|stock|mercancia|caja|ventas|compras|cartera|documentos|facturas)\b/.test(sitio)&&!/^\d/.test(sitio)&&!meses.includes(sitio);
+ const ubicacionExplicita=!!sitio&&!sitioTemporal&&!/^(?:todas|general|efectivo|tarjeta|transferencia|total|riesgo|que|cerrar|cerrarse|abrir|vendio|vendieron|inventario|stock|mercancia|caja|ventas|compras|cartera|documentos|facturas)\b/.test(sitio)&&!/^\d/.test(sitio)&&!meses.includes(sitio);
  const todas=/\b(todas las|consolidado|toda la empresa)\b/.test(q)||tipo==='ranking';
  const coincidencias=todas?[]:sedes.map(s=>{
   const n=normal(s.nombre),corto=alias(s.nombre);

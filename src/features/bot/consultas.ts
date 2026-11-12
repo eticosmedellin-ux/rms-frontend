@@ -8,7 +8,7 @@ export const cargarSedes=async(signal:AbortSignal)=>(await apiClient.get<Sede[]>
 export const cargarConocimiento=async(signal:AbortSignal)=>(await apiClient.get<Regla[]>('/ayuda/bot/conocimiento',{signal})).data;
 const dinero=(n:unknown)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(Number(n));
 type Informe={alcance:string;sedes?:string[];evaluados?:number;omitidos?:number;conteosCompras?:{ordenes?:number;recepciones?:number;facturas?:number;pendientes?:number};unidades?:number;porSede?:Record<string,number>;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;facturas?:number;otros?:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
-const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',comprasResumen:'Resumen de compras',ordenesCompra:'Órdenes de compra',recepcionesCompra:'Recepciones registradas',comprasPendientes:'Órdenes pendientes de recibir',margenProducto:'Margen bruto por producto',margenBajo:'Productos más vendidos con margen bajo',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
+const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',comprasResumen:'Resumen de compras',ordenesCompra:'Órdenes de compra',recepcionesCompra:'Recepciones registradas',comprasPendientes:'Órdenes pendientes de recibir',reposicion:'Prioridades de reposición',margenProducto:'Margen bruto por producto',margenBajo:'Productos más vendidos con margen bajo',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
 export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta>{
  try{
   const {data:d}=await apiClient.get<Informe>(ruta+'/'+c.tipo,{params:{desde:c.desde,hasta:c.hasta,sucursalId:c.sucursalId,nombre:c.nombre||undefined,soloFacturas:c.soloFacturas,ultimo:c.ultimo},signal});
@@ -33,6 +33,16 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
   if(c.tipo==='valor'&&d.porSede){
    return {...base,texto:[`El valor estimado del inventario actual es ${dinero(d.total)}.`,alcance,
     ...Object.entries(d.porSede).map(([s,v])=>`• ${s}: ${dinero(v)}`),'Estimación al costo registrado por producto; el precio de venta no se usa en este cálculo.'].join('\n')};
+  }
+  if(c.tipo==='reposicion'){
+   if(typeof d.registros!=='number'||!Array.isArray(d.filas))throw new Error('Respuesta de reposición incompleta');
+   return {...base,texto:[`Prioridades de reposición · ${alcance}`,
+    `Ventas usadas para estimar el ritmo: ${periodo}. Las existencias corresponden al momento de la consulta.`,
+    d.registros?`Encontré ${cantidad(d.registros)} combinaciones de producto y sucursal para revisar.`:'No encontré productos con ventas directas y señales de reposición en ese período y alcance.',
+    ...d.filas.map(f=>`• ${f.nombre}${f.codigo?' ('+f.codigo+')':''} · ${f.sucursal}: stock ${cantidad(Number(f.stock))} · mínimo ${cantidad(Number(f.minimo))} · vendidas ${cantidad(Number(f.unidades))} · ${Number(f.stock)<=0?'agotado':cantidad(Number(f.cobertura))+' días de cobertura estimada'}`),
+    d.registros>10?'Se muestran las 10 prioridades principales.':'',
+    'Incluye productos con ventas directas que están agotados, por debajo del mínimo o con cobertura de hasta 7 días. No incorpora componentes de combos, devoluciones ni pedidos en tránsito. No genera órdenes.',
+   ].filter(Boolean).join('\n')};
   }
   if(c.tipo==='margenProducto'||c.tipo==='margenBajo'){
    if(typeof d.evaluados!=='number'||typeof d.omitidos!=='number')throw new Error('Respuesta de margen incompleta');
