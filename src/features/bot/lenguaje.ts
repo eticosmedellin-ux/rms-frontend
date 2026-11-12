@@ -1,7 +1,7 @@
 import {normal} from './resolver';
 export type Sede={id:number;nombre:string;principal:boolean};
 export type Regla={expresion:string;intencion:string};
-export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes'] as const;
+export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes','margenProducto','margenBajo'] as const;
 type Tipo=typeof tipos[number];
 export type Intencion={tipo:Tipo|'ninguna';filtro:'ninguno'|'sede'|'no_disponible';contar:boolean;ultimo:boolean;porMonto:boolean;soloFacturas:boolean;retomar:boolean;requierePeriodo:boolean};
 
@@ -53,6 +53,8 @@ const reglas:[Tipo,RegExp][]=[
  ['documentos',/documentos? (?:de )?ventas?|(?:cuantas?|cantidad de|numero de|total de|cuantos) facturas?(?: de venta)?\b(?!.*(?:por pagar|por cobrar|proveedor|compras?))/],
  ['ranking',/\b(sucursal|sede)\b.*\b(vendio mas|mas vendio|mayor venta|vendieron mas)\b/],
  ['pagos',/(?:metodos?|medios?|formas?|ingresos?) de pago|pagos?.*mas (?:usad[oa]s?|utilizad[oa]s?|frecuentes?|comun(?:es)?)|(?:como|con que) (?:me |nos )?pag(?:an|aron) mas|cuanto.*(tarjeta|transferencia)/],
+ ['margenBajo',/\b(?:poc[oa] (?:margen|ganancia|rentabilidad)|margen bajo|bajo margen|ganancia baja|baja rentabilidad|poca utilidad|perdida por producto)\b/],
+ ['margenProducto',/\b(?:margen|rentabilidad|ganancia|utilidad) (?:brut[oa] )?(?:por|de los) (?:cada )?productos?\b|\bproductos?\b.*\b(?:margen|rentabilidad|ganancia bruta)\b/],
  ['rotacion',/rotacion|se (mueven|movieron) poco|menos vendidos/],
  ['productos',/que vendi\b|que vendimos\b|que (productos? )?(salio|salieron|se vendieron)|productos? mas vendido|producto.*mas (salio|vendio)|mas se movio|unidades vendidas|ingresos por producto/],
  ['vendedores',/ventas? por (vendedor|empleado)|vendedor.*vendio/],
@@ -98,6 +100,8 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  if(!tipo&&continuidad)tipo=anterior?.tipo;
  if(!tipo&&anterior&&/cuanto entro/.test(q)&&['ventas','caja'].includes(anterior.tipo))tipo=anterior.tipo;
  if(!tipo){if(fCorta?.[0])return {periodoPendiente:fCorta,aclarar:`Entendí el período ${fCorta[0]} a ${fCorta[1]}. ¿Qué quieres consultar: ventas, compras o caja?`};if(/cuanto entro|que (tengo pendiente|nos falta)/.test(q))return {aclarar:'¿Te refieres a caja, ventas, cartera o inventario?'};return {};}
+ if(['margenBajo','margenProducto'].includes(tipo)&&/%|\bpor ciento\b|\b(?:producto llamado|producto con codigo|margen del producto)\b/i.test(texto))
+  return {aclarar:'Este análisis usa un umbral fijo de margen menor al 15 % para detectar margen bajo. Aún no admite umbrales personalizados ni un filtro por producto.'};
  const segmentos=partes[0].split(/\s+(?:contra|versus|vs\.?|comparado con)\s+/i);
  const f=fechas(segmentos[0],actual);
  const comparar=segmentos.length===2?fechas(segmentos[1],actual):undefined;
@@ -107,7 +111,7 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  const ultimo=tipo==='arqueos'&&(forzada?.ultimo||/\b(?:ultim[oa]|reciente|mas reciente)\b/.test(q)||continuidad&&anterior?.ultimo);
  const grupoCompra=['compras','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes'];
  const retomaCompra=!!anterior&&grupoCompra.includes(tipo)&&grupoCompra.includes(anterior.tipo)&&/^(?:y |cuantas? (?:recibi|recibimos|se recibieron|quedaron|siguen|estan)|facturas)/.test(q);
- const rango=f??(periodoSuelo?periodoPendiente:undefined)??((continuidad||retomaCompra)&&anterior?[anterior.desde,anterior.hasta]:(tipo==='rotacion'||ultimo)?[sumar(actual,-29),actual]:tipo==='pagos'&&!f?[actual.slice(0,7)+'-01',actual]:(tipo==='documentos'||grupoCompra.includes(tipo))?[actual.slice(0,7)+'-01',actual]:[actual,actual]);
+ const rango=f??(periodoSuelo?periodoPendiente:undefined)??((continuidad||retomaCompra)&&anterior?[anterior.desde,anterior.hasta]:(tipo==='rotacion'||ultimo)?[sumar(actual,-29),actual]:tipo==='pagos'&&!f?[actual.slice(0,7)+'-01',actual]:(tipo==='documentos'||grupoCompra.includes(tipo)||tipo==='margenProducto'||tipo==='margenBajo')?[actual.slice(0,7)+'-01',actual]:[actual,actual]);
  const sitio=q.match(/\b(?:en (?:la |el )?|sede |sucursal |punto de trabajo )([a-z0-9 ]+)$/)?.[1]
   ?.replace(/^(?:sede |sucursal |punto de trabajo )(?:de )?/,'')
   .replace(/\b(?:hoy|ayer|antier|anteayer|durante|este mes|esta semana|como nos fue|la semana pasada|desde|del)\b.*$/,'').trim();

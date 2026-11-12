@@ -1,3 +1,4 @@
+import {isAxiosError} from 'axios';
 import {apiClient} from '@/api/client';
 import type {Respuesta} from './resolver';
 import type {Consulta,Regla,Sede} from './lenguaje';
@@ -6,8 +7,8 @@ const ruta='/reportes/vista/bot';
 export const cargarSedes=async(signal:AbortSignal)=>(await apiClient.get<Sede[]>(ruta+'/sucursales',{signal})).data;
 export const cargarConocimiento=async(signal:AbortSignal)=>(await apiClient.get<Regla[]>('/ayuda/bot/conocimiento',{signal})).data;
 const dinero=(n:unknown)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP'}).format(Number(n));
-type Informe={alcance:string;sedes?:string[];conteosCompras?:{ordenes?:number;recepciones?:number;facturas?:number;pendientes?:number};unidades?:number;porSede?:Record<string,number>;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;facturas?:number;otros?:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
-const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',comprasResumen:'Resumen de compras',ordenesCompra:'Órdenes de compra',recepcionesCompra:'Recepciones registradas',comprasPendientes:'Órdenes pendientes de recibir',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
+type Informe={alcance:string;sedes?:string[];evaluados?:number;omitidos?:number;conteosCompras?:{ordenes?:number;recepciones?:number;facturas?:number;pendientes?:number};unidades?:number;porSede?:Record<string,number>;desde:string;hasta:string;sucursalId?:number;total:number;registros:number;facturas?:number;otros?:number;resumenVentas?:{ventas:number;vendido:number};medios?:{nombre:string;total:number}[];INGRESO?:number;EGRESO?:number;filas:Record<string,string|number>[]};
+const titulos:Record<Consulta['tipo'],string>={ventas:'Ventas completadas',documentos:'Documentos de venta',productos:'Productos vendidos',pagos:'Pagos registrados de ventas',ranking:'Ventas por sucursal',inventario:'Existencias',agotados:'Productos agotados',bajos:'Existencias bajas o agotadas',valor:'Valor estimado de inventario',compras:'Compras no anuladas',cxp:'Saldo pendiente por pagar',cxc:'Saldo pendiente por cobrar',caja:'Movimientos de caja',gastos:'Gastos',utilidad:'Utilidad bruta estimada',recepciones:'Órdenes pendientes de recibir',arqueos:'Cierres de caja',clientesVentas:'Ventas por cliente',vendedores:'Ventas por vendedor',comprasResumen:'Resumen de compras',ordenesCompra:'Órdenes de compra',recepcionesCompra:'Recepciones registradas',comprasPendientes:'Órdenes pendientes de recibir',margenProducto:'Margen bruto por producto',margenBajo:'Productos más vendidos con margen bajo',rotacion:'Productos con menos unidades vendidas entre los que sí tuvieron ventas'};
 export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta>{
  try{
   const {data:d}=await apiClient.get<Informe>(ruta+'/'+c.tipo,{params:{desde:c.desde,hasta:c.hasta,sucursalId:c.sucursalId,nombre:c.nombre||undefined,soloFacturas:c.soloFacturas,ultimo:c.ultimo},signal});
@@ -32,6 +33,18 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
   if(c.tipo==='valor'&&d.porSede){
    return {...base,texto:[`El valor estimado del inventario actual es ${dinero(d.total)}.`,alcance,
     ...Object.entries(d.porSede).map(([s,v])=>`• ${s}: ${dinero(v)}`),'Estimación al costo registrado por producto; el precio de venta no se usa en este cálculo.'].join('\n')};
+  }
+  if(c.tipo==='margenProducto'||c.tipo==='margenBajo'){
+   if(typeof d.evaluados!=='number'||typeof d.omitidos!=='number')throw new Error('Respuesta de margen incompleta');
+   const bajo=c.tipo==='margenBajo';
+   return {...base,texto:[`${titulos[c.tipo]} · ${periodo}. ${alcance}`,
+    bajo?'Criterio: entre el 25 % con más unidades vendidas de los productos evaluables, con margen menor al 15 %.':'Ordenado por unidades vendidas.',
+    `Productos evaluados: ${cantidad(d.evaluados)} · Coincidencias: ${cantidad(d.registros)}.`,
+    d.omitidos?`Se excluyeron ${cantidad(d.omitidos)} productos por falta de base o costo histórico utilizable, o por ingreso sin impuestos no positivo.`:'',
+    ...d.filas.map(f=>`• ${f.nombre}${f.codigo?' ('+f.codigo+')':''}: ${cantidad(Number(f.unidades))} unidades · margen ${cantidad(Number(f.margen))} % · ganancia bruta ${dinero(f.utilidad)} · venta sin impuestos ${dinero(f.ingreso)} · costo ${dinero(f.costo)}`),
+    d.registros>10?'Se muestran hasta 10 productos.':'',
+    'Estimación sobre ventas completadas, con descuentos incluidos en la base de venta. Excluye combos, devoluciones posteriores y gastos.',
+   ].filter(Boolean).join('\n')};
   }
   if(['comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes'].includes(c.tipo)){
    const r=d.conteosCompras;if(!r)throw new Error('Conteo de compras incompleto');
@@ -87,5 +100,8 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
     c.tipo==='inventario'&&typeof d.unidades==='number'?`Existencia total: ${cantidad(d.unidades)} unidades.`:'',c.nombre?'Filtro: '+c.nombre:'',d.registros?total?`Total: ${dinero(d.total)} · ${d.registros} registros`:c.tipo==='caja'?`Ingresos: ${dinero(d.INGRESO)} · Egresos: ${dinero(d.EGRESO)}`:'':'No hay registros que coincidan con este alcance.',
     d.resumenVentas?`Total vendido: ${dinero(d.resumenVentas.vendido)} · ${d.resumenVentas.ventas} ventas completadas`:'',
     ...detalle,d.medios?.length?'Pagos registrados: '+d.medios.map(p=>p.nombre+' '+dinero(p.total)).join(' · '):'',d.filas.length>10?'Se muestran los primeros 10 resultados.':'',nota].filter(Boolean).join('\n')};
- }catch{return {datoVivo:true,contexto:c,texto:'No pude consultar los datos. Verifica el permiso de Reportes, la sede y el período. No se puede confirmar un total.'};}
+ }catch(error){
+  if((c.tipo==='margenBajo'||c.tipo==='margenProducto')&&isAxiosError(error)&&error.response?.status===403)
+   return {datoVivo:true,contexto:c,texto:'No tienes acceso a este análisis. Se requiere permiso para consultar Reportes y ver costos en la sucursal solicitada.'};
+  return {datoVivo:true,contexto:c,texto:'No pude consultar los datos. Verifica el permiso de Reportes, la sede y el período. No se puede confirmar un total.'};}
 }
