@@ -12,11 +12,11 @@ const reglas:[RegExp,string][]=[
 ];
 const omitidas=new Set('como que hago para puedo quiero donde cual necesito saber no se un una el la los las de del en al mi me con por registrar hacer consultar ver sicom'.split(' '));
 const tokens=(s:string)=>new Set(normal(s).split(' ').filter(w=>w.length>2&&!omitidas.has(w)).map(w=>w.replace(/(?:es|s)$/,'')));
-export type Respuesta={texto:string;datoVivo?:boolean;fuente?:string;pendiente?:Consulta;contexto?:Consulta;antecedentes?:{id:number;titulo:string}[];opciones?:{id:string;titulo:string;nota?:string}[];sinGuia?:boolean;aclarar?:boolean};
+export type Respuesta={texto:string;alcanceDetalle?:string;periodoPendiente?:[string,string];datoVivo?:boolean;fuente?:string;pendiente?:Consulta;contexto?:Consulta;antecedentes?:{id:number;titulo:string}[];opciones?:{id:string;titulo:string;nota?:string}[];sinGuia?:boolean;aclarar?:boolean};
 export function resolver(pregunta:string,publicadas:Guia[],anterior=''):Respuesta{
  const q=normal(pregunta),contexto=normal(anterior+' '+pregunta);
  if(/^(hola|buenas|buenos dias|buenas tardes)( bot| sicom)?$/.test(q))return {texto:'Hola. Cuéntame qué estás intentando hacer en SICOM y buscaré una práctica que te ayude.'};
- if(/\b(cuanto vendimos|cuanto se vendio|cuanto le debo|cuanto debemos|como nos fue|cuanto vendi|cuantas unidades quedan)\b/.test(q))return {texto:'Todavía no puedo consultar los datos de tu empresa. Puedo ayudarte a encontrar la guía para revisar esa información.',sinGuia:true};
+ if(/\b(cuanto vendimos|cuanto se vendio|cuanto le debo|cuanto debemos|como nos fue|cuanto vendi|cuantas unidades quedan)\b/.test(q))return {texto:'No pude convertir esa pregunta en una consulta de datos. Indica qué quieres medir, por ejemplo «total vendido» o «saldo pendiente de un proveedor».',sinGuia:true};
  const catalogo=biblioteca.filter(c=>c.pasos?.length).map(c=>({...c,nota:''}));
  const propias=publicadas.filter(g=>g.estado==='PUBLICADO').flatMap(g=>{
   const c=catalogo.find(x=>x.id===g.plantilla);return c?[{...c,titulo:g.titulo,nota:g.indicacion}]:[];
@@ -40,7 +40,7 @@ export function resolver(pregunta:string,publicadas:Guia[],anterior=''):Respuest
   return {c,n:coincidencias*3+[...entrada].filter(w=>grupo.has(w)).length};
  }).filter(x=>x.n>=6).sort((a,b)=>b.n-a.n);
  const primero=candidatos[0];
- if(!primero)return {texto:'No encontré una guía que coincida con suficiente claridad. Dime el módulo y qué estabas intentando hacer. También puedes enviar la duda a soporte.',sinGuia:true};
+ if(!primero)return {texto:'No pude identificar el dato o la acción que buscas. Si quieres consultar tu negocio, dime qué dato necesitas. Si buscas ayuda para hacer algo en SICOM, dime qué acción quieres completar.',sinGuia:true};
  const segundo=candidatos.find(x=>x.c.id!==primero.c.id);
  if(segundo&&segundo.n===primero.n)return {texto:'Encontré más de una práctica posible. Elige la que corresponda o dime en qué módulo estás.',opciones:candidatos.filter(x=>x.n===primero.n).filter((x,i,a)=>a.findIndex(y=>y.c.id===x.c.id)===i).slice(0,3).map(x=>convertir(x.c)),aclarar:true};
  return responder(primero.c);

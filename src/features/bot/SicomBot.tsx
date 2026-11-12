@@ -1,5 +1,5 @@
 import {Link} from 'react-router-dom';
-import {entender} from './lenguaje';
+import {consultaPublica,entender,pedirAlcance} from './lenguaje';
 import {consultar,cargarSedes,cargarConocimiento} from './consultas';
 import {useEffect,useRef,useState} from 'react';
 import {Bot,Minus,Send,Trash2,X} from 'lucide-react';
@@ -62,7 +62,7 @@ export function SicomBot({identidad}:{identidad:string}){
  function cerrar(modo:'cerrado'|'minimizado'){setEstado(modo);boton.current?.focus();}
  async function enviar(){
   const pregunta=texto.trim();if(!pregunta||solicitud.current||gestion)return;
-  const ultimo=historial.at(-1),contexto=ultimo?.respuesta.contexto;
+  const ultimo=historial.at(-1),contexto=ultimo?.respuesta.pendiente??ultimo?.respuesta.contexto,periodoPendiente=ultimo?.respuesta.periodoPendiente;
   const ac=new AbortController();solicitud.current=ac;setConsultando(true);setTexto('');setAviso('');setSugerencia('');
   try{
    const recuperar=pregunta.match(/^\s*(?:retoma|busca en mis chats)\s+(.+)/i);
@@ -76,13 +76,21 @@ export function SicomBot({identidad}:{identidad:string}){
     if(!ac.signal.aborted)setHistorial(prev=>[...prev,{pregunta,respuesta:{datoVivo:true,texto:data.nota||'Todavía no tienes una nota guardada en Mi memoria.'}}].slice(-100));
     return;
    }
-   const pistas=entender(pregunta,[],contexto);
+   if(pedirAlcance(pregunta)&&ultimo?.respuesta.alcanceDetalle){
+    const respuesta={texto:ultimo.respuesta.alcanceDetalle,datoVivo:true,contexto,alcanceDetalle:ultimo.respuesta.alcanceDetalle};
+    setHistorial(prev=>[...prev,{pregunta,respuesta}].slice(-100));return;
+   }
+   if(consultaPublica(pregunta)){
+    const activa=estadoWeb.data?.activo;
+    const respuesta={datoVivo:true,texto:activa?'Puedo consultar fuentes públicas para responder esta pregunta. Selecciona «Buscar información pública en Internet» y confirma el texto que se enviará.':'Esta pregunta necesita fuentes públicas. La búsqueda externa no está habilitada o no está disponible en este momento.'};
+    setHistorial(prev=>[...prev,{pregunta,respuesta}].slice(-100));if(activa)setSugerencia(pregunta);return;
+   }
    const reglas=await cargarConocimiento(ac.signal).catch(()=>[]);
-   const previa=entender(pregunta,[],contexto,reglas);
-   const sedes=(previa.consulta||previa.aclarar||pistas.consulta||contexto)?await cargarSedes(ac.signal):[];
-   const analisis=entender(pregunta,sedes,contexto,reglas);
-   let respuesta=analisis.consulta?await consultar(analisis.consulta,ac.signal):analisis.aclarar?
-    {texto:analisis.aclarar,datoVivo:true,contexto}:resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');
+   const previa=entender(pregunta,[],contexto,reglas,undefined,periodoPendiente);
+   const sedes=(previa.consulta||previa.pendiente||contexto)?await cargarSedes(ac.signal):[];
+   const analisis=entender(pregunta,sedes,contexto,reglas,undefined,periodoPendiente);
+   let respuesta:Respuesta=analisis.consulta?await consultar(analisis.consulta,ac.signal):analisis.aclarar?
+    {texto:analisis.aclarar,datoVivo:true,pendiente:analisis.pendiente,contexto,periodoPendiente:analisis.periodoPendiente}:resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');
    if(analisis.guia&&analisis.consulta){
     const g=resolver(analisis.guia,guias.data??[]);respuesta={...respuesta,texto:respuesta.texto+'\n\n'+g.texto,opciones:g.opciones};
    }
