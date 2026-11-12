@@ -1,7 +1,7 @@
 import {normal} from './resolver';
 export type Sede={id:number;nombre:string;principal:boolean};
 export type Regla={expresion:string;intencion:string};
-export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes','margenProducto','margenBajo','reposicion','sugerenciaCompra','citas'] as const;
+export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion','comprasResumen','ordenesCompra','recepcionesCompra','comprasPendientes','margenProducto','margenBajo','reposicion','sugerenciaCompra','citas','resumenOperativo','saldosOperativos','gastoSobreVentas','gastosCategoria','descuentosVentas','descuentosSede','ventaMayor','clientesDistintos','arqueosDiferencias','ordenesAbiertas','ordenesListas','ordenesRepuestos','prestamosActivos','citasConfirmar','citasCompletadas','mesasOcupadas'] as const;
 type Tipo=typeof tipos[number];
 export type Intencion={tipo:Tipo|'ninguna';filtro:'ninguno'|'sede'|'no_disponible';contar:boolean;ultimo:boolean;porMonto:boolean;soloFacturas:boolean;retomar:boolean;requierePeriodo:boolean};
 
@@ -50,6 +50,23 @@ export function fechas(texto:string,actual=hoy()):[string,string]|undefined{
  if(/\b(desde|hasta|entre|semana|mes|ano|fecha|trimestre)\b/.test(q))return ['',''];
 }
 const reglas:[Tipo,RegExp][]=[
+ ['resumenOperativo',/\b(?:como va mi negocio|resumen (?:ejecutivo|operativo)|ventas.{0,20}compras.{0,20}gastos)\b/],
+ ['saldosOperativos',/\b(?:por cobrar.{0,35}por pagar|por pagar.{0,35}por cobrar)\b/],
+ ['gastoSobreVentas',/\b(?:porcentaje.{0,30}ventas.{0,30}gastos|ingresos.{0,40}consumiendo en gastos)\b/],
+ ['gastosCategoria',/\b(?:gastos por categoria|en que.{0,20}gastando mas)\b/],
+ ['descuentosVentas',/\b(?:cuanto.{0,30}descontado|descuento promedio)\b/],
+ ['descuentosSede',/\b(?:sucursal.{0,30}(?:mayores|mas) descuentos|descuentos por sucursal)\b/],
+ ['ventaMayor',/\b(?:venta mas grande|venta de mayor valor)\b/],
+ ['clientesDistintos',/\b(?:clientes diferentes nos compraron|cuantos clientes distintos)\b/],
+ ['arqueosDiferencias',/\b(?:arqueos.{0,30}no han cuadrado|diferencias en sus cierres de caja|cierres con diferencias)\b/],
+ ['ordenesAbiertas',/\bordenes de trabajo.{0,25}abiertas\b/],
+ ['ordenesListas',/\b(?:trabajos.{0,25}pendientes de entregar|ordenes.{0,20}listas para entregar)\b/],
+ ['ordenesRepuestos',/\bordenes.{0,30}falta de repuestos\b/],
+ ['prestamosActivos',/\bcuantos prestamos.{0,20}activos\b/],
+ ['citasConfirmar',/\bcitas.{0,25}pendientes de confirmar\b/],
+ ['citasCompletadas',/\bcuantas citas.{0,22}(?:atendimos|completadas)\b/],
+ ['mesasOcupadas',/\bmesas.{0,25}ocupadas\b/],
+
  ['documentos',/documentos? (?:de )?ventas?|(?:cuantas?|cantidad de|numero de|total de|cuantos) facturas?(?: de venta)?\b(?!.*(?:por pagar|por cobrar|proveedor|compras?))/],
  ['ranking',/\b(sucursal|sede)\b.*\b(vendio mas|mas vendio|mayor venta|vendieron mas)\b/],
  ['pagos',/(?:metodos?|medios?|formas?|ingresos?) de pago|pagos?.*mas (?:usad[oa]s?|utilizad[oa]s?|frecuentes?|comun(?:es)?)|(?:como|con que) (?:me |nos )?pag(?:an|aron) mas|cuanto.*(tarjeta|transferencia)/],
@@ -110,7 +127,7 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  if(['margenBajo','margenProducto'].includes(tipo)&&/%|\bpor ciento\b|\b(?:producto llamado|producto con codigo|margen del producto)\b/i.test(texto))
   return {aclarar:'Este análisis usa un umbral fijo de margen menor al 15 % para detectar margen bajo. Aún no admite umbrales personalizados ni un filtro por producto.'};
  const segmentos=partes[0].split(/\s+(?:contra|versus|vs\.?|comparado con)\s+/i);
- const f=fechas(segmentos[0],actual);
+ const f=fechas(segmentos[0].replace(/entre mis empleados/i,'mis empleados'),actual);
  const comparar=segmentos.length===2?fechas(segmentos[1],actual):undefined;
  if(segmentos.length>1&&(!f||!comparar||!comparar[0]||!comparar[1]||comparar[0]>comparar[1]||tipo!=='ventas'))
   return {aclarar:'Para comparar ventas, indica dos períodos claros, por ejemplo «ventas de este mes contra el mes pasado».'};
@@ -127,7 +144,7 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
   .replace(/\b(?:hoy|ayer|antier|anteayer|durante|este mes|esta semana|como nos fue|la semana pasada|desde|del)\b.*$/,'').trim()??(filtroBreve?sedeBreve:undefined);
  const sitioTemporal=!!sitio&&(meses.some(m=>new RegExp(`^(?:el |la )?(?:mes de )?${m}(?: |$)`).test(sitio))||
   /^(?:el |la )?(?:mes pasado|ano pasado|este ano|ultimos |semana pasada|periodo )/.test(sitio));
- const ubicacionExplicita=!!sitio&&!sitioTemporal&&!/^(?:todas|general|efectivo|tarjeta|transferencia|total|riesgo|que|cerrar|cerrarse|abrir|vendio|vendieron|inventario|stock|mercancia|caja|ventas|compras|cartera|documentos|facturas)\b/.test(sitio)&&!/^\d/.test(sitio)&&!meses.includes(sitio);
+ const ubicacionExplicita=!!sitio&&!sitioTemporal&&!/^(?:todas|general|efectivo|tarjeta|transferencia|total|gastos|conjunto|esta otorgando|sus cierres|este momento|riesgo|que|cerrar|cerrarse|abrir|vendio|vendieron|inventario|stock|mercancia|caja|ventas|compras|cartera|documentos|facturas)\b/.test(sitio)&&!/^\d/.test(sitio)&&!meses.includes(sitio);
  const todas=/\b(todas las|consolidado|toda la empresa)\b/.test(q)||tipo==='ranking';
  const coincidencias=todas?[]:sedes.map(s=>{
   const n=normal(s.nombre),corto=alias(s.nombre);
