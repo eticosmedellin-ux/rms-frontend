@@ -2,12 +2,13 @@ import {Link} from 'react-router-dom';
 import {aplicarIntencion,consultaPublica,entender,pedirAlcance,type Intencion} from './lenguaje';
 import {consultar,cargarSedes,cargarConocimiento} from './consultas';
 import {useEffect,useRef,useState} from 'react';
-import {Bot,Minus,Send,Trash2,X} from 'lucide-react';
+import {Bot,Mic,Minus,Send,Square,Trash2,Volume2,X} from 'lucide-react';
 import {useGuias,urlPractica} from '../tutorial/practica/bibliotecaApi';
 import {resolver,type Respuesta} from './resolver';
 import {apiClient} from '@/api/client';
 import {getApiErrorMessage} from '@/api/errors';
 import {useQuery} from '@tanstack/react-query';
+import {unirDictado,useVozBot} from './voz';
 
 type Fuente={titulo:string;url:string};
 type Turno={pregunta:string;respuesta:Respuesta & {externa?:{fuentes:Fuente[];consultado:string}};enviada?:boolean};
@@ -24,6 +25,7 @@ const temaPublico=(q:string)=>{
 function leer(k:string):Turno[]{try{const v=JSON.parse(localStorage.getItem(k)??'[]');return Array.isArray(v)?v.filter(x=>typeof x?.pregunta==='string'&&typeof x?.respuesta?.texto==='string').slice(-30):[];}catch{return [];}}
 export function SicomBot({identidad}:{identidad:string}){
  const solicitud=useRef<AbortController|null>(null);
+ const voz=useVozBot();
  const [consultando,setConsultando]=useState(false);
  useEffect(()=>()=>solicitud.current?.abort(),[]);
  const clave='sicom-bot-v1:'+identidad;
@@ -39,7 +41,7 @@ export function SicomBot({identidad}:{identidad:string}){
  const estadoWeb=useQuery({queryKey:['bot-web',identidad],queryFn:async()=>(await apiClient.get<{activo:boolean}>(web)).data,enabled:estado==='abierto',retry:false});
  const intencion='/ayuda/bot/intencion';
  const estadoIntencion=useQuery({queryKey:['bot-intencion',identidad],queryFn:async()=>(await apiClient.get<{activa:boolean}>(intencion)).data,enabled:estado==='abierto',retry:false});
- async function gestionar(fn:()=>Promise<void>){if(gestion||consultando||solicitud.current)return;setGestion(true);setAviso('');try{await fn();}catch(e){setAviso(getApiErrorMessage(e,'No se pudo completar el cambio.'));}finally{setGestion(false);}}
+ async function gestionar(fn:()=>Promise<void>){if(gestion||consultando||solicitud.current)return;voz.cancelarVoz();setGestion(true);setAviso('');try{await fn();}catch(e){setAviso(getApiErrorMessage(e,'No se pudo completar el cambio.'));}finally{setGestion(false);}}
  function abrirChat(id:number){void gestionar(async()=>{
   const {data}=await apiClient.get<Turno[]>(ruta+'/'+id);
   setHistorial(data);setChat(id);setTitulo(chats.data?.find(c=>c.id===id)?.titulo??'');setSugerencia('');setPublica(null);
@@ -62,9 +64,9 @@ export function SicomBot({identidad}:{identidad:string}){
  useEffect(()=>{if(chat!==null)return;try{localStorage.setItem(clave,JSON.stringify(historial.filter(t=>!t.respuesta.datoVivo)));}catch{}},[clave,historial,chat]);
  useEffect(()=>{if(estado==='abierto')campo.current?.focus();},[estado]);
  useEffect(()=>{if(estado==='abierto')final.current?.scrollIntoView({block:'nearest'});},[historial,estado]);
- function cerrar(modo:'cerrado'|'minimizado'){setEstado(modo);boton.current?.focus();}
+ function cerrar(modo:'cerrado'|'minimizado'){voz.cancelarVoz();setEstado(modo);boton.current?.focus();}
  async function enviar(){
-  const pregunta=texto.trim();if(!pregunta||solicitud.current||gestion)return;
+  const pregunta=texto.trim();if(!pregunta||solicitud.current||gestion||voz.dictado!=='inactivo')return;
   const ultimo=historial.at(-1),contexto=ultimo?.respuesta.pendiente??ultimo?.respuesta.contexto,periodoPendiente=ultimo?.respuesta.periodoPendiente;
   const ac=new AbortController();solicitud.current=ac;setConsultando(true);setTexto('');setAviso('');setSugerencia('');
   try{
@@ -137,7 +139,7 @@ export function SicomBot({identidad}:{identidad:string}){
    </header>
    <div className="space-y-2 border-b p-2 text-xs">
     <div className="flex flex-wrap gap-2">
-     <select className="input flex-1" aria-label="Conversaciones" disabled={gestion||consultando} value={chat??''} onChange={e=>{if(e.target.value)abrirChat(Number(e.target.value));else {setChat(null);setHistorial(leer(clave));setTitulo('');setPublica(null);setSugerencia('');}}}>
+     <select className="input flex-1" aria-label="Conversaciones" disabled={gestion||consultando} value={chat??''} onChange={e=>{if(e.target.value)abrirChat(Number(e.target.value));else {voz.cancelarVoz();setChat(null);setHistorial(leer(clave));setTitulo('');setPublica(null);setSugerencia('');}}}>
       <option value="">Chat local anterior</option>{chats.data?.map(c=><option key={c.id} value={c.id}>{c.titulo}</option>)}
      </select>
      <button type="button" className="sicom-accion" disabled={gestion||consultando} onClick={nuevo}>Nuevo chat</button>
@@ -158,6 +160,7 @@ export function SicomBot({identidad}:{identidad:string}){
     {historial.map((t,i)=><div key={i} className="space-y-2">
      <p className="ml-6 rounded-xl bg-emerald-100 p-2"><strong>Tú: </strong>{t.pregunta}</p>
      <div className="mr-4 space-y-2 rounded-xl bg-ink-50 p-2"><p className="whitespace-pre-line">{t.respuesta.texto}</p>
+      {voz.puedeLeer&&<button type="button" className="sicom-accion inline-flex items-center gap-1 text-xs" disabled={voz.dictado!=='inactivo'} aria-pressed={voz.leyendo===i} onClick={()=>voz.escuchar(i,t.respuesta.texto,setAviso)}>{voz.leyendo===i?<><Square size={13}/> Detener lectura</>:<><Volume2 size={14}/> Escuchar</>}</button>}
       {t.respuesta.antecedentes?.map((a,i)=><button key={i} type="button" className="sicom-accion" disabled={gestion||consultando} onClick={()=>abrirChat(a.id)}>Abrir: {a.titulo}</button>)}
       {t.respuesta.externa&&<div className="space-y-1 text-xs"><p>Consulta web · {new Date(t.respuesta.externa.consultado).toLocaleString('es-CO')}</p>{t.respuesta.externa.fuentes.filter(f=>enlaceSeguro(f.url)).map(f=><a key={f.url} className="block underline" target="_blank" rel="noopener noreferrer" href={f.url}>{f.titulo||f.url}</a>)}</div>}
       {t.respuesta.fuente?.startsWith('/')&&!t.respuesta.fuente.startsWith('//')&&<Link className="sicom-accion" to={t.respuesta.fuente}>Abrir fuente en SICOM</Link>}
@@ -177,12 +180,15 @@ export function SicomBot({identidad}:{identidad:string}){
     <button className="sicom-accion sicom-accion-principal" disabled={!confirmada||!publica.trim()||consultando||gestion}>Consultar web</button>
     <button type="button" className="sicom-accion ml-2" onClick={()=>setPublica(null)}>Cancelar</button>
    </form>}
+   {voz.puedeDictar&&voz.dictado==='inactivo'&&<p className="px-3 pt-1 text-xs text-ink-600">El dictado usa el servicio de voz del navegador.</p>}
+   {voz.dictado!=='inactivo'&&<p role="status" className="px-3 pt-1 text-xs">{voz.dictado==='escuchando'?'Escuchando… habla y revisa el texto antes de enviarlo.':'Terminando el dictado…'}</p>}
    <form className="flex gap-2 border-t p-3" onSubmit={e=>{e.preventDefault();enviar();}}>
     <input ref={campo} className="input min-w-0" aria-label="Escribe tu pregunta" placeholder="Ej. Puse dos cafés y solo era uno" maxLength={400} value={texto} onChange={e=>setTexto(e.target.value)}/>
-    <button className="sicom-accion sicom-accion-principal" aria-label="Enviar pregunta" disabled={!texto.trim()||consultando||gestion}><Send size={17}/></button>
+    {voz.puedeDictar&&<button type="button" className="sicom-accion" title={voz.dictado==='inactivo'?'Dictar con el servicio de voz del navegador':'Detener dictado'} aria-label={voz.dictado==='inactivo'?'Dictar pregunta':'Detener dictado'} aria-pressed={voz.dictado!=='inactivo'} disabled={consultando||gestion||voz.dictado==='procesando'} onClick={()=>voz.microfono(fragmento=>{setTexto(prev=>unirDictado(prev,fragmento));campo.current?.focus();},setAviso)}>{voz.dictado==='inactivo'?<Mic size={17}/>:<Square size={16}/>}</button>}
+    <button className="sicom-accion sicom-accion-principal" aria-label="Enviar pregunta" disabled={!texto.trim()||consultando||gestion||voz.dictado!=='inactivo'}><Send size={17}/></button>
    </form>
    {!!historial.length&&<div className="flex justify-between gap-2 px-3 pb-3 text-xs">
-    {chat===null&&<button type="button" className="inline-flex items-center gap-1 underline" disabled={enviando||consultando} onClick={()=>{setHistorial([]);setAviso('');}}><Trash2 size={13}/> Borrar historial</button>}
+    {chat===null&&<button type="button" className="inline-flex items-center gap-1 underline" disabled={enviando||consultando} onClick={()=>{voz.cancelarVoz();setHistorial([]);setAviso('');}}><Trash2 size={13}/> Borrar historial</button>}
     <button type="button" className="underline" disabled={enviando||consultando||historial.at(-1)?.enviada||historial.at(-1)?.respuesta.datoVivo} onClick={()=>void reportar()}>{historial.at(-1)?.enviada?'Duda enviada':enviando?'Enviando…':'No me resolvió · enviar duda'}</button>
    </div>}
   </section>}
