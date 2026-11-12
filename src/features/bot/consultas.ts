@@ -33,6 +33,12 @@ export async function consultar(c:Consulta,signal:AbortSignal):Promise<Respuesta
    return {...base,texto:[`El valor estimado del inventario actual es ${dinero(d.total)}.`,alcance,
     ...Object.entries(d.porSede).map(([s,v])=>`• ${s}: ${dinero(v)}`),'Estimación al costo registrado por producto; el precio de venta no se usa en este cálculo.'].join('\n')};
   }
+  if(c.tipo==='compras'&&c.contar)return {...base,texto:[
+   `Encontré ${cantidad(d.registros)} ${d.registros===1?'factura de compra no anulada':'facturas de compra no anuladas'}.`,
+   `Período: ${periodo}. ${alcance}`,
+   d.registros?`Total facturado por proveedores: ${dinero(d.total)}.`:'',
+   'Conteo por fecha de emisión de las facturas vinculadas a las sucursales consultadas. Las órdenes, las recepciones y las facturas sin sede vinculada no forman parte de este conteo.',
+  ].filter(Boolean).join('\n')};
   if(c.tipo==='documentos'){
    if(typeof d.facturas!=='number'||typeof d.otros!=='number')throw new Error('Respuesta de documentos incompleta');
    const tipo=c.soloFacturas?(d.registros===1?'factura de venta':'facturas de venta'):(d.registros===1?'documento de venta':'documentos de venta');

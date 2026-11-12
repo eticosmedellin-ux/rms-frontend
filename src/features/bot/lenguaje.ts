@@ -3,6 +3,8 @@ export type Sede={id:number;nombre:string;principal:boolean};
 export type Regla={expresion:string;intencion:string};
 export const tipos=['ventas','documentos','productos','pagos','ranking','inventario','agotados','bajos','valor','compras','cxp','cxc','caja','gastos','utilidad','recepciones','arqueos','clientesVentas','vendedores','rotacion'] as const;
 type Tipo=typeof tipos[number];
+export type Intencion={tipo:Tipo|'ninguna';filtro:'ninguno'|'sede'|'no_disponible';contar:boolean;ultimo:boolean;porMonto:boolean;soloFacturas:boolean;retomar:boolean;requierePeriodo:boolean};
+
 export type Consulta={tipo:Tipo;nombre:string;desde:string;hasta:string;sucursalId?:number;comparar?:[string,string];soloFacturas?:boolean;contar?:boolean;ultimo?:boolean;porMonto?:boolean};
 const meses='enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre'.split(' ');
 // Corrige errores frecuentes sin alterar nombres de sedes ni fechas numéricas.
@@ -71,19 +73,19 @@ const reglas:[Tipo,RegExp][]=[
 ];
 const quitar=(q:string,x:string)=>(' '+q+' ').replace(' '+x+' ',' ').trim();
 const cerca=(a:string,b:string)=>{if(a===b)return true;if(Math.min(a.length,b.length)<5||Math.abs(a.length-b.length)>1)return false;let i=0,j=0,n=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;}else{if(++n>1)return false;if(a.length>=b.length)i++;if(b.length>=a.length)j++;}}return n+a.length-i+b.length-j<=1;};
-export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimiento:Regla[]=[],actual=hoy(),periodoPendiente?:[string,string]):{periodoPendiente?:[string,string];consulta?:Consulta;aclarar?:string;guia?:string;pendiente?:Consulta}{
+export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimiento:Regla[]=[],actual=hoy(),periodoPendiente?:[string,string],forzada?:Intencion):{periodoPendiente?:[string,string];consulta?:Consulta;aclarar?:string;guia?:string;pendiente?:Consulta}{
  texto=corregir(texto);
  if(consultaPublica(texto))return {};
  const partes=texto.split(/\s+y\s+(?=[¿¡]?(?:c[oó]mo|d[oó]nde)\s+(?:hago|puedo|registro|creo|abro))/i);
  const q=normal(partes[0]),guia=partes[1];
- if(/^(como|donde|pasos para|quiero aprender)\b/.test(q)&&!/^como (nos fue|estuvieron|van|vamos|estuvo|nos pagaron|nos pagan|me pagan|me pagaron)\b/.test(q))return {};
+ if(!forzada&&/^(como|donde|pasos para|quiero aprender)\b/.test(q)&&!/^como (nos fue|estuvieron|van|vamos|estuvo|nos pagaron|nos pagan|me pagan|me pagaron)\b/.test(q))return {};
  const alias=(n:string)=>normal(n).replace(/^(?:sucursal|sede|punto) (?:de )?/,'');
  const periodoSuelo=!!periodoPendiente&&!/\b(?:hoy|ayer|mes|semana|ano)\b/.test(q);
  const sedeSola=sedes.some(s=>q===normal(s.nombre)||alias(q)===alias(s.nombre));
  const fCorta=fechas(partes[0],actual);
- const continuidad=/^(y\b|en\b|ayer$|hoy$|este mes$|la semana pasada$|cuantas?$)/.test(q)||!!anterior&&(sedeSola||!!fCorta&&q.split(' ').length<=6);
+ const continuidad=!!forzada?.retomar||/^(y\b|en\b|ayer$|hoy$|este mes$|la semana pasada$|cuantas?$)/.test(q)||!!anterior&&(sedeSola||!!fCorta&&q.split(' ').length<=6);
  const candidata=conocimiento.find(r=>(' '+q+' ').includes(' '+normal(r.expresion)+' ')&&(tipos as readonly string[]).includes(r.intencion));
- let tipo=(candidata?.intencion as Tipo|undefined)??reglas.find(([,r])=>r.test(q))?.[0];
+ let tipo=(forzada?.tipo!=='ninguna'?forzada?.tipo:undefined)??(candidata?.intencion as Tipo|undefined)??reglas.find(([,r])=>r.test(q))?.[0];
  if(!tipo&&continuidad)tipo=anterior?.tipo;
  if(!tipo&&anterior&&/cuanto entro/.test(q)&&['ventas','caja'].includes(anterior.tipo))tipo=anterior.tipo;
  if(!tipo){if(fCorta?.[0])return {periodoPendiente:fCorta,aclarar:`Entendí el período ${fCorta[0]} a ${fCorta[1]}. ¿Qué quieres consultar: ventas, compras o caja?`};if(/cuanto entro|que (tengo pendiente|nos falta)/.test(q))return {aclarar:'¿Te refieres a caja, ventas, cartera o inventario?'};return {};}
@@ -93,7 +95,7 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  if(segmentos.length>1&&(!f||!comparar||!comparar[0]||!comparar[1]||comparar[0]>comparar[1]||tipo!=='ventas'))
   return {aclarar:'Para comparar ventas, indica dos períodos claros, por ejemplo «ventas de este mes contra el mes pasado».'};
  if(f&&(!f[0]||!f[1]||f[0]>f[1]))return {aclarar:'No pude identificar el período. Indica una fecha o un rango, por ejemplo «del 1 al 15 de octubre».'};
- const ultimo=tipo==='arqueos'&&(/\b(?:ultim[oa]|reciente|mas reciente)\b/.test(q)||continuidad&&anterior?.ultimo);
+ const ultimo=tipo==='arqueos'&&(forzada?.ultimo||/\b(?:ultim[oa]|reciente|mas reciente)\b/.test(q)||continuidad&&anterior?.ultimo);
  const rango=f??(periodoSuelo?periodoPendiente:undefined)??(continuidad&&anterior?[anterior.desde,anterior.hasta]:(tipo==='rotacion'||ultimo)?[sumar(actual,-29),actual]:tipo==='pagos'&&!f?[actual.slice(0,7)+'-01',actual]:tipo==='documentos'?[actual.slice(0,7)+'-01',actual]:[actual,actual]);
  const sitio=q.match(/\b(?:en (?:la |el )?|sede |sucursal |punto de trabajo )([a-z0-9 ]+)$/)?.[1]
   ?.replace(/^(?:sede |sucursal |punto de trabajo )(?:de )?/,'')
@@ -107,7 +109,7 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
   const exacta=(' '+q+' ').includes(' '+n+' ')||(' '+q+' ').includes(' '+corto+' ');
   return {s,p:exacta?corto.length+5:s.principal&&/\b(?:sede|sucursal) principal\b/.test(q)?4:ubicacionExplicita&&sitio&&cerca(sitio,corto)?3:0};
  }).filter(x=>x.p>0).sort((a,b)=>b.p-a.p);
- if(coincidencias.length>1)return {aclarar:'Hay más de una sucursal posible: '+coincidencias.map(x=>x.s.nombre).join(', ')+'. Indica el nombre completo.',pendiente:{tipo,nombre:anterior?.nombre??'',desde:rango[0],hasta:rango[1],ultimo,contar:/\b(?:cuantos?|cuantas?|cantidad)\b/.test(q)||anterior?.contar}};
+ if(coincidencias.length>1)return {aclarar:'Hay más de una sucursal posible: '+coincidencias.map(x=>x.s.nombre).join(', ')+'. Indica el nombre completo.',pendiente:{tipo,nombre:anterior?.nombre??'',desde:rango[0],hasta:rango[1],ultimo,contar:forzada?.contar||/\b(?:cuantos?|cuantas?|cantidad)\b/.test(q)||anterior?.contar}};
  const sedeDesconocida=!todas&&ubicacionExplicita&&!coincidencias.length;
  const mensajeSede='No encontré esa sede entre las que puedes consultar.'+(sedes.length?' Puedes responder con: '+sedes.map(s=>s.nombre).join(', ')+'.':'');
  const sucursalId=todas?undefined:coincidencias[0]?.s.id??(continuidad?anterior?.sucursalId:undefined);
@@ -118,8 +120,19 @@ export function entender(texto:string,sedes:Sede[],anterior?:Consulta,conocimien
  tipo==='inventario'?resto.match(/(?:stock de|existencias de|quedan de|quedan|unidades de)\s+(.+)/)?.[1]:
  tipo==='compras'?resto.match(/(?:compras (?:al proveedor|a|del proveedor|de)|compramos a)\s+(.+)/)?.[1]:undefined;
  const nombre=n?.replace(/^(?:proveedor|cliente)\s+/,'').replace(/\s+(?:en (?:la )?(?:sucursal|sede)|en|durante|desde)\s*$/,'').trim()??(continuidad&&tipo===anterior?.tipo?anterior.nombre:'');
- const consulta={tipo,nombre,desde:rango[0],hasta:rango[1],sucursalId,comparar,ultimo,porMonto:tipo==='pagos'&&(/por (?:monto|valor)|mayor monto/.test(q)||continuidad&&!/por (?:uso|frecuencia|cantidad)/.test(q)&&anterior?.porMonto),
-  soloFacturas:tipo==='documentos'&&(/\bfacturas?\b/.test(q)||continuidad&&anterior?.soloFacturas),
-  contar:/\b(?:cuantos?|cuantas?|cantidad|numero de)\b/.test(q)||continuidad&&anterior?.contar};
+ const consulta={tipo,nombre,desde:rango[0],hasta:rango[1],sucursalId,comparar,ultimo,porMonto:tipo==='pagos'&&(forzada?.porMonto||/por (?:monto|valor)|mayor monto/.test(q)||continuidad&&!/por (?:uso|frecuencia|cantidad)/.test(q)&&anterior?.porMonto),
+  soloFacturas:tipo==='documentos'&&(forzada?.soloFacturas||/\bfacturas?\b/.test(q)||continuidad&&anterior?.soloFacturas),
+  contar:forzada?.contar||/\b(?:cuantos?|cuantas?|cantidad|numero de)\b/.test(q)||continuidad&&anterior?.contar};
  return sedeDesconocida?{aclarar:mensajeSede,pendiente:consulta}:{consulta,guia};
+}
+
+export function aplicarIntencion(i:Intencion,q:string,sedes:Sede[],anterior?:Consulta,periodoPendiente?:[string,string],actual=hoy()){
+ if(i.tipo==='ninguna'||!(tipos as readonly string[]).includes(i.tipo)||!['ninguno','sede','no_disponible'].includes(i.filtro)||i.retomar&&i.tipo!==anterior?.tipo)return {};
+ if(i.filtro==='no_disponible')return {aclarar:'Entendí el tema, pero el bot no puede aplicar ese filtro o cruce. Puedes pedir un total general o revisar el detalle en Reportes.'};
+ if(i.requierePeriodo&&!fechas(q,actual)?.[0]&&!periodoPendiente)return {aclarar:'Entendí qué dato buscas. Escribe el período con un mes o dos fechas, por ejemplo «junio» o «del 1 al 15 de junio».'};
+ const resultado=entender(q,sedes,i.retomar?anterior:undefined,[],actual,periodoPendiente,i);
+ if(i.filtro==='sede'&&resultado.consulta?.sucursalId==null&&!resultado.aclarar){
+  return {aclarar:'Indica una sucursal autorizada para que pueda consultar ese dato.',pendiente:resultado.consulta};
+ }
+ return resultado;
 }

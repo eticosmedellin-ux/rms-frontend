@@ -1,5 +1,5 @@
 import {Link} from 'react-router-dom';
-import {consultaPublica,entender,pedirAlcance} from './lenguaje';
+import {aplicarIntencion,consultaPublica,entender,pedirAlcance,type Intencion} from './lenguaje';
 import {consultar,cargarSedes,cargarConocimiento} from './consultas';
 import {useEffect,useRef,useState} from 'react';
 import {Bot,Minus,Send,Trash2,X} from 'lucide-react';
@@ -33,9 +33,12 @@ export function SicomBot({identidad}:{identidad:string}){
  const [chat,setChat]=useState<number|null>(null),[memoria,setMemoria]=useState<string|null>(null);
  const [titulo,setTitulo]=useState(''),[gestion,setGestion]=useState(false);
  const [publica,setPublica]=useState<string|null>(null),[confirmada,setConfirmada]=useState(false),[sugerencia,setSugerencia]=useState('');
+ const [permitirInterpretacion,setPermitirInterpretacion]=useState(false);
  const [tema,setTema]=useState('general');
  const chats=useQuery({queryKey:['bot-chats',identidad],queryFn:async()=>(await apiClient.get<Chat[]>(ruta)).data,enabled:estado==='abierto',retry:false});
  const estadoWeb=useQuery({queryKey:['bot-web',identidad],queryFn:async()=>(await apiClient.get<{activo:boolean}>(web)).data,enabled:estado==='abierto',retry:false});
+ const intencion='/ayuda/bot/intencion';
+ const estadoIntencion=useQuery({queryKey:['bot-intencion',identidad],queryFn:async()=>(await apiClient.get<{activa:boolean}>(intencion)).data,enabled:estado==='abierto',retry:false});
  async function gestionar(fn:()=>Promise<void>){if(gestion||consultando||solicitud.current)return;setGestion(true);setAviso('');try{await fn();}catch(e){setAviso(getApiErrorMessage(e,'No se pudo completar el cambio.'));}finally{setGestion(false);}}
  function abrirChat(id:number){void gestionar(async()=>{
   const {data}=await apiClient.get<Turno[]>(ruta+'/'+id);
@@ -88,9 +91,19 @@ export function SicomBot({identidad}:{identidad:string}){
    const reglas=await cargarConocimiento(ac.signal).catch(()=>[]);
    const previa=entender(pregunta,[],contexto,reglas,undefined,periodoPendiente);
    const sedes=(previa.consulta||previa.pendiente||contexto)?await cargarSedes(ac.signal):[];
-   const analisis=entender(pregunta,sedes,contexto,reglas,undefined,periodoPendiente);
+   let analisis=entender(pregunta,sedes,contexto,reglas,undefined,periodoPendiente);
    let respuesta:Respuesta=analisis.consulta?await consultar(analisis.consulta,ac.signal):analisis.aclarar?
     {texto:analisis.aclarar,datoVivo:true,pendiente:analisis.pendiente,contexto,periodoPendiente:analisis.periodoPendiente}:resolver(pregunta,guias.data??[],ultimo?.respuesta.aclarar?ultimo.pregunta:'');
+   if(!analisis.consulta&&(respuesta.sinGuia||analisis.periodoPendiente&&pregunta.trim().split(/\s+/).length>=4)&&permitirInterpretacion&&estadoIntencion.data?.activa){
+    const i=await apiClient.post<Intencion>(intencion,{pregunta,anterior:contexto?.tipo,autorizada:true},{signal:ac.signal}).then(r=>r.data).catch(()=>null);
+    if(i&&i.tipo!=='ninguna'&&!ac.signal.aborted){
+     const autorizadas=i.filtro==='no_disponible'?[]:sedes.length?sedes:await cargarSedes(ac.signal);
+     const interpretada=aplicarIntencion(i,pregunta,autorizadas,contexto,periodoPendiente);
+     if(interpretada.consulta||interpretada.aclarar)analisis=interpretada;
+     if(interpretada.consulta)respuesta=await consultar(interpretada.consulta,ac.signal);
+     else if(interpretada.aclarar)respuesta={texto:interpretada.aclarar,datoVivo:true,pendiente:interpretada.pendiente,contexto};
+    }
+   }
    if(analisis.guia&&analisis.consulta){
     const g=resolver(analisis.guia,guias.data??[]);respuesta={...respuesta,texto:respuesta.texto+'\n\n'+g.texto,opciones:g.opciones};
    }
@@ -155,6 +168,7 @@ export function SicomBot({identidad}:{identidad:string}){
    {guias.isError&&<p className="px-3 text-xs text-ink-600">Las guías adicionales no cargaron. Puedes usar el catálogo base.</p>}
    {consultando&&<p role="status" className="px-3 text-xs">Interpretando la pregunta…</p>}
    {aviso&&<p role="status" className="px-3 text-xs">{aviso}</p>}
+   {estadoIntencion.data?.activa&&<label className="mx-3 my-1 flex items-center gap-2 text-xs" title="Solo se envía la pregunta escrita y el tipo de consulta anterior; no se envían resultados de SICOM."><input type="checkbox" checked={permitirInterpretacion} onChange={e=>setPermitirInterpretacion(e.target.checked)}/> Ayuda para interpretar preguntas con IA externa</label>}
    {estadoWeb.data?.activo&&publica===null&&<button type="button" disabled={consultando||gestion} className="mx-3 my-1 self-start text-xs underline" onClick={()=>{const q=sugerencia||texto;setPublica(q);setTema(temaPublico(q));setConfirmada(false);}}>Buscar información pública en Internet</button>}
    {publica!==null&&<form className="space-y-2 border-t p-3 text-xs" onSubmit={e=>{e.preventDefault();void externa();}}>
     <label>Pregunta pública que se enviará al proveedor<textarea className="input" required maxLength={500} value={publica} onChange={e=>{setPublica(e.target.value);setTema(temaPublico(e.target.value));setConfirmada(false);}}/></label>
