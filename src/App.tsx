@@ -35,6 +35,8 @@ const DomiciliosPage=lazy(()=>import('@/pages/domicilios/DomiciliosPage'));
 const AppMeseroPage=lazy(()=>import('@/pages/restaurante/AppMeseroPage'));
 const AppCocinaPage=lazy(()=>import('@/pages/restaurante/AppCocinaPage'));
 
+const modulos=[{path:"/dashboard",element:<DashboardPage/>},{path:"/inventario",element:<InventarioPage/>},{path:"/compras",element:<ComprasPage/>},{path:"/pos",element:<PosPage/>},{path:"/descuentos",element:<DescuentosPage/>},{path:"/documentos",element:<DocumentosPage/>},{path:"/contabilidad",element:<ContabilidadPage/>},{path:"/mis-clientes-contables",element:<MisClientesContablesPage/>},{path:"/nomina",element:<NominaPage/>},{path:"/restaurante",element:<RestaurantePage/>},{path:"/servicios",element:<ServiciosPage/>},{path:"/prestamos",element:<PrestamosPage/>},{path:"/domicilios",element:<DomiciliosPage/>},{path:"/gastos",element:<GastosPage/>},{path:"/reportes",element:<ReportesPage/>},{path:"/alertas",element:<AlertasPage/>},{path:"/administracion",element:<AdministracionPage/>},{path:"/aplicaciones",element:<TiendaAplicaciones/>},{path:"/configuracion",element:<ConfiguracionPage/>},{path:"/plataforma",element:<PlataformaPage/>}];
+
 export default function App() {
   return (
     <Suspense fallback={<p className="p-6">Cargando módulo…</p>}><Routes>
@@ -47,27 +49,7 @@ export default function App() {
       <Route path="/menu" element={<MenuPublicoPage />} />
 
       <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/inventario" element={<InventarioPage />} />
-          <Route path="/compras" element={<ComprasPage />} />
-          <Route path="/pos" element={<PosPage />} />
-          <Route path="/descuentos" element={<DescuentosPage />} />
-          <Route path="/documentos" element={<DocumentosPage />} />
-          <Route path="/contabilidad" element={<ContabilidadPage />} />
-          <Route path="/mis-clientes-contables" element={<MisClientesContablesPage />} />
-          <Route path="/nomina" element={<NominaPage />} />
-          <Route path="/restaurante" element={<RestaurantePage />} />
-          <Route path="/servicios" element={<ServiciosPage />} />
-          <Route path="/prestamos" element={<PrestamosPage />} />
-          <Route path="/domicilios" element={<DomiciliosPage />} />
-          <Route path="/gastos" element={<GastosPage />} />
-          <Route path="/reportes" element={<ReportesPage />} />
-          <Route path="/alertas" element={<AlertasPage />} />
-          <Route path="/administracion" element={<AdministracionPage />} />
-          <Route path="/aplicaciones" element={<TiendaAplicaciones />} />
-          <Route path="/configuracion" element={<ConfiguracionPage />} />
-          <Route path="/plataforma" element={<PlataformaPage />} />
+        <Route element={<AppLayout modulos={modulos} />}><Route path="/" element={null}/><Route path="/dashboard" element={null}/><Route path="/inventario" element={null}/><Route path="/compras" element={null}/><Route path="/pos" element={null}/><Route path="/descuentos" element={null}/><Route path="/documentos" element={null}/><Route path="/contabilidad" element={null}/><Route path="/mis-clientes-contables" element={null}/><Route path="/nomina" element={null}/><Route path="/restaurante" element={null}/><Route path="/servicios" element={null}/><Route path="/prestamos" element={null}/><Route path="/domicilios" element={null}/><Route path="/gastos" element={null}/><Route path="/reportes" element={null}/><Route path="/alertas" element={null}/><Route path="/administracion" element={null}/><Route path="/aplicaciones" element={null}/><Route path="/configuracion" element={null}/><Route path="/plataforma" element={null}/>
         </Route>
 
         {/* Apps simplificadas de pantalla completa — protegidas por sesión, pero SIN el

@@ -1,9 +1,9 @@
 import {useMenuAplicaciones} from '@/features/aplicaciones/api';
 import {LogoAplicacion} from '@/features/aplicaciones/iconos';
-import {MarcaSicom} from '@/features/apariencia/MarcaSicom';
-import {useApariencia} from '@/features/apariencia/AparienciaProvider';
-import {fondo} from '@/features/apariencia/tema';
-import { NavLink, useLocation } from 'react-router-dom';
+
+
+
+
 import {
   LayoutDashboard,
   Package,
@@ -23,7 +23,7 @@ import {
   CalendarClock,
   Landmark,
   Bike,
-  X,
+
   Briefcase,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -77,9 +77,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
   },
 ];
 
-export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolean; onCerrar: () => void;ocultoPC?:boolean }) {
-  const ubicacion=useLocation();
-  const apariencia=useApariencia();
+export function useModulosInicio(){
   const esSuperadmin = useAuthStore((state) => state.esSuperadmin);
   const esAdministradorTotal = useAuthStore((state) => state.esAdministradorTotal);
   const permisos = useAuthStore((state) => state.permisos);
@@ -120,93 +118,26 @@ export function Sidebar({ abierto, onCerrar, ocultoPC=false }: { abierto: boolea
       }
       return [item];
     }).map(item=>{
-      const ficha=fichas?.[item.to];
+      const ficha=item.to==='/'?(fichas?.['/dashboard']??fichas?.['/']):fichas?.[item.to];
       return ficha?{...item,label:ficha.nombre||item.label,fichaIcono:ficha.icono}:item;
     }),
   })).filter((grupo) => grupo.items.length > 0);
 
-  return (
-    <>
-      {abierto && (
-        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={onCerrar} aria-hidden="true" />
-      )}
-      <aside
-        style={apariencia.activo?fondo(apariencia.menu):undefined}
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-ink-800 text-ink-100 transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${ocultoPC?'md:hidden':'md:flex'} ${
-          abierto ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex min-h-16 items-center justify-between gap-2 px-4 py-2" style={apariencia.activo?{minHeight:Math.min(apariencia.logoAlto,80)+24}:undefined}>
-          <div className="flex items-center gap-2">
-            {apariencia.activo?<MarcaSicom compacta/>:<span className="font-display text-lg font-bold tracking-tight">
-              <span className="text-white">SIC</span>
-              <span className="text-sicom-greenLight">OM</span>
-            </span>}
-            <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-300">
-              Beta
-            </span>
-          </div>
-          <button onClick={onCerrar} className="rounded p-1 text-ink-300 hover:text-white md:hidden">
-            <X size={20} />
-          </button>
-        </div>
+  return [...gruposVisibles.flatMap(g=>g.items).map(i=>i.to==='/'?{...i,to:'/dashboard'}:i),
+   ...(esSuperadmin?[{to:'/plataforma',label:'Plataforma',icon:ShieldAlert}]:[])];
+}
 
-        <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
-          {gruposVisibles.map((grupo, i) => (
-            <div key={grupo.titulo ?? `grupo-${i}`}>
-              {grupo.titulo && (
-                <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
-                  {grupo.titulo}
-                </p>
-              )}
-              <div className="space-y-1">
-                {grupo.items.map(({ to, label, icon: Icon, end, fichaIcono }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    end={end}
-                    onClick={onCerrar}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                        isActive && (!to.includes("?") || to.endsWith(ubicacion.search) && !!ubicacion.search)
-                          ? 'bg-ink-700 text-white'
-                          : 'text-ink-300 hover:bg-ink-700/60 hover:text-white'
-                      }`
-                    }
-                  >
-                    <LogoAplicacion codigo={fichaIcono} alternativo={Icon} size={18} className="shrink-0"/>
-                    {label}
-                  </NavLink>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {esSuperadmin && (
-            <div>
-              <div className="mb-2 border-t border-ink-700" />
-              <NavLink
-                to="/plataforma"
-                onClick={onCerrar}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-amber-400/20 text-amber-300'
-                      : 'text-amber-400/80 hover:bg-amber-400/10 hover:text-amber-300'
-                  }`
-                }
-              >
-                <ShieldAlert size={18} strokeWidth={2} />
-                Plataforma
-              </NavLink>
-            </div>
-          )}
-        </nav>
-
-        <div className="border-t border-ink-700 px-6 py-4 text-xs text-ink-400">
-          Retail Management System
-        </div>
-      </aside>
-    </>
-  );
+export function InicioModulos({modulos,abrir}:{modulos:ReturnType<typeof useModulosInicio>;abrir:(ruta:string,nueva:boolean)=>void}){
+ return <section className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
+  <h1 className="mb-2 text-3xl font-bold text-ink-900 dark:text-white">Inicio</h1>
+  <p className="mb-8 text-sm text-ink-600 dark:text-ink-300">Selecciona una aplicación. Usa el botón + para abrir otra copia.</p>
+  <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+   {modulos.map(({to,label,icon,fichaIcono})=><li key={to} className="relative rounded-2xl border border-ink-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-ink-800">
+    <button type="button" onClick={()=>abrir(to,false)} className="flex min-h-28 w-full flex-col items-center justify-center gap-3 rounded-2xl px-2 py-4 text-center text-sm font-semibold text-ink-800 focus-visible:ring-2 focus-visible:ring-emerald-600 dark:text-white">
+     <span className="rounded-2xl bg-emerald-50 p-3 text-emerald-800"><LogoAplicacion codigo={fichaIcono} alternativo={icon} size={27}/></span>{label}
+    </button>
+    <button type="button" onClick={()=>abrir(to,true)} aria-label={`Abrir otra pestaña de ${label}`} className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full border border-ink-100 bg-white font-semibold text-ink-700 hover:bg-emerald-50">+</button>
+   </li>)}
+  </ul>
+ </section>;
 }
