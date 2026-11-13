@@ -1,3 +1,4 @@
+import {useContrasteInicio} from '@/features/apariencia/contrasteInicio';
 import {ConteoTareas} from '@/features/inventario/ConteoTareas';
 import {TutorialGlobal} from '@/features/tutorial/TutorialUso';
 import {useApariencia} from '@/features/apariencia/AparienciaProvider';
@@ -24,6 +25,7 @@ export function AppLayout({modulos}:{modulos:{path:string;element:ReactNode}[]})
 }
 function Espacio({modulos}:{modulos:{path:string;element:ReactNode}[]}){
  const apariencia=useApariencia(),esSuperadmin=useAuthStore(a=>a.esSuperadmin);
+ const textoInicio=useContrasteInicio(apariencia.activo?apariencia.inicio??apariencia.sistema:undefined);
  const {data:miPlan}=useMiPlan();
  const visibles=useModulosInicio();
  const location=useLocation(),navigate=useNavigate();
@@ -91,7 +93,7 @@ function Espacio({modulos}:{modulos:{path:string;element:ReactNode}[]}){
   </nav>
   {aviso&&<p role="status" className="border-b bg-amber-50 px-4 py-2 text-sm text-amber-900">{aviso}</p>}
   <div className="relative min-h-0 flex-1">
-   {activa==='inicio'&&<main className="h-full overflow-y-auto" style={apariencia.activo&&apariencia.inicio?fondo(apariencia.inicio):undefined}><InicioModulos modulos={visibles} abrir={abrir}/></main>}
+   {activa==='inicio'&&<main className="h-full overflow-y-auto" style={apariencia.activo&&apariencia.inicio?fondo(apariencia.inicio):undefined}><InicioModulos modulos={visibles} abrir={abrir} texto={textoInicio}/></main>}
    {tabs.filter(t=>buscarModulo(t.modulo)).map(t=><main key={t.id} hidden={t.id!==activa} className="h-full overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
     <UNSAFE_LocationContext.Provider value={{location:t.ubicacion,navigationType:NavigationType.Pop}}>
      <Suspense fallback={<p>Cargando módulo…</p>}>{t.id===activa&&<ConteoTareas/>}{modulos.find(m=>m.path===t.ubicacion.pathname)?.element}</Suspense>
@@ -101,6 +103,6 @@ function Espacio({modulos}:{modulos:{path:string;element:ReactNode}[]}){
   <AsistenteAyuda/><TutorialGlobal/>
  </div>;
 }
-function pastilla(activa:boolean){
+export function pastilla(activa:boolean){
  return 'flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold '+(activa?'border-emerald-700 bg-emerald-800 text-white':'border-ink-200 bg-ink-50 text-ink-700');
 }

@@ -127,11 +127,14 @@ export function useModulosInicio(){
    ...(esSuperadmin?[{to:'/plataforma',label:'Plataforma',icon:ShieldAlert}]:[])];
 }
 
-export function InicioModulos({modulos,abrir}:{modulos:ReturnType<typeof useModulosInicio>;abrir:(ruta:string,nueva:boolean)=>void}){
+export const modulosDemostracion=NAV_GROUPS_DEF.flatMap(g=>g.items).slice(0,12);
+export function InicioModulos({modulos,abrir,texto,compacto=false}:{modulos:ReturnType<typeof useModulosInicio>;abrir:(ruta:string,nueva:boolean)=>void;texto?:import("react").CSSProperties;compacto?:boolean}){
  return <section className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
-  <h1 className="mb-2 text-3xl font-bold text-ink-900 dark:text-white">Inicio</h1>
-  <p className="mb-8 text-sm text-ink-600 dark:text-ink-300">Selecciona una aplicación. Usa el botón + para abrir otra copia.</p>
-  <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+  <div className="mb-8 w-fit rounded-xl px-3 py-2 text-ink-900 dark:text-white" style={texto}>
+   <h1 className="mb-2 text-3xl font-bold">Inicio</h1>
+   <p className="text-sm">Selecciona una aplicación. Usa el botón + para abrir otra copia.</p>
+  </div>
+  <ul className={compacto?"grid grid-cols-2 gap-4":"grid grid-cols-[repeat(auto-fit,minmax(min(100%,8.5rem),1fr))] gap-4"}>
    {modulos.map(({to,label,icon,fichaIcono})=><li key={to} className="relative rounded-2xl border border-ink-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-ink-800">
     <button type="button" onClick={()=>abrir(to,false)} className="flex min-h-28 w-full flex-col items-center justify-center gap-3 rounded-2xl px-2 py-4 text-center text-sm font-semibold text-ink-800 focus-visible:ring-2 focus-visible:ring-emerald-600 dark:text-white">
      <span className="rounded-2xl bg-emerald-50 p-3 text-emerald-800"><LogoAplicacion codigo={fichaIcono} alternativo={icon} size={27}/></span>{label}
