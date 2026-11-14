@@ -1,3 +1,8 @@
+import {useQueries} from '@tanstack/react-query';
+import {stockPorSucursal} from '@/api/inventario';
+import {useSucursales} from '@/hooks/useSucursales';
+import {useVistaInventario} from '@/hooks/useVistaInventario';
+import {useAuthStore} from '@/stores/authStore';
 import {EscanerBarras} from '@/components/busqueda/EscanerBarras';
 import {normalizar,concordancia} from '@/components/busqueda/BuscarSeleccion';
 import {ProductoFicha} from '@/features/inventario/ProductoFicha';
@@ -16,8 +21,27 @@ export function ProductosTab() {
   const [url,setUrl]=useSearchParams();const referencia=url.get('origen')==='reporte'?url.get('referencia'):null;
   const { data: todos, isLoading } = useProductos();
   const [busqueda,setBusqueda]=useState(''),[categoria,setCategoria]=useState('');
+  const {data:sucursales, isLoading:cargandoSucursales, isError:errorSucursales} = useSucursales();
+  const {vista, admin} = useVistaInventario();
+  const empresaId = useAuthStore(s => s.empresaId);
+  const usuarioId = useAuthStore(s => s.usuarioId);
+  const [sede, setSede] = useState('');
+  const activas = (sucursales ?? []).filter(s => s.estado);
+  const catalogo = admin && sede === 'catalogo';
+  const consolidada = admin && vista.data?.consolidada === true && sede === 'todas';
+  const actual = activas.find(s => String(s.id) === sede) ?? activas.find(s => s.esPrincipal) ?? activas[0];
+  const consultas = useQueries({ queries: (catalogo ? [] : consolidada ? activas : actual ? [actual] : []).map(s => ({
+    queryKey: ['stock', 'inventario-productos', empresaId, usuarioId, s.id],
+    queryFn: () => stockPorSucursal(s.id),
+    refetchInterval: 15000,
+  })) });
+  const cargandoStock = consultas.some(q => q.isPending);
+  const errorStock = consultas.some(q => q.isError);
+  const saldos = new Map<number, number>();
+  consultas.forEach(q => q.data?.forEach(fila => saldos.set(fila.productoId,
+    (saldos.get(fila.productoId) ?? 0) + Number(fila.stockActual))));
   const [ficha,setFicha]=useState<Producto|null>(null);
-  const productos=(referencia?todos?.filter(p=>String(p.id)===referencia):todos)?.filter(p=>(!categoria||p.categoria===categoria)&&normalizar([p.nombre,p.codigoInterno,p.codigoBarras,...(p.presentaciones??[]).map(x=>x.codigo_barras),p.categoria,p.marca,p.descripcion,p.ubicacion].join(' ')).includes(normalizar(busqueda))).sort((a,b)=>concordancia(a.nombre,busqueda)-concordancia(b.nombre,busqueda));
+  const productos=(referencia?todos?.filter(p=>String(p.id)===referencia):todos)?.filter(p=>(catalogo || !p.manejaInventario || saldos.has(p.id))&&(!categoria||p.categoria===categoria)&&normalizar([p.nombre,p.codigoInterno,p.codigoBarras,...(p.presentaciones??[]).map(x=>x.codigo_barras),p.categoria,p.marca,p.descripcion,p.ubicacion].join(' ')).includes(normalizar(busqueda))).sort((a,b)=>concordancia(a.nombre,busqueda)-concordancia(b.nombre,busqueda));
   const [modalFormAbierto, setModalFormAbierto] = useState(false);
   const [modalImportarAbierto, setModalImportarAbierto] = useState(false);
   const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
@@ -37,12 +61,19 @@ export function ProductosTab() {
   return (
     <div>
       {referencia&&<p className="mb-3 rounded bg-ink-50 p-3 text-sm">Producto #{referencia} desde el reporte: abre Stock y Kardex para revisar sus existencias. <button className="underline" onClick={()=>{const p=new URLSearchParams(url);p.delete('referencia');setUrl(p);}}>Ver todos los productos</button></p>}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-ink-400">
           {productos?.length ?? 0} producto{productos?.length === 1 ? '' : 's'} registrado
           {productos?.length === 1 ? '' : 's'}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <select aria-label="Sucursal del inventario" className="input w-auto" disabled={!activas.length}
+            value={catalogo ? 'catalogo' : consolidada ? 'todas' : String(actual?.id ?? '')} onChange={e => setSede(e.target.value)}>
+            {!activas.length && <option value="">Sin sucursales disponibles</option>}
+            {activas.map(s => <option value={s.id} key={s.id}>{s.nombre}</option>)}
+            {admin && <option value="catalogo">Catálogo de empresa (sin stock)</option>}
+            {admin && vista.data?.consolidada && <option value="todas">Todas las sucursales</option>}
+          </select>
           <button
             onClick={() => setModalImportarAbierto(true)}
             className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
@@ -61,7 +92,8 @@ export function ProductosTab() {
       </div>
 
       <div className="flex gap-2 mb-3"><input aria-label="Buscar producto" type="search" className="input" placeholder="Nombre, código, barras, categoría, marca o ubicación" value={busqueda} onChange={e=>setBusqueda(e.target.value)}/><EscanerBarras alLeer={setBusqueda}/><select className="input max-w-48" aria-label="Filtrar categoría" value={categoria} onChange={e=>setCategoria(e.target.value)}><option value="">Todas las categorías</option>{Array.from(new Set(todos?.map(p=>p.categoria).filter(Boolean))).map(c=><option key={c} value={c??''}>{c}</option>)}</select></div>
-      {isLoading ? (
+      <p className="mb-2 text-xs text-ink-500">El filtro consulta existencias. Importar y editar actualiza el catálogo de la empresa; los movimientos se registran por sucursal.</p>
+      {errorStock || errorSucursales ? <p role="alert">No se pudieron consultar las existencias. Intenta recargar.</p> : isLoading || cargandoStock || cargandoSucursales ? (
         <LoadingState label="Cargando productos…" />
       ) : productos && productos.length > 0 ? (
         <div className="overflow-x-auto rounded-xl border border-ink-100 bg-white shadow-card">
@@ -73,6 +105,7 @@ export function ProductosTab() {
                 <th className="px-4 py-3 text-left font-medium">Nombre</th>
                 <th className="px-4 py-3 text-left font-medium">Categoría</th>
                 <th className="px-4 py-3 text-left font-medium">Marca</th>
+                <th className="px-4 py-3 text-right font-medium">Existencias</th>
                 <th className="px-4 py-3 text-right font-medium">Costo prom.</th>
                 <th className="px-4 py-3 text-right font-medium">Precio venta</th>
                 <th className="px-4 py-3 text-right font-medium">Acciones</th>
@@ -101,6 +134,7 @@ export function ProductosTab() {
                   </td>
                   <td className="px-4 py-3 text-ink-500">{p.categoria ?? '—'}</td>
                   <td className="px-4 py-3 text-ink-500">{p.marca ?? '—'}</td>
+                  <td className="px-4 py-3 text-right">{p.manejaInventario && !catalogo ? saldos.get(p.id)?.toLocaleString('es-CO', {maximumFractionDigits: 20}) : '—'}</td>
                   <td className="px-4 py-3 text-right text-ink-700">
                     ${p.costoPromedio.toLocaleString('es-CO')}
                   </td>
@@ -142,8 +176,8 @@ export function ProductosTab() {
         </div>
       ) : (
         <EmptyState
-          title="Todavía no tienes productos"
-          description="Crea el primero con el botón de arriba para empezar a registrar inventario."
+          title="No hay productos para esta vista"
+          description="Elige otra sucursal o registra existencias desde el catálogo de empresa."
         />
       )}
 

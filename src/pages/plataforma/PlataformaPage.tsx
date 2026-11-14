@@ -7,7 +7,7 @@ import EditorApariencia from '@/features/apariencia/EditorApariencia';
 import {DobleFactor} from '@/features/sicom/DobleFactor';
 import {ContadoresPlataforma} from '@/features/sicom/ContadoresPlataforma';
 import {getApiErrorMessage} from '@/api/errors';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Settings2, Trash2 } from 'lucide-react';
 import { useEmpresasPlataforma, useSuspenderEmpresa, useActivarEmpresa, useEliminarEmpresa } from '@/hooks/usePlataforma';
 import { LoadingState, EmptyState } from '@/components/ui/States';
@@ -22,7 +22,7 @@ import { TiposNegocioTab } from '@/pages/plataforma/TiposNegocioTab';
 import { DashboardEjecutivoTab } from '@/pages/plataforma/DashboardEjecutivoTab';
 
 const TABS = [
-  { id: 'usuarios', label: 'Usuarios y contraseñas' },
+  { id: 'usuarios', label: 'Usuarios por empresa' },
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'seguridad', label: 'Seguridad' },
   { id: 'apariencia', label: 'Apariencia en vivo' },
@@ -65,7 +65,7 @@ export default function PlataformaPage() {
       </div>
 
       <div className="mt-5">
-        {tab === 'usuarios' && <GestionUsuarios plataforma/>}
+        {tab === 'usuarios' && <EmpresasTab />}
         {tab === 'dashboard' && <DashboardEjecutivoTab />}
         {tab === 'seguridad' && <div className="space-y-4"><DobleFactor /><Superadministradores /></div>}
         {tab === 'apariencia' && <EditorApariencia />}
@@ -85,6 +85,10 @@ export default function PlataformaPage() {
 }
 
 function EmpresasTab() {
+  const [abiertas,setAbiertas] = useState<Set<number>>(new Set());
+  function alternar(id:number) {
+    setAbiertas(prev => { const sig = new Set(prev); if (sig.has(id)) sig.delete(id); else sig.add(id); return sig; });
+  }
   const [fichaEmpresa,setFichaEmpresa]=useState<number|null>(null);
   const { data: empresas, isLoading } = useEmpresasPlataforma();
   const suspender = useSuspenderEmpresa();
@@ -116,10 +120,10 @@ function EmpresasTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-50">
-              {empresas.map((e) => (
-                <tr key={e.id} className="hover:bg-ink-50/60">
+              {[...empresas].sort((a,b)=>new Date(b.creadoEn).getTime()-new Date(a.creadoEn).getTime()||b.id-a.id).map((e) => (
+                <Fragment key={e.id}><tr className="hover:bg-ink-50/60">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-ink-800">{e.nombreComercial ?? e.nombre}</p>
+                    <button type="button" aria-expanded={abiertas.has(e.id)} onClick={()=>alternar(e.id)} className="text-left font-medium text-ink-800 underline">{abiertas.has(e.id) ? '▾' : '▸'} {e.nombreComercial ?? e.nombre}</button>
                     <p className="text-xs text-ink-400">{e.nombre}</p>
                   </td>
                   <td className="px-4 py-3 text-ink-500">{e.nit ?? '—'}</td>
@@ -175,6 +179,8 @@ function EmpresasTab() {
                     </div>
                   </td>
                 </tr>
+                {abiertas.has(e.id) && <tr><td colSpan={6} className="bg-ink-50 px-4 py-3"><GestionUsuarios plataforma empresaId={e.id}/></td></tr>}
+                </Fragment>
               ))}
             </tbody>
           </table>

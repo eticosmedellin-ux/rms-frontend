@@ -1,3 +1,7 @@
+import {useQuery} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
+import {useStockSucursal} from '@/hooks/useInventario';
+import {GestionUsuarios} from '@/features/sicom/GestionUsuarios';
 import { useState,createContext,useContext, type ReactNode } from 'react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
@@ -42,7 +46,7 @@ function money(v: number) {
 }
 
 const AbrirIndicador=createContext<(label:string)=>void>(()=>{});
-export default function DashboardPage(){const auth=useAuthStore();if(!auth.esSuperadmin&&!auth.esAdministradorTotal&&!auth.permisos.includes('REPORTES_CONSULTAR'))return <div><h1 className="font-display text-2xl font-semibold text-ink-800">Inicio</h1><p className="mt-2 text-sm text-ink-500">Usa el menú para abrir las operaciones autorizadas de tu perfil. Los indicadores financieros requieren permiso de reportes.</p></div>;return <DashboardResumen/>;}
+export default function DashboardPage(){const auth=useAuthStore();if(!auth.esSuperadmin&&!auth.esAdministradorTotal&&!auth.permisos.includes('REPORTES_CONSULTAR'))return <DashboardPersonal/>;return <DashboardResumen/>;}
 function descargarDashboard(datos:unknown,f:Filtro){const filas:string[][]=[['Dashboard SICOM'],['Desde',f.desde,'Hasta',f.hasta,'Sucursal',f.sucursalId||'Todas'],['Nota','Los saldos son actuales. Los indicadores especializados históricos se identifican en pantalla.'],['Indicador','Valor']];function recorrer(x:unknown,p:string){if(x==null)return;if(Array.isArray(x)){x.forEach((v,i)=>recorrer(v,`${p} ${i+1}`));return;}if(typeof x==='object'){Object.entries(x).forEach(([k,v])=>recorrer(v,`${p} ${k.replace(/([A-Z])/g,' $1').toLowerCase()}`.trim()));return;}filas.push([p,typeof x==='number'?x.toLocaleString('es-CO',{maximumFractionDigits:3}):String(x)]);}recorrer(datos,'');const text='\uFEFF'+filas.map(a=>a.map(v=>'"'+v.replace(/^[=+@\t\r-]/,m=>"'"+m).replaceAll('"','""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download=`sicom-dashboard-${f.desde}-${f.hasta}.csv`;a.click();URL.revokeObjectURL(url);}
 function DashboardResumen() {
   const nombreCompleto = useAuthStore((state) => state.nombreCompleto);
@@ -98,6 +102,7 @@ function DashboardResumen() {
       </div>
 
       <div className="mt-4"><PendientesDashboard f={f}/></div>
+      {(auth.esAdministradorTotal || auth.esSuperadmin) && <details className="mt-4 rounded-xl border border-ink-100 p-4"><summary className="cursor-pointer font-semibold">Actividad de trabajadores</summary><ActividadTrabajadores/></details>}
       {error&&<p role="alert" className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700">{getApiErrorMessage(error,'No se pudo cargar el dashboard')}</p>}
       {(alertas?.length ?? 0) > 0 && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -487,4 +492,37 @@ function GraficoTorta({ titulo, datos }: { titulo: string; datos: { nombre: stri
       )}
     </div>
   );
+}
+
+function ActividadTrabajadores() {
+  const [visible, setVisible] = useState(false);
+  return visible ? <GestionUsuarios actividad/> : <button className="mt-2 underline" onClick={()=>setVisible(true)}>Buscar trabajador</button>;
+}
+
+function DashboardPersonal() {
+  const auth=useAuthStore();
+  const {data:sucursales}=useSucursales();
+  const {data:plan}=useMiPlan();
+  const activas=(sucursales??[]).filter(s=>s.estado);
+  const [sede,setSede]=useState<number|null>(null);
+  const sucursalId=activas.find(s=>s.id===sede)?.id??activas[0]?.id??null;
+  const ventas=auth.permisos.some(p=>p==='VENTAS_CREAR'||p==='VENTAS_CONSULTAR');
+  const inventario=auth.permisos.includes('INVENTARIO_CONSULTAR');
+  const misVentas=useQuery({
+    queryKey:['dashboard-mis-ventas',auth.empresaId,auth.usuarioId,sucursalId],
+    enabled:ventas&&incluidaEnPlan(plan?.rutasHabilitadas,'ventas')&&sucursalId!==null,
+    queryFn:async()=>(await apiClient.get<{ventas:number;total:number;cajasAbiertas:number}>('/dashboard/mis-ventas',{params:{sucursalId}})).data,
+  });
+  const stock=useStockSucursal(inventario && incluidaEnPlan(plan?.rutasHabilitadas,'productos')?sucursalId:null);
+  const [bajos,setBajos]=useState(false);
+  return <section className="space-y-4">
+    <h1 className="font-display text-2xl font-semibold text-ink-800">Mi operación</h1>
+    {activas.length>0 && <label>Sucursal <select className="input w-auto" value={sucursalId??''} onChange={e=>setSede(Number(e.target.value))}>{activas.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}</select></label>}
+    {misVentas.data && <article className="rounded-xl border p-4"><h2 className="font-semibold">Mis ventas de hoy</h2><p>{misVentas.data.ventas} ventas completadas · {money(misVentas.data.total)}</p><p>Cajas abiertas a mi nombre: {misVentas.data.cajasAbiertas}</p></article>}
+    {misVentas.isError && <p role="alert">No se pudo consultar el resumen personal de ventas.</p>}
+    {stock.data && <button className="rounded-xl border p-4" onClick={()=>setBajos(true)}>Productos con bajo stock: {stock.data.filter(p=>p.stockBajo).length} · Ver detalle</button>}
+    {stock.isError && <p role="alert">No se pudo consultar el inventario de la sucursal.</p>}
+    {bajos && <Modal title="Productos con bajo stock" isOpen onClose={()=>setBajos(false)}><ul>{stock.data?.filter(p=>p.stockBajo).map(p=><li key={p.productoId}>{p.productoNombre} · {p.stockActual}</li>)}</ul></Modal>}
+    {!ventas && !inventario && <p>Abre los módulos autorizados desde el menú.</p>}
+  </section>;
 }

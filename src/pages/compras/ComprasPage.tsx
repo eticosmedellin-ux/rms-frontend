@@ -1,7 +1,7 @@
 import {usePestanas} from '@/hooks/usePestanas';
 import {ImportarComprasXml} from './ImportarComprasXml';
 import { useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ProveedoresTab } from '@/pages/compras/ProveedoresTab';
 import { OrdenesCompraTab } from '@/pages/compras/OrdenesCompraTab';
 import { FacturasCuentasTab } from '@/pages/compras/FacturasCuentasTab';
@@ -18,6 +18,10 @@ type TabId = (typeof TABS)[number]['id'];
 export default function ComprasPage() {
   const [url]=useSearchParams();
   const [seleccion, setTab] = useState<TabId>(()=>TABS.some(t=>t.id===url.get('tab'))?url.get('tab') as TabId:'proveedores');
+  useEffect(()=>{
+    const destino = url.get('tab');
+    if (TABS.some(t=>t.id===destino)) setTab(destino as TabId);
+  },[url]);
   const permiteTab=usePestanas('COMPRAS');
   const tabsPermitidas=TABS.filter(t=>permiteTab(t.id));
   const tab=tabsPermitidas.find(t=>t.id===seleccion)?.id??tabsPermitidas[0]?.id;
