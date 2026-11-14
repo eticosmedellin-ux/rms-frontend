@@ -9,7 +9,7 @@ import { useCatalogoPlanesPublico } from '@/hooks/useCatalogoPlanes';
 
 export default function RegistroEmpresaPage() {
   const navigate = useNavigate();
-  const { data: tiposNegocio } = useTiposNegocioActivos();
+  const { data: tiposNegocio, isLoading: cargandoTipos, isError: errorTipos } = useTiposNegocioActivos();
   const { data: catalogoPlanes } = useCatalogoPlanesPublico();
   const [codigoInvitacion, setCodigoInvitacion] = useState('');
   const [nombreEmpresa, setNombreEmpresa] = useState('');
@@ -43,10 +43,6 @@ export default function RegistroEmpresaPage() {
     }
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password)) {
       setError('La contraseña debe tener mínimo 8 caracteres, con al menos una mayúscula, una minúscula y un número');
-      return;
-    }
-    if (tiposNegocioIds.length === 0) {
-      setError('Elige al menos 1 tipo de negocio (máximo 2)');
       return;
     }
 
@@ -122,8 +118,13 @@ export default function RegistroEmpresaPage() {
 
           <div>
             <span className="mb-1.5 block text-sm font-medium text-ink-700">
-              Tipo de negocio <span className="font-normal text-ink-400">(elige 1 o 2)</span>
+              Tipo de negocio <span className="font-normal text-ink-400">(opcional, hasta 2)</span>
             </span>
+            {cargandoTipos && <p className="text-xs text-ink-600">Cargando tipos de negocio…</p>}
+            {errorTipos && <p className="text-xs text-ink-600">No se pudo cargar el catálogo. Puedes continuar sin elegir un tipo.</p>}
+            {!cargandoTipos && !errorTipos && !tiposNegocio?.length && (
+              <p className="text-xs text-ink-600">No hay tipos disponibles. Puedes continuar sin elegir uno.</p>
+            )}
             <div className="grid grid-cols-2 gap-2">
               {tiposNegocio?.map((t) => {
                 const seleccionado = tiposNegocioIds.includes(t.id);
@@ -131,8 +132,10 @@ export default function RegistroEmpresaPage() {
                   <button
                     key={t.id}
                     type="button"
+                    aria-pressed={seleccionado}
+                    disabled={!seleccionado && tiposNegocioIds.length >= 2}
                     onClick={() => toggleTipoNegocio(t.id)}
-                    className={`rounded-lg border px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    className={`rounded-lg border px-3 py-2 text-left text-xs font-medium transition-colors disabled:opacity-50 ${
                       seleccionado
                         ? 'border-sicom-green bg-sicom-green/10 text-sicom-green'
                         : 'border-ink-200 text-ink-600 hover:border-ink-300'

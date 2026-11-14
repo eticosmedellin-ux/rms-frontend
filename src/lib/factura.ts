@@ -41,10 +41,16 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
   const numero = venta.numeroFactura || venta.numero;
   const esFacturaFormal = !!venta.numeroFactura;
   const pagina = estiloPagina(empresa);
+  const termica = empresa.tamanoImpresion === 'TERMICA_58' || empresa.tamanoImpresion === 'TERMICA_80';
 
   const filas = venta.detalles
     .map(
-      (d, i) => `
+      (d, i) => termica ? `
+        <tr class="detalle-termico"><td>
+          <strong>${escapeHtml(d.producto)}</strong>
+          <div class="linea-termica"><span>${formatearNumero(d.cantidad)} × ${formatearMoneda(d.precioUnitario)}</span><b>${formatearMoneda(d.subtotalLinea)}</b></div>
+          ${d.descuentoLinea > 0 ? `<div>Descuento: −${formatearMoneda(d.descuentoLinea)}</div>` : ''}
+        </td></tr>` : `
         <tr class="${i % 2 === 0 ? 'par' : ''}">
           <td>${escapeHtml(d.producto)}</td>
           <td class="num">${formatearNumero(d.cantidad)}</td>
@@ -168,6 +174,28 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
     padding-top: 10px;
   }
   .resumen tr.cambio td { color: #b45309; font-weight: 600; }
+  ${termica ? `
+  @page { margin: 2mm; }
+  body { width: 100%; padding: 0 1mm; line-height: 1.25; overflow-wrap: anywhere; }
+  .encabezado, .marca { display: block; text-align: center; }
+  .encabezado { padding-bottom: 2mm; margin-bottom: 2mm; }
+  .marca img { max-width: 100%; height: auto; max-height: 15mm; }
+  .doc-tipo { text-align: center; }
+  .doc-tipo .numero, .marca-nombre { font-size: 15px; }
+  .qr-factura { margin: 2mm auto; }
+  .bloques { display: block; margin-bottom: 2mm; }
+  .bloque { margin-bottom: 2mm; }
+  .bloque p, tbody td, .resumen td { font-size: inherit; }
+  .productos { table-layout: fixed; }
+  .productos thead { display: none; }
+  .detalle-termico { break-inside: avoid; }
+  .detalle-termico td { padding: 1.5mm 0; }
+  .linea-termica { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1mm; }
+  .linea-termica b { text-align: right; }
+  .resumen { display: block; margin-top: 2mm; }
+  .resumen table { width: 100%; table-layout: fixed; }
+  .resumen tr.total td { font-size: 13px; }
+  ` : ''}
 
   .pie {
     margin-top: 40px;
@@ -236,7 +264,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
     </div>
   </div>
 
-  <table>
+  <table class="productos">
     <thead>
       <tr>
         <th>Producto</th>

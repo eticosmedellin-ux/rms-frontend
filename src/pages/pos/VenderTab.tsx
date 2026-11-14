@@ -107,7 +107,7 @@ export function VenderTab() {
   const disponibilidad = useQuery({
     queryKey: ['disponibilidad-venta', sucursalId, avisoStock?.productoId],
     enabled: Boolean(avisoStock?.consultar && sucursalId && avisoStock.sede === sucursalId),
-    queryFn: async () => (await apiClient.get<string[]>(`/sicom/disponibilidad/${avisoStock!.productoId}`, {params:{sucursalId}})).data,
+    queryFn: async () => (await apiClient.get<Array<string | { sucursal: string; cantidadDisponible: number; estado: 'DISPONIBLE' | 'AGOTADO' }>>(`/sicom/disponibilidad/${avisoStock!.productoId}`, {params:{sucursalId, detalle:true}})).data,
     retry:false,
   });
   const busquedaInputRef = useRef<HTMLInputElement>(null);
@@ -254,7 +254,7 @@ export function VenderTab() {
   function agregarItem(item: ItemVendible,cantidadAgregar=1) {
     const enCarrito = carrito.find(l => l.tipo === item.tipo && l.itemId === item.id)?.cantidad ?? 0;
     if (item.manejaInventario && (item.stock === null || enCarrito + cantidadAgregar > item.stock)) {
-      setAvisoStock({productoId:item.id,sede:sucursalId,consultar:item.stock === 0,
+      setAvisoStock({productoId:item.id,sede:sucursalId,consultar:item.tipo === 'PRODUCTO' && item.stock !== null,
         texto:item.stock === null ? 'Selecciona una sucursal y espera a que cargue el stock.' : `${item.nombre}: no hay existencias suficientes en esta sucursal.`});
       return false;
     }
@@ -432,9 +432,15 @@ export function VenderTab() {
         </div>
         {avisoStock?.sede === sucursalId && avisoStock && <div role="status" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
           {avisoStock.texto}
-          {avisoStock.consultar && disponibilidad.data && <p>{disponibilidad.data.length
-            ? `Disponible en: ${disponibilidad.data.join(', ')}.`
-            : 'Sin disponibilidad registrada en otras sucursales.'}</p>}
+          {avisoStock.consultar && disponibilidad.isFetching && <p>Consultando existencias en otras sucursales…</p>}
+          {avisoStock.consultar && disponibilidad.isError && <p>No se pudo consultar el inventario de otras sucursales.</p>}
+          {avisoStock.consultar && !disponibilidad.isFetching && !disponibilidad.isError && disponibilidad.data && (
+            disponibilidad.data.length ? <ul className="mt-1 list-disc pl-5">
+              {disponibilidad.data.map((fila, i) => typeof fila === 'string'
+                ? <li key={i}>{fila} — Disponible; cantidad sin informar</li>
+                : <li key={i}>{fila.sucursal} — {fila.cantidadDisponible.toLocaleString('es-CO', { maximumFractionDigits: 20 })} · {fila.estado === 'DISPONIBLE' ? 'Disponible' : 'Agotado'}</li>)}
+            </ul> : <p>Sin existencias registradas en otras sucursales.</p>
+          )}
         </div>}
 
         {itemsVisibles.length > 0 ? (
