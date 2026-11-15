@@ -1,4 +1,5 @@
-import {useSicom,permitido} from '@/features/sicom/api';
+import {useAuthStore} from '@/stores/authStore';
+import {useSicom} from '@/features/sicom/api';
 import {PreviewPago} from '@/components/ui/PreviewPago';
 import { useState, useEffect } from 'react';
 import { Lock, Unlock, List, Plus, Loader2, AlertTriangle, Download } from 'lucide-react';
@@ -12,6 +13,7 @@ import { descargarArchivo } from '@/lib/descargarArchivo';
 
 export function CajaBar() {
   const {data:cfg}=useSicom();
+  const puedeOperarCaja = useAuthStore(s => s.esSuperadmin || s.esAdministradorTotal || s.permisos.includes('CAJA_ABRIR_CERRAR'));
   const { data: sucursales } = useSucursales();
   const { sucursalId, setSucursalId } = usePosStore();
   const [modalAbrir, setModalAbrir] = useState(false);
@@ -94,14 +96,14 @@ export function CajaBar() {
             Movimientos
           </button>
         )}
-        {caja ? (permitido(cfg,'CERRAR_CAJA') && (
+        {caja ? (puedeOperarCaja && (
           <button
             onClick={() => setModalCerrar(true)}
             className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
           >
             Cerrar caja
           </button>
-        )) : (permitido(cfg,'ABRIR_CAJA') && (
+        )) : (puedeOperarCaja && (
           <button
             onClick={() => setModalAbrir(true)}
             disabled={!sucursalId}
