@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { usePosStore } from '@/stores/posStore';
+import { useAuthStore } from '@/stores/authStore';
 import * as posApi from '@/api/pos';
 import type {
   AbonoClienteRequest,
@@ -41,9 +43,11 @@ export function useActualizarCliente() {
 
 // --- Caja ---
 export function useCajaAbierta(sucursalId: number | null) {
+  const cajaFisicaId = usePosStore(s => s.sucursalId === sucursalId ? s.cajaFisicaId : null);
+  const usuarioId = useAuthStore(s => s.usuarioId);
   return useQuery({
-    queryKey: ['caja-abierta', sucursalId],
-    queryFn: () => posApi.obtenerCajaAbierta(sucursalId as number),
+    queryKey: ['caja-abierta', sucursalId, cajaFisicaId, usuarioId],
+    queryFn: () => posApi.obtenerCajaAbierta(sucursalId as number, cajaFisicaId),
     enabled: sucursalId !== null,
   });
 }
@@ -51,9 +55,10 @@ export function useCajaAbierta(sucursalId: number | null) {
 export function useAbrirCaja() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { sucursalId: number; montoApertura: number }) => posApi.abrirCaja(data),
+    mutationFn: (data: { sucursalId: number; montoApertura: number; cajaFisicaId?: number }) => posApi.abrirCaja(data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['caja-abierta', variables.sucursalId] });
+      queryClient.invalidateQueries({ queryKey: ['cajas-fisicas', variables.sucursalId] });
     },
   });
 }

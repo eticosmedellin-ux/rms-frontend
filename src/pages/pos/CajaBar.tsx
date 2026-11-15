@@ -1,3 +1,6 @@
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {listarCajasFisicas, crearCajaFisica} from '@/api/pos';
+import {listarUsuarios} from '@/api/nucleo';
 import {useAuthStore} from '@/stores/authStore';
 import {useSicom} from '@/features/sicom/api';
 import {PreviewPago} from '@/components/ui/PreviewPago';
@@ -15,7 +18,24 @@ export function CajaBar() {
   const {data:cfg}=useSicom();
   const puedeOperarCaja = useAuthStore(s => s.esSuperadmin || s.esAdministradorTotal || s.permisos.includes('CAJA_ABRIR_CERRAR'));
   const { data: sucursales } = useSucursales();
-  const { sucursalId, setSucursalId } = usePosStore();
+  const { sucursalId, setSucursalId, cajaFisicaId, setCajaFisicaId } = usePosStore();
+  const usuarioId = useAuthStore(s => s.usuarioId);
+  const administra = useAuthStore(s => s.esSuperadmin || s.esAdministradorTotal);
+  const qc = useQueryClient();
+  const fisicas = useQuery({queryKey:['cajas-fisicas',sucursalId,usuarioId],
+    queryFn:()=>listarCajasFisicas(sucursalId!),enabled:sucursalId !== null});
+  const crearFisica = useMutation({mutationFn:crearCajaFisica,
+    onSuccess: async (c,variables)=>{await qc.invalidateQueries({queryKey:['cajas-fisicas',variables.sucursalId]});
+      if(usePosStore.getState().sucursalId===variables.sucursalId) setCajaFisicaId(c.id);}});
+  const [nombreCaja,setNombreCaja]=useState('');
+  const [asignadaA,setAsignadaA]=useState('');
+  const [modalFisica,setModalFisica]=useState(false);
+  const empleados=useQuery({queryKey:['cajas-trabajadores',usuarioId],queryFn:listarUsuarios,enabled:administra && modalFisica});
+
+  useEffect(()=>{
+    if(fisicas.data && !fisicas.data.some(c=>c.id===cajaFisicaId))
+      setCajaFisicaId(fisicas.data.length===1 ? fisicas.data[0].id : null);
+  },[fisicas.data,cajaFisicaId,setCajaFisicaId]);
   const [modalAbrir, setModalAbrir] = useState(false);
   const [modalCerrar, setModalCerrar] = useState(false);
   const [modalMovimientos, setModalMovimientos] = useState(false);
@@ -74,6 +94,14 @@ export function CajaBar() {
           </select>
         </label>
 
+        {Boolean(fisicas.data?.length) && <label className="flex items-center gap-2 text-sm">
+          Caja física
+          <select className="input" value={cajaFisicaId ?? ''} onChange={e=>setCajaFisicaId(e.target.value ? Number(e.target.value) : null)}>
+            <option value="">Selecciona una caja</option>
+            {fisicas.data?.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>}
+        {fisicas.isError && <span role="alert" className="text-sm text-danger-600">{getApiErrorMessage(fisicas.error,'No se pudo consultar las cajas físicas')}</span>}
         {!isLoading && (
           <span
             className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
@@ -87,6 +115,7 @@ export function CajaBar() {
       </div>
 
       <div className="flex items-center gap-2">
+        {administra && sucursalId && <button className="rounded-lg border px-3 py-2 text-sm" onClick={()=>{crearFisica.reset();setModalFisica(true);}}>Nueva caja</button>}
         {caja && !cfg?.facturador && (
           <button
             onClick={() => setModalMovimientos(true)}
@@ -106,7 +135,7 @@ export function CajaBar() {
         )) : (puedeOperarCaja && (
           <button
             onClick={() => setModalAbrir(true)}
-            disabled={!sucursalId}
+            disabled={!sucursalId || !fisicas.isSuccess || isLoading || (fisicas.data.length > 1 && !cajaFisicaId)}
             className="rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:opacity-60"
           >
             Abrir caja
@@ -115,7 +144,25 @@ export function CajaBar() {
       </div>
       </div>
 
-      <AbrirCajaModal isOpen={modalAbrir} onClose={() => setModalAbrir(false)} sucursalId={sucursalId} />
+      <Modal isOpen={modalFisica} onClose={()=>setModalFisica(false)} title="Nueva caja física" size="sm">
+        <form className="space-y-3" onSubmit={async e=>{e.preventDefault();if(!sucursalId)return;
+          try {await crearFisica.mutateAsync({sucursalId,nombre:nombreCaja,asignadaA:asignadaA?Number(asignadaA):undefined});
+            setModalFisica(false);setNombreCaja('');setAsignadaA('');
+          } catch { /* El error se muestra en el formulario. */ }
+        }}>
+          <label className="block text-sm">Nombre<input required maxLength={60} className="input" value={nombreCaja} onChange={e=>setNombreCaja(e.target.value)}/></label>
+          <label className="block text-sm">Trabajador asignado
+            <select className="input" value={asignadaA} onChange={e=>setAsignadaA(e.target.value)}>
+              <option value="">Libre</option>
+              {empleados.data?.filter(u=>u.estado && sucursalId !== null && u.sucursalIds?.includes(sucursalId))
+                .map(u=><option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>)}
+            </select>
+          </label>
+          {crearFisica.isError && <p role="alert">{getApiErrorMessage(crearFisica.error,'No se pudo crear la caja')}</p>}
+          <button disabled={crearFisica.isPending} className="rounded border px-3 py-2">Crear caja</button>
+        </form>
+      </Modal>
+      <AbrirCajaModal isOpen={modalAbrir} onClose={() => setModalAbrir(false)} sucursalId={sucursalId} cajaFisicaId={cajaFisicaId ?? undefined} />
       {caja && (
         <>
           <CerrarCajaModal isOpen={modalCerrar} onClose={() => setModalCerrar(false)} cajaId={caja.id} />
@@ -259,10 +306,12 @@ function AbrirCajaModal({
   isOpen,
   onClose,
   sucursalId,
+  cajaFisicaId,
 }: {
   isOpen: boolean;
   onClose: () => void;
   sucursalId: number | null;
+  cajaFisicaId?: number;
 }) {
   const abrir = useAbrirCaja();
   const [montoApertura, setMontoApertura] = useState('0');
@@ -272,7 +321,7 @@ function AbrirCajaModal({
     setError(null);
     if (!sucursalId) return;
     try {
-      await abrir.mutateAsync({ sucursalId, montoApertura: Number(montoApertura) });
+      await abrir.mutateAsync({ sucursalId, montoApertura: Number(montoApertura), cajaFisicaId });
       setMontoApertura('0');
       onClose();
     } catch (err) {

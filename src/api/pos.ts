@@ -34,15 +34,21 @@ export const obtenerEstadoCuentaCliente = async (clienteId: number): Promise<Est
   (await apiClient.get<EstadoCuentaCliente>(`/clientes/${clienteId}/estado-cuenta`)).data;
 
 // --- Caja ---
-export const obtenerCajaAbierta = async (sucursalId: number): Promise<CajaSesion | null> => {
+export type CajaFisica = { id:number; nombre:string; asignadaA:number | null };
+export const listarCajasFisicas = async (sucursalId: number) =>
+  (await apiClient.get<CajaFisica[]>('/caja/fisicas', {params:{sucursalId}})).data;
+export const crearCajaFisica = async (data:{sucursalId:number; nombre:string; asignadaA?:number}) =>
+  (await apiClient.post<CajaFisica>('/caja/fisicas',data)).data;
+
+export const obtenerCajaAbierta = async (sucursalId: number, cajaFisicaId?: number | null): Promise<CajaSesion | null> => {
   const response = await apiClient.get<CajaSesion>('/caja/abierta', {
-    params: { sucursalId },
+    params: { sucursalId, cajaFisicaId },
     validateStatus: (status) => status === 200 || status === 204,
   });
   return response.status === 204 ? null : response.data;
 };
 
-export const abrirCaja = async (data: { sucursalId: number; montoApertura: number }): Promise<CajaSesion> =>
+export const abrirCaja = async (data: { sucursalId: number; montoApertura: number; cajaFisicaId?: number }): Promise<CajaSesion> =>
   (await apiClient.post<CajaSesion>('/caja/abrir', data)).data;
 
 export const cerrarCaja = async (id: number, montoCierreReal: number, observaciones?: string): Promise<CajaSesion> =>
