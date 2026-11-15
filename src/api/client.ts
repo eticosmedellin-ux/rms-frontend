@@ -13,7 +13,12 @@ export const apiClient = axios.create({
 // Adjunta el access token vigente a cada petición saliente.
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   if(enPractica){config.headers.delete('Authorization');return config;}
-  if(config.method==='post'){await adjuntarSoportes(config.data);const r=config.data as Record<string,unknown>|undefined;if(r&&/\/(anticipos|anticipar|abonos|anticipo)$/.test(config.url??'')&&['TRANSFERENCIA','TARJETA'].includes(String(r.metodo))&&!r.soporte)r.soporte=await solicitarSoporte(String(r.metodo));}
+  if(config.method==='post'){
+    const pagos = config.data?.pagos;
+    const transferenciaOpcional = config.url === '/ventas' && Array.isArray(pagos)
+      && pagos.some(p => p?.metodoPago === 'TRANSFERENCIA' && !p.soporte && Number(p.monto)>0)
+      && (await apiClient.get<{exigirSoporteTransferencia?: boolean}>('/empresa')).data.exigirSoporteTransferencia === false;
+    await adjuntarSoportes(config.data, transferenciaOpcional);const r=config.data as Record<string,unknown>|undefined;if(r&&/\/(anticipos|anticipar|abonos|anticipo)$/.test(config.url??'')&&['TRANSFERENCIA','TARJETA'].includes(String(r.metodo))&&!r.soporte)r.soporte=await solicitarSoporte(String(r.metodo));}
   const { accessToken } = useAuthStore.getState();
   const publica = config.url?.startsWith('/auth/') || config.url === '/noticias-login/activas' || config.url === '/apariencia/publica';
   if (accessToken && !publica) {

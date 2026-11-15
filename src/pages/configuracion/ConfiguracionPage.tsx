@@ -791,6 +791,7 @@ function VentasGeneralCard() {
 
   const [permitirStockNegativo, setPermitirStockNegativo] = useState(false);
   const [confirmarAntesDeVenta, setConfirmarAntesDeVenta] = useState(false);
+  const [exigirSoporteTransferencia, setExigirSoporteTransferencia] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
 
@@ -798,6 +799,7 @@ function VentasGeneralCard() {
     if (empresa) {
       setPermitirStockNegativo(empresa.permitirStockNegativo);
       setConfirmarAntesDeVenta(empresa.confirmarAntesDeVenta);
+      setExigirSoporteTransferencia(empresa.exigirSoporteTransferencia !== false);
     }
   }, [empresa]);
 
@@ -806,7 +808,8 @@ function VentasGeneralCard() {
     setGuardado(false);
     if (!empresa) return;
     try {
-      await actualizar.mutateAsync({ nombre: empresa.nombre, permitirStockNegativo, confirmarAntesDeVenta });
+      await actualizar.mutateAsync({ nombre: empresa.nombre, permitirStockNegativo, confirmarAntesDeVenta,
+        exigirSoporteTransferencia: exigirSoporteTransferencia !== (empresa.exigirSoporteTransferencia !== false) ? exigirSoporteTransferencia : undefined });
       setGuardado(true);window.dispatchEvent(new Event('sicom-config-guardada'));
     } catch (err) {
       setError(getApiErrorMessage(err, 'No se pudo guardar la configuración de ventas'));
@@ -837,6 +840,15 @@ function VentasGeneralCard() {
               Si lo activas, el sistema deja vender un producto aunque el inventario quede en negativo (útil si el
               conteo puede estar desactualizado). Por defecto, el sistema bloquea la venta.
             </span>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2">
+          <input type="checkbox" checked={exigirSoporteTransferencia}
+            onChange={(e) => setExigirSoporteTransferencia(e.target.checked)} className="mt-0.5 h-4 w-4" />
+          <span>
+            <span className="block text-sm font-medium text-ink-700">Exigir comprobante de transferencia en ventas</span>
+            <span className="block text-xs text-ink-400">Si lo desactivas, el trabajador podrá omitir el comprobante. SICOM registrará la venta y generará una alerta. Para tarjeta sigue siendo obligatorio.</span>
           </span>
         </label>
 

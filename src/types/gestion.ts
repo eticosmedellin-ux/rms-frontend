@@ -32,6 +32,7 @@ export type TipoAlerta =
   | 'SIN_MOVIMIENTO'
   | 'COMPRA_PENDIENTE'
   | 'CAJA_SIN_CERRAR'
+  | 'VENTA_SIN_SOPORTE'
   | 'CXP_POR_VENCER'
   | 'CXC_POR_VENCER'
   | 'EFECTIVO_MAXIMO_CAJA'
@@ -150,6 +151,7 @@ export interface Empresa {
   tema: 'CLARO' | 'OSCURO';
   permitirStockNegativo: boolean;
   confirmarAntesDeVenta: boolean;
+  exigirSoporteTransferencia?: boolean;
   stockMinimoDefault: number;
   facebook: string | null;
   instagram: string | null;
@@ -182,6 +184,7 @@ export interface EmpresaRequest {
   tema?: string;
   permitirStockNegativo?: boolean;
   confirmarAntesDeVenta?: boolean;
+  exigirSoporteTransferencia?: boolean;
   stockMinimoDefault?: number;
   facebook?: string;
   instagram?: string;
