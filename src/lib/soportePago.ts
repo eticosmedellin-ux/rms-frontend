@@ -8,13 +8,18 @@ export function solicitarSoporte(medio:string):Promise<ArchivoPago>{return new P
  const titulo=document.createElement('h2');titulo.className='text-lg font-semibold mb-3';titulo.textContent=`Soporte obligatorio: ${medio}`;
  const texto=document.createElement('p');texto.textContent='Adjunta el comprobante de este pago (PDF, PNG o JPG, máximo 5 MB).';texto.className='text-sm mb-4';
  const input=document.createElement('input');input.type='file';input.accept='application/pdf,image/png,image/jpeg';input.className='input';
+ const camara=document.createElement('input');camara.type='file';camara.accept='image/jpeg,image/png';camara.setAttribute('capture','environment');camara.className='input';
+ const archivoLabel=document.createElement('label');archivoLabel.className='block mb-3';archivoLabel.append('Adjuntar archivo',input);
+ const camaraLabel=document.createElement('label');camaraLabel.className='block';camaraLabel.append('Tomar foto (en un dispositivo compatible)',camara);
+ input.onchange=()=>{if(input.files?.length)camara.value='';};
+ camara.onchange=()=>{if(camara.files?.length)input.value='';};
  const error=document.createElement('p');error.className='text-red-700 text-sm';error.setAttribute('role','alert');
  const cancelar=document.createElement('button');cancelar.textContent='Cancelar cobro';cancelar.className='rounded border p-2 mt-4';
  const ok=document.createElement('button');ok.textContent='Adjuntar y continuar';ok.className='rounded bg-ink-800 text-white p-2 mt-4 ml-2';
  let completo=false;function limpiar(){d.close();d.remove();}function cancel(){if(completo)return;completo=true;limpiar();reject(new Error('Cobro cancelado: falta el soporte'));}
  cancelar.onclick=cancel;d.addEventListener('cancel',e=>{e.preventDefault();cancel();});
- ok.onclick=async()=>{if(!input.files?.[0]){error.textContent='Selecciona un archivo';return;}ok.disabled=true;try{const a=await archivoPago(input.files[0]);completo=true;limpiar();resolve(a);}catch(e){error.textContent=e instanceof Error?e.message:'Archivo inválido';ok.disabled=false;}};
- d.append(titulo,texto,input,error,cancelar,ok);document.body.append(d);d.showModal();input.focus();
+ ok.onclick=async()=>{const archivo=input.files?.[0]??camara.files?.[0];if(!archivo){error.textContent='Selecciona un archivo o toma una foto';return;}ok.disabled=true;try{const a=await archivoPago(archivo);if(completo)return;completo=true;limpiar();resolve(a);}catch(e){error.textContent=e instanceof Error?e.message:'Archivo inválido';ok.disabled=false;}};
+ d.append(titulo,texto,archivoLabel,camaraLabel,error,cancelar,ok);document.body.append(d);d.showModal();input.focus();
 });}
 export async function adjuntarSoportes(datos:unknown):Promise<void>{
  if(!datos||typeof datos!=='object'||datos instanceof FormData)return;
