@@ -15,9 +15,9 @@ export interface EstiloPagina {
 export function estiloPagina(empresa: Pick<Empresa, 'tamanoImpresion' | 'anchoPersonalizadoMm' | 'altoPersonalizadoMm'>): EstiloPagina {
   switch (empresa.tamanoImpresion) {
     case 'TERMICA_58':
-      return { reglaPagina: 'size: 58mm auto; margin: 2mm;', anchoMaximo: '54mm', fontSize: '11px' };
+      return { reglaPagina: 'size: auto; margin: 2mm;', anchoMaximo: '54mm', fontSize: '11px' };
     case 'TERMICA_80':
-      return { reglaPagina: 'size: 80mm auto; margin: 3mm;', anchoMaximo: '76mm', fontSize: '12px' };
+      return { reglaPagina: 'size: auto; margin: 3mm;', anchoMaximo: '74mm', fontSize: '12px' };
     case 'MEDIA_CARTA':
       return { reglaPagina: 'size: 5.5in 8.5in; margin: 10mm;', anchoMaximo: '100%', fontSize: '13px' };
     case 'CARTA':

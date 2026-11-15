@@ -27,6 +27,7 @@ export interface ClienteRequest {
 
 export interface CajaSesion {
   id: number;
+  cierrePendiente?: boolean;
   sucursal: string;
   usuario: string;
   montoApertura: number;

@@ -1,3 +1,7 @@
+import {useQuery,useMutation,useQueryClient} from '@tanstack/react-query';
+import {apiClient} from '@/api/client';
+import {getApiErrorMessage} from '@/api/errors';
+import {Modal} from '@/components/ui/Modal';
 import {usePestanas} from '@/hooks/usePestanas';
 import { useState, type ReactNode } from 'react';
 import { CentroReportes } from '@/features/reportes/CentroReportes';
@@ -302,6 +306,8 @@ function ProveedoresReporteTab() {
 
 function ArqueosTab({ desde, hasta, consultar }: { desde: string; hasta: string; consultar: boolean }) {
   const { data, isLoading } = useReporteArqueos(desde, hasta, consultar);
+  const [sesionReposicion,setSesionReposicion] = useState<number | null>(null);
+  const administra = useAuthStore(s=>s.esSuperadmin || s.esAdministradorTotal);
   const { data: analisis } = useAnalisisArqueos(desde, hasta, consultar);
   if (!consultar) return <p className="text-sm text-ink-400">Elige un rango de fechas y dale clic a "Consultar".</p>;
   if (isLoading) return <LoadingState />;
@@ -359,15 +365,44 @@ function ArqueosTab({ desde, hasta, consultar }: { desde: string; hasta: string;
         <BotonExportar url="/reportes/arqueos/exportar" params={{ desde, hasta }} nombre="arqueos.xlsx" />
       </Encabezado>
       <Tabla
-        columnas={['Sucursal', 'Usuario', 'Apertura', 'Cierre', 'Sistema', 'Real', 'Diferencia']}
+        columnas={['Sucursal', 'Usuario', 'Apertura', 'Cierre', 'Sistema', 'Real', 'Diferencia', ...(administra ? ['Reposiciones'] : [])]}
         filas={data.map((a) => [
           a.sucursal, a.usuario, new Date(a.fechaApertura).toLocaleString('es-CO'),
           new Date(a.fechaCierre).toLocaleString('es-CO'), money(a.montoCierreSistema), money(a.montoCierreReal),
-          money(a.diferencia),
+          <span className={a.diferencia < 0 ? 'font-semibold text-danger-600' : ''}>{money(a.diferencia)}</span>,
+          ...(administra ? [a.diferencia < 0 && a.sesionId
+            ? <button className="underline" onClick={()=>setSesionReposicion(a.sesionId!)}>Ver o registrar</button> : '—'] : []),
         ])}
       />
+      {sesionReposicion !== null && <ModalReposiciones sesionId={sesionReposicion} cerrar={()=>setSesionReposicion(null)}/>}
     </div>
   );
+}
+
+function ModalReposiciones({sesionId,cerrar}:{sesionId:number;cerrar:()=>void}) {
+  type Estado = {faltanteOriginal:number;pendiente:number;registros:{id:number;monto:number;motivo:string;usuario:string;fecha:string}[]};
+  const url = `/caja/${sesionId}/reposiciones`;
+  const [monto,setMonto]=useState('');
+  const [motivo,setMotivo]=useState('');
+  const qc=useQueryClient();
+  const key=['reposiciones-caja',sesionId];
+  const consulta=useQuery({queryKey:key,queryFn:async()=> (await apiClient.get<Estado>(url)).data});
+  const guardar=useMutation({mutationFn:async()=> (await apiClient.post<Estado>(url,{monto:Number(monto),motivo})).data,
+    onSuccess:d=>{qc.setQueryData(key,d);setMonto('');setMotivo('');}});
+  return <Modal isOpen onClose={cerrar} title="Reposiciones del faltante" size="md">
+    {consulta.isError && <p role="alert">{getApiErrorMessage(consulta.error,'No se pudieron consultar las reposiciones')}</p>}
+    {consulta.isLoading && <LoadingState/>}
+    {consulta.data && <div className="space-y-3">
+      <p>Faltante original: <strong>{money(consulta.data.faltanteOriginal)}</strong>. Pendiente: <strong>{money(consulta.data.pendiente)}</strong>.</p>
+      {consulta.data.registros.map(r=><p key={r.id} className="border-b py-1 text-sm">{money(r.monto)} · {r.usuario} · {new Date(r.fecha).toLocaleString('es-CO')} · {r.motivo}</p>)}
+      {consulta.data.pendiente>0 ? <form className="space-y-2" onSubmit={e=>{e.preventDefault();guardar.mutate();}}>
+        <label className="block">Monto<input className="input" type="number" min="0.01" max={consulta.data.pendiente} step="0.01" required value={monto} onChange={e=>setMonto(e.target.value)}/></label>
+        <label className="block">Motivo<input className="input" required maxLength={500} value={motivo} onChange={e=>setMotivo(e.target.value)}/></label>
+        {guardar.isError && <p role="alert">{getApiErrorMessage(guardar.error,'No se pudo registrar la reposición')}</p>}
+        <button disabled={guardar.isPending} className="rounded border px-3 py-2">Registrar reposición</button>
+      </form> : <p>Faltante compensado.</p>}
+    </div>}
+  </Modal>;
 }
 
 function CuentasPorPagarTab() {
@@ -480,7 +515,7 @@ function ModulosReporteTab() {
   );
 }
 
-function Tabla({ columnas, filas }: { columnas: string[]; filas: (string | number)[][] }) {
+function Tabla({ columnas, filas }: { columnas: string[]; filas: ReactNode[][] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-ink-100 bg-white shadow-card">
       <table className="w-full text-sm">

@@ -327,7 +327,7 @@ export function VenderTab() {
   async function confirmarVenta() {
     setError(null);
     setVentaExitosa(null);
-    if (!caja || carrito.length === 0 || !sucursalId || registrarVenta.isPending) return;
+    if (!caja || caja.cierrePendiente || carrito.length === 0 || !sucursalId || registrarVenta.isPending) return;
     if (!permitido(sicom,'VENDER')) {setError('El administrador no ha habilitado la venta');return;}
     if(!calculo.data||calculo.isFetching||calculo.isError){setError('Espera a que termine el cálculo de la venta');return;}
     if(total<=0){setError('La venta debe tener un total positivo');return;}
@@ -400,6 +400,11 @@ export function VenderTab() {
 
   if (!sucursalId) {
     return <EmptyState title="Selecciona una sucursal arriba para empezar" />;
+  }
+
+  if (caja?.cierrePendiente) {
+    return <EmptyState title="Cierre de jornada pendiente"
+      description="Cierra esta caja y abre una sesión nueva antes de vender. Puedes seguir trabajando en otra caja abierta hoy." />;
   }
 
   if (!caja) {

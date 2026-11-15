@@ -50,6 +50,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
           <strong>${escapeHtml(d.producto)}</strong>
           <div class="linea-termica"><span>${formatearNumero(d.cantidad)} × ${formatearMoneda(d.precioUnitario)}</span><b>${formatearMoneda(d.subtotalLinea)}</b></div>
           ${d.descuentoLinea > 0 ? `<div>Descuento: −${formatearMoneda(d.descuentoLinea)}</div>` : ''}
+          ${d.impuestoMonto != null && d.impuestoMonto > 0 ? `<div>Impuesto de la línea: ${formatearMoneda(d.impuestoMonto)}</div>` : ''}
         </td></tr>` : `
         <tr class="${i % 2 === 0 ? 'par' : ''}">
           <td>${escapeHtml(d.producto)}</td>
@@ -66,7 +67,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>${numero}</title>
+<title>${escapeHtml(numero)}</title>
 <style>
   @media print {
     @page { ${pagina.reglaPagina} }
@@ -175,7 +176,6 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
   }
   .resumen tr.cambio td { color: #b45309; font-weight: 600; }
   ${termica ? `
-  @page { margin: 2mm; }
   body { width: 100%; padding: 0 1mm; line-height: 1.25; overflow-wrap: anywhere; }
   .encabezado, .marca { display: block; text-align: center; }
   .encabezado { padding-bottom: 2mm; margin-bottom: 2mm; }
@@ -195,6 +195,11 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
   .resumen { display: block; margin-top: 2mm; }
   .resumen table { width: 100%; table-layout: fixed; }
   .resumen tr.total td { font-size: 13px; }
+  .pie { display: block; margin-top: 3mm; padding-top: 2mm; }
+  .pie .atendido { text-align: left; }
+  .info-extra { display: block; margin-top: 2mm; padding-top: 2mm; }
+  .info-extra-redes { text-align: left; align-items: flex-start; }
+  .marca-sicom { margin-top: 2mm; padding-top: 2mm; }
   ` : ''}
 
   .pie {
@@ -244,7 +249,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
     </div>
     <div class="doc-tipo">
       <div class="titulo">${esFacturaFormal ? 'Factura de venta' : 'Comprobante de venta'}</div>
-      <div class="numero">${numero}</div>
+      <div class="numero">${escapeHtml(numero)}</div>
       <div class="fecha">${fecha}</div>
       ${!esFacturaFormal ? '<div class="aviso-no-formal">Sin factura formal</div>' : ''}
       <img class="qr-factura" src="${urlQr(contenidoQr(venta, empresa, cufe))}" alt="Código QR de verificación" />
@@ -328,7 +333,7 @@ function formatearMoneda(valor: number): string {
 }
 
 function formatearNumero(valor: number): string {
-  return valor.toLocaleString('es-CO', { maximumFractionDigits: 2 });
+  return valor.toLocaleString('es-CO', { maximumFractionDigits: 3 });
 }
 
 function escapeHtml(texto: string | null | undefined): string {

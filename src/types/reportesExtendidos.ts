@@ -41,6 +41,7 @@ export interface ProveedorReporte {
 }
 
 export interface ArqueoReporte {
+  sesionId?: number;
   sucursal: string;
   usuario: string;
   fechaApertura: string;

@@ -49,6 +49,7 @@ export function useCajaAbierta(sucursalId: number | null) {
     queryKey: ['caja-abierta', sucursalId, cajaFisicaId, usuarioId],
     queryFn: () => posApi.obtenerCajaAbierta(sucursalId as number, cajaFisicaId),
     enabled: sucursalId !== null,
+    refetchInterval: 60_000,
   });
 }
 

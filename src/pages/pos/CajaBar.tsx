@@ -1,3 +1,4 @@
+import {apiClient} from '@/api/client';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {listarCajasFisicas, crearCajaFisica} from '@/api/pos';
 import {listarUsuarios} from '@/api/nucleo';
@@ -30,6 +31,17 @@ export function CajaBar() {
   const [nombreCaja,setNombreCaja]=useState('');
   const [asignadaA,setAsignadaA]=useState('');
   const [modalFisica,setModalFisica]=useState(false);
+  const [modalLimites,setModalLimites]=useState(false);
+  const [faltante,setFaltante]=useState('');
+  const [sobrante,setSobrante]=useState('');
+  const limitesUrl = `/caja/fisicas/${cajaFisicaId}/limites`;
+  const limites = useQuery({queryKey:['limites-caja',usuarioId,sucursalId,cajaFisicaId],
+    queryFn:async()=> (await apiClient.get<{faltante:number|null;sobrante:number|null}>(limitesUrl,{params:{sucursalId}})).data,
+    enabled:administra && modalLimites && !!cajaFisicaId});
+  useEffect(()=>{if(limites.data){setFaltante(String(limites.data.faltante ?? ''));setSobrante(String(limites.data.sobrante ?? ''));}},[limites.data]);
+  const guardarLimites = useMutation({mutationFn:()=>apiClient.put(limitesUrl,
+    {faltante:faltante===''?null:Number(faltante),sobrante:sobrante===''?null:Number(sobrante)},{params:{sucursalId}}),
+    onSuccess:()=>{void qc.invalidateQueries({queryKey:['limites-caja']});setModalLimites(false);}});
   const empleados=useQuery({queryKey:['cajas-trabajadores',usuarioId],queryFn:listarUsuarios,enabled:administra && modalFisica});
 
   useEffect(()=>{
@@ -109,12 +121,13 @@ export function CajaBar() {
             }`}
           >
             {caja ? <Unlock size={14} /> : <Lock size={14} />}
-            {caja ? `Caja abierta (apertura: $${caja.montoApertura.toLocaleString('es-CO')})` : 'Caja cerrada'}
+            {caja?.cierrePendiente ? 'Cierre de jornada pendiente' : caja ? `Caja abierta (apertura: $${caja.montoApertura.toLocaleString('es-CO')})` : 'Caja cerrada'}
           </span>
         )}
       </div>
 
       <div className="flex items-center gap-2">
+        {administra && cajaFisicaId && <button className="rounded-lg border px-3 py-2 text-sm" onClick={()=>{guardarLimites.reset();setModalLimites(true);}}>Límites de caja</button>}
         {administra && sucursalId && <button className="rounded-lg border px-3 py-2 text-sm" onClick={()=>{crearFisica.reset();setModalFisica(true);}}>Nueva caja</button>}
         {caja && !cfg?.facturador && (
           <button
@@ -144,6 +157,16 @@ export function CajaBar() {
       </div>
       </div>
 
+      <Modal isOpen={modalLimites} onClose={()=>setModalLimites(false)} title="Límites de descuadre" size="sm">
+        {limites.isLoading ? <LoadingState /> : limites.isError ? <p role="alert">{getApiErrorMessage(limites.error,'No se pudieron consultar los límites')}</p> :
+          <form className="space-y-3" onSubmit={e=>{e.preventDefault();guardarLimites.mutate();}}>
+            <p className="text-sm">Deja un campo vacío para no aplicar ese límite. Cero exige que no haya diferencia de ese tipo.</p>
+            <label className="block text-sm">Faltante máximo<input type="number" min="0" step="0.01" className="input" value={faltante} onChange={e=>setFaltante(e.target.value)}/></label>
+            <label className="block text-sm">Sobrante máximo<input type="number" min="0" step="0.01" className="input" value={sobrante} onChange={e=>setSobrante(e.target.value)}/></label>
+            {guardarLimites.isError && <p role="alert">{getApiErrorMessage(guardarLimites.error,'No se pudieron guardar los límites')}</p>}
+            <button disabled={!limites.isSuccess || guardarLimites.isPending} className="rounded border px-3 py-2">Guardar</button>
+          </form>}
+      </Modal>
       <Modal isOpen={modalFisica} onClose={()=>setModalFisica(false)} title="Nueva caja física" size="sm">
         <form className="space-y-3" onSubmit={async e=>{e.preventDefault();if(!sucursalId)return;
           try {await crearFisica.mutateAsync({sucursalId,nombre:nombreCaja,asignadaA:asignadaA?Number(asignadaA):undefined});
