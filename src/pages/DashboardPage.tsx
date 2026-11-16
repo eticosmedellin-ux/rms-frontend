@@ -46,7 +46,7 @@ function money(v: number) {
 }
 
 const AbrirIndicador=createContext<(label:string)=>void>(()=>{});
-export default function DashboardPage(){const auth=useAuthStore();if(!auth.esSuperadmin&&!auth.esAdministradorTotal&&!auth.permisos.includes('REPORTES_CONSULTAR'))return <DashboardPersonal/>;return <DashboardResumen/>;}
+export default function DashboardPage(){const auth=useAuthStore();if(!auth.esSuperadmin&&!auth.esAdministradorTotal)return <DashboardPersonal/>;return <DashboardResumen/>;}
 function descargarDashboard(datos:unknown,f:Filtro){const filas:string[][]=[['Dashboard SICOM'],['Desde',f.desde,'Hasta',f.hasta,'Sucursal',f.sucursalId||'Todas'],['Nota','Los saldos son actuales. Los indicadores especializados históricos se identifican en pantalla.'],['Indicador','Valor']];function recorrer(x:unknown,p:string){if(x==null)return;if(Array.isArray(x)){x.forEach((v,i)=>recorrer(v,`${p} ${i+1}`));return;}if(typeof x==='object'){Object.entries(x).forEach(([k,v])=>recorrer(v,`${p} ${k.replace(/([A-Z])/g,' $1').toLowerCase()}`.trim()));return;}filas.push([p,typeof x==='number'?x.toLocaleString('es-CO',{maximumFractionDigits:3}):String(x)]);}recorrer(datos,'');const text='\uFEFF'+filas.map(a=>a.map(v=>'"'+v.replace(/^[=+@\t\r-]/,m=>"'"+m).replaceAll('"','""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download=`sicom-dashboard-${f.desde}-${f.hasta}.csv`;a.click();URL.revokeObjectURL(url);}
 function DashboardResumen() {
   const nombreCompleto = useAuthStore((state) => state.nombreCompleto);
@@ -513,12 +513,27 @@ function DashboardPersonal() {
     enabled:ventas&&incluidaEnPlan(plan?.rutasHabilitadas,'ventas')&&sucursalId!==null,
     queryFn:async()=>(await apiClient.get<{ventas:number;total:number;cajasAbiertas:number}>('/dashboard/mis-ventas',{params:{sucursalId}})).data,
   });
+  const [verVentas,setVerVentas]=useState(false);
+  const detalleVentas=useQuery({
+    queryKey:['dashboard-mis-ventas-detalle',auth.empresaId,auth.usuarioId,sucursalId],
+    enabled:verVentas&&misVentas.data!==undefined&&misVentas.isSuccess,
+    queryFn:async()=>(await apiClient.get<{id:number;numero:string;fecha:string;total:number}[]>('/dashboard/mis-ventas/detalle',{params:{sucursalId}})).data,
+  });
   const stock=useStockSucursal(inventario && incluidaEnPlan(plan?.rutasHabilitadas,'productos')?sucursalId:null);
   const [bajos,setBajos]=useState(false);
   return <section className="space-y-4">
     <h1 className="font-display text-2xl font-semibold text-ink-800">Mi operación</h1>
     {activas.length>0 && <label>Sucursal <select className="input w-auto" value={sucursalId??''} onChange={e=>setSede(Number(e.target.value))}>{activas.map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}</select></label>}
-    {misVentas.data && <article className="rounded-xl border p-4"><h2 className="font-semibold">Mis ventas de hoy</h2><p>{misVentas.data.ventas} ventas completadas · {money(misVentas.data.total)}</p><p>Cajas abiertas a mi nombre: {misVentas.data.cajasAbiertas}</p></article>}
+    {misVentas.data && <article className="rounded-xl border p-4"><h2 className="font-semibold">Mis ventas de hoy</h2><p>{misVentas.data.ventas} ventas completadas · {money(misVentas.data.total)}</p><p>Cajas abiertas a mi nombre: {misVentas.data.cajasAbiertas}</p><button className="mt-2 underline" onClick={()=>setVerVentas(true)}>Ver mis ventas</button></article>}
+    {verVentas && <Modal title="Mis ventas completadas de hoy" isOpen onClose={()=>setVerVentas(false)}>
+      {detalleVentas.isLoading && <LoadingState/>}
+      {detalleVentas.isError && <p role="alert">No se pudo cargar el detalle de ventas.</p>}
+      {detalleVentas.data?.length === 0 && <p>No hay ventas completadas en esta sucursal.</p>}
+      {!!detalleVentas.data?.length && <>
+        <p className="mb-2 text-sm">Hasta 100 ventas recientes de la sucursal seleccionada.</p>
+        <ul className="divide-y">{detalleVentas.data.map(v=><li key={v.id} className="flex flex-wrap justify-between gap-2 py-2"><span>{v.numero} · {v.fecha}</span><strong>{money(v.total)}</strong></li>)}</ul>
+      </>}
+    </Modal>}
     {misVentas.isError && <p role="alert">No se pudo consultar el resumen personal de ventas.</p>}
     {stock.data && <button className="rounded-xl border p-4" onClick={()=>setBajos(true)}>Productos con bajo stock: {stock.data.filter(p=>p.stockBajo).length} · Ver detalle</button>}
     {stock.isError && <p role="alert">No se pudo consultar el inventario de la sucursal.</p>}
