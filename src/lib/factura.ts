@@ -336,7 +336,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
 }
 
 function formatearMoneda(valor: number): string {
-  return `$${valor.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${valor.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 function formatearNumero(valor: number): string {

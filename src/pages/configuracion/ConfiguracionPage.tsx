@@ -1,3 +1,4 @@
+import {useSearchParams} from 'react-router-dom';
 import {GestionUsuarios} from '@/features/sicom/GestionUsuarios';
 import {useAuthStore} from '@/stores/authStore';
 import {useVistaInventario} from '@/hooks/useVistaInventario';
@@ -28,7 +29,10 @@ const SECCIONES=[['empresa','Mi empresa'],['acceso','Cuenta y perfiles'],['pagos
 const GRUPOS=[['Empresa y acceso',['empresa','acceso','redes']],['Operación',['pagos','ventas','inventario','impuestos','fidelizacion','facturadores']],['Documentos y sistema',['impresion','facturacion','sistema']],['Aprender a usar SICOM',['tutorial']]] as const;
 const DETALLES:Record<string,string>={empresa:'Identificación, contacto, logo y tipo de negocio',acceso:'Ingreso de empresa, contraseña y perfiles',pagos:'Medios disponibles para cobrar',redes:'Contacto, redes sociales y datos bancarios',sistema:'Idioma, moneda, zona horaria y tema',ventas:'Opciones del punto de venta',inventario:'Reglas generales de existencias',impresion:'Impresora, tiquetes, tamaño y contenido',impuestos:'Categorías, subcategorías, reglas y aplicación masiva',facturacion:'Proveedor y datos de facturación electrónica',fidelizacion:'Reglas y beneficios de clientes',facturadores:'Acciones de usuarios dedicados a facturar',tutorial:'Simuladores por módulo con datos de demostración'};
 export default function ConfiguracionPage() {
- const [seccionSolicitada,setSeccion]=useState('empresa'),[busqueda,setBusqueda]=useState(''),[editada,setEditada]=useState(false);
+ const [params]=useSearchParams();
+ const tab=params.get('tab');
+ const [seccionSolicitada,setSeccion]=useState(tab??'empresa'),[busqueda,setBusqueda]=useState(''),[editada,setEditada]=useState(false);
+ useEffect(()=>{if(tab)setSeccion(tab);},[tab]);
  const permiteTab=usePestanas('CONFIGURACION');
  const seccion=SECCIONES.find(([id])=>id===seccionSolicitada&&permiteTab(id))?.[0]??SECCIONES.find(([id])=>permiteTab(id))?.[0]??'tutorial';
  useEffect(()=>{const listo=()=>setEditada(false);const salir=(e:BeforeUnloadEvent)=>{if(editada){e.preventDefault();e.returnValue='';}};const marcar=()=>setEditada(true);window.addEventListener('sicom-config-editada',marcar);window.addEventListener('sicom-config-guardada',listo);window.addEventListener('beforeunload',salir);return()=>{window.removeEventListener('sicom-config-editada',marcar);window.removeEventListener('sicom-config-guardada',listo);window.removeEventListener('beforeunload',salir);};},[editada]);

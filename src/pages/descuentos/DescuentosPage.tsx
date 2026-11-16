@@ -1,3 +1,7 @@
+import {Link} from 'react-router-dom';
+import {useAuthStore} from '@/stores/authStore';
+import {usePestanas} from '@/hooks/usePestanas';
+import {puedeVerRuta} from '@/lib/permisos';
 import { useEffect, useState } from 'react';
 import { Plus, Loader2, Pencil, Tag } from 'lucide-react';
 import {
@@ -19,7 +23,11 @@ const APLICA_A_LABEL: Record<AplicaDescuento, string> = {
 };
 
 export default function DescuentosPage() {
-  const { data: tipos, isLoading } = useTiposDescuento();
+  const { data: tipos, isLoading, isError, error, refetch } = useTiposDescuento();
+  const auth=useAuthStore();
+  const permiteTab=usePestanas('CONFIGURACION');
+  const puedeAbrirImpuestos=(auth.esAdministradorTotal||auth.esSuperadmin||puedeVerRuta(auth.permisos,'/configuracion'))
+    && permiteTab('impuestos');
   const desactivar = useDesactivarTipoDescuento();
   const reactivar = useReactivarTipoDescuento();
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -42,11 +50,12 @@ export default function DescuentosPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="font-display text-xl font-semibold text-ink-800">Descuentos</h1>
+        <h1 className="font-display text-xl font-semibold text-ink-800">Descuentos e impuestos</h1>
         <p className="mt-1 text-sm text-ink-400">
           Catálogo de descuentos que los cajeros pueden aplicar al vender. Ellos solo eligen de esta lista —
           nunca escriben un valor libre.
         </p>
+        {puedeAbrirImpuestos && <Link className="mt-3 inline-block rounded-lg border px-3 py-2 text-sm font-medium" to="/configuracion?tab=impuestos">Abrir impuestos y categorías</Link>}
       </div>
 
       <div className="mb-4 flex items-center justify-between">
@@ -55,6 +64,7 @@ export default function DescuentosPage() {
         </p>
         <button
           onClick={abrirCrear}
+          disabled={isError}
           className="flex items-center gap-1.5 rounded-lg bg-ink-800 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
         >
           <Plus size={16} />
@@ -64,6 +74,11 @@ export default function DescuentosPage() {
 
       {isLoading ? (
         <LoadingState />
+      ) : isError ? (
+        <div role="alert" className="rounded-lg border p-4 text-sm text-danger-600">
+          <p>{getApiErrorMessage(error,'No se pudo abrir el catálogo de descuentos. Revisa los permisos y que la aplicación esté habilitada.')}</p>
+          <button type="button" className="mt-2 underline" onClick={()=>void refetch()}>Volver a intentar</button>
+        </div>
       ) : tipos && tipos.length > 0 ? (
         <div className="overflow-x-auto rounded-xl border border-ink-100 bg-white shadow-card">
           <table className="w-full text-sm">

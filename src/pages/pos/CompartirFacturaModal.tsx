@@ -60,7 +60,7 @@ export function CompartirFacturaModal({ venta, onClose }: { venta: Venta; onClos
         {error && <div className="mt-3 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-600">{error}</div>}
         {enviado && !error && (
           <div className="mt-3 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-success-600">
-            Enviado correctamente.
+            El proveedor aceptó el correo. La entrega al buzón aún puede tardar.
           </div>
         )}
 

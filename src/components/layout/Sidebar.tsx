@@ -42,7 +42,7 @@ const NAV_GROUPS_DEF: { titulo: string | null; items: NavItem[] }[] = [
     items: [
       { to: '/pos', label: 'Punto de venta', icon: Store },
       { to: '/documentos', label: 'Documentos', icon: FileStack },
-      { to: '/descuentos', label: 'Descuentos', icon: Tag },
+      { to: '/descuentos', label: 'Descuentos e impuestos', icon: Tag },
     ],
   },
   {
@@ -119,7 +119,7 @@ export function useModulosInicio(){
       return [item];
     }).map(item=>{
       const ficha=item.to==='/'?(fichas?.['/dashboard']??fichas?.['/']):fichas?.[item.to];
-      return ficha?{...item,label:ficha.nombre||item.label,fichaIcono:ficha.icono}:item;
+      return ficha?{...item,label:(item.to==='/descuentos' && ficha.nombre==='Descuentos') ? item.label : ficha.nombre||item.label,fichaIcono:ficha.icono}:item;
     }),
   })).filter((grupo) => grupo.items.length > 0);
 
