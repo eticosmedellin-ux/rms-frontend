@@ -43,6 +43,9 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
   const pagina = estiloPagina(empresa);
   const termica = empresa.tamanoImpresion === 'TERMICA_58' || empresa.tamanoImpresion === 'TERMICA_80';
 
+  const pagos = venta.pagos ?? [];
+  const recibido = pagos.filter(p => p.metodoPago !== 'CREDITO').reduce((s,p)=>s+Math.round(p.monto*100),0)/100;
+  const etiquetas: Record<string,string> = {EFECTIVO:'Efectivo',TARJETA:'Tarjeta',TRANSFERENCIA:'Transferencia',CREDITO:'Financiado'};
   const filas = venta.detalles
     .map(
       (d, i) => termica ? `
@@ -57,6 +60,7 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
           <td class="num">${formatearNumero(d.cantidad)}</td>
           <td class="num">${formatearMoneda(d.precioUnitario)}</td>
           <td class="num">${d.descuentoLinea > 0 ? '-' + formatearMoneda(d.descuentoLinea) : '—'}</td>
+          <td class="num">${d.impuestoMonto == null ? "—" : formatearMoneda(d.impuestoMonto)}</td>
           <td class="num total-linea">${formatearMoneda(d.subtotalLinea)}</td>
         </tr>`
     )
@@ -264,7 +268,9 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
     </div>
     <div class="bloque">
       <h3>Detalles del pago</h3>
-      <p>Total pagado: ${formatearMoneda(venta.total + venta.cambio)}</p>
+      ${pagos.length ? `
+      ${pagos.map(p=>`<p class="secundario">${escapeHtml(etiquetas[p.metodoPago] ?? p.metodoPago)}: ${formatearMoneda(p.monto)}</p>`).join('')}
+      <p>Recibido: ${formatearMoneda(recibido)}</p>` : '<p>Sin detalle de pagos disponible.</p>'}
       ${venta.cambio > 0 ? `<p class="secundario">Cambio entregado: ${formatearMoneda(venta.cambio)}</p>` : ''}
     </div>
   </div>
@@ -276,7 +282,8 @@ function construirHtmlFactura(venta: Venta, empresa: Empresa, cufe?: string): st
         <th class="num">Cant.</th>
         <th class="num">Precio</th>
         <th class="num">Descuento</th>
-        <th class="num">Subtotal</th>
+        <th class="num">Impuesto</th>
+        <th class="num">Total línea</th>
       </tr>
     </thead>
     <tbody>

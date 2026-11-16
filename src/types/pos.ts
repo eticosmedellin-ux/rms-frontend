@@ -158,6 +158,7 @@ export interface Venta {
   numeroFactura: string | null;
   fecha: string;
   detalles: VentaDetalleResponse[];
+  pagos?: {metodoPago: string; monto: number}[];
 }
 
 export type TipoValorDescuento = 'MONTO' | 'PORCENTAJE';
