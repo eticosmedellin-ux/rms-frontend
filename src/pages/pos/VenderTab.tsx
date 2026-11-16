@@ -253,7 +253,7 @@ export function VenderTab() {
 
   function agregarItem(item: ItemVendible,cantidadAgregar=1) {
     const enCarrito = carrito.find(l => l.tipo === item.tipo && l.itemId === item.id)?.cantidad ?? 0;
-    if (item.manejaInventario && (item.stock === null || enCarrito + cantidadAgregar > item.stock)) {
+    if (item.manejaInventario && (item.stock === null || sumarCantidades(enCarrito, cantidadAgregar) > item.stock)) {
       setAvisoStock({productoId:item.id,sede:sucursalId,consultar:item.tipo === 'PRODUCTO' && item.stock !== null,
         texto:item.stock === null ? 'Selecciona una sucursal y espera a que cargue el stock.' : `${item.nombre}: no hay existencias suficientes en esta sucursal.`});
       return false;
@@ -263,7 +263,7 @@ export function VenderTab() {
       const existente = prev.find((l) => l.tipo === item.tipo && l.itemId === item.id);
       if (existente) {
         return prev.map((l) =>
-          l.tipo === item.tipo && l.itemId === item.id ? { ...l, cantidad: l.cantidad + cantidadAgregar } : l
+          l.tipo === item.tipo && l.itemId === item.id ? { ...l, cantidad: sumarCantidades(l.cantidad, cantidadAgregar) } : l
         );
       }
       return [
@@ -282,6 +282,10 @@ export function VenderTab() {
     const presentacion=item.tipo==='PRODUCTO'?productos?.find(p=>p.id===item.id)?.presentaciones?.find(p=>p.codigo_barras===busqueda.trim()):undefined;
     if (agregarItem(item,presentacion?.unidades??1)) setBusqueda('');
     busquedaInputRef.current?.focus();
+  }
+
+  function sumarCantidades(a:number,b:number) {
+    return (Math.round(a*100)+Math.round(b*100))/100;
   }
 
   function actualizarCantidad(tipo: 'PRODUCTO' | 'COMBO', itemId: number, cantidad: number) {
@@ -564,7 +568,8 @@ export function VenderTab() {
                 </div>
                 <input
                   type="number"
-                  min={1}
+                  min={0.01}
+                  step={0.01}
                   aria-label={`Cantidad de ${l.nombre}`}
                   value={l.cantidad}
                   onChange={(e) => actualizarCantidad(l.tipo, l.itemId, Number(e.target.value))}
@@ -578,7 +583,7 @@ export function VenderTab() {
                 </button>
               </div>
 
-              {l.tipo==='PRODUCTO'&&(productos?.find(p=>p.id===l.itemId)?.presentaciones?.length??0)>0&&<label className="text-xs">Añadir una presentación<select className="input" value="" onChange={e=>{const p=productos?.find(p=>p.id===l.itemId)?.presentaciones?.find(x=>x.id===Number(e.target.value));if(p)actualizarCantidad(l.tipo,l.itemId,l.cantidad+p.unidades);}}><option value="">Selecciona presentación (cantidad en unidades base)</option>{productos?.find(p=>p.id===l.itemId)?.presentaciones?.map(p=><option key={p.id} value={p.id}>{p.nombre} · {p.unidades} unidades · ${(p.unidades*l.precioUnitario).toLocaleString('es-CO')}</option>)}</select></label>}
+              {l.tipo==='PRODUCTO'&&(productos?.find(p=>p.id===l.itemId)?.presentaciones?.length??0)>0&&<label className="text-xs">Añadir una presentación<select className="input" value="" onChange={e=>{const p=productos?.find(p=>p.id===l.itemId)?.presentaciones?.find(x=>x.id===Number(e.target.value));if(p)actualizarCantidad(l.tipo,l.itemId,sumarCantidades(l.cantidad,p.unidades));}}><option value="">Selecciona presentación (cantidad en unidades base)</option>{productos?.find(p=>p.id===l.itemId)?.presentaciones?.map(p=><option key={p.id} value={p.id}>{p.nombre} · {p.unidades} unidades · ${(p.unidades*l.precioUnitario).toLocaleString('es-CO')}</option>)}</select></label>}
               {modoDescuento === 'LINEA' && (
                 <div className="flex items-center gap-2 pl-1">
                   <Tag size={12} className="text-ink-300 shrink-0" />
