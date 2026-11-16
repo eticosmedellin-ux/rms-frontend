@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {useAuthStore} from '@/stores/authStore';
 import * as gestionApi from '@/api/gestion';
 import type { GastoRequest } from '@/types/gestion';
 
@@ -34,7 +35,9 @@ export function useRegistrarGasto() {
 
 // --- Alertas ---
 export function useAlertas() {
-  return useQuery({ queryKey: ['alertas'], queryFn: gestionApi.listarAlertas });
+  const empresaId = useAuthStore(s => s.empresaId);
+  const usuarioId = useAuthStore(s => s.usuarioId);
+  return useQuery({ queryKey: ['alertas', empresaId, usuarioId], queryFn: gestionApi.listarAlertas });
 }
 
 export function useGenerarAlertas() {

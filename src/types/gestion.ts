@@ -49,6 +49,7 @@ export type TipoAlerta =
 export interface Alerta {
   id: number;
   tipo: TipoAlerta;
+  sucursal?: string | null;
   entidadTipo: string;
   entidadId: number;
   mensaje: string;

@@ -1,3 +1,5 @@
+import {useAuthStore} from '@/stores/authStore';
+import {getApiErrorMessage} from '@/api/errors';
 import { useState } from 'react';
 import { RefreshCw, X, Settings2 } from 'lucide-react';
 import {
@@ -54,7 +56,8 @@ const TIPO_TONES: Record<TipoAlerta, string> = {
 };
 
 export default function AlertasPage() {
-  const { data: alertas, isLoading } = useAlertas();
+  const { data: alertas, isLoading, isError, error, refetch } = useAlertas();
+  const administra = useAuthStore(s => s.esSuperadmin || s.esAdministradorTotal);
   const generar = useGenerarAlertas();
   const descartar = useDescartarAlerta();
   const [modalConfigAbierto, setModalConfigAbierto] = useState(false);
@@ -66,7 +69,7 @@ export default function AlertasPage() {
           <h1 className="font-display text-2xl font-semibold text-ink-800">Alertas</h1>
           <p className="mt-1 text-sm text-ink-400">Stock bajo, cajas sin cerrar y cuentas por vencer.</p>
         </div>
-        <div className="flex gap-2">
+        {administra && <div className="flex gap-2">
           <button
             onClick={() => setModalConfigAbierto(true)}
             className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50"
@@ -82,11 +85,19 @@ export default function AlertasPage() {
             <RefreshCw size={16} className={generar.isPending ? 'animate-spin' : ''} />
             Revisar ahora
           </button>
-        </div>
+        </div>}
       </div>
 
+      {(generar.isError || descartar.isError) && <p role="alert" className="mb-3 text-sm text-danger-600">
+        {getApiErrorMessage(generar.error ?? descartar.error,'No se pudo completar la acción')}
+      </p>}
       {isLoading ? (
         <LoadingState />
+      ) : isError ? (
+        <div role="alert" className="rounded-lg border p-4 text-sm text-danger-600">
+          {getApiErrorMessage(error,'No se pudieron consultar las alertas')}
+          <button type="button" className="ml-2 underline" onClick={()=>void refetch()}>Reintentar</button>
+        </div>
       ) : alertas && alertas.length > 0 ? (
         <div className="space-y-2">
           {alertas.map((a) => (
@@ -98,7 +109,10 @@ export default function AlertasPage() {
                 <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${TIPO_TONES[a.tipo]}`}>
                   {TIPO_LABELS[a.tipo] ?? a.tipo}
                 </span>
-                <p className="text-sm text-ink-700">{a.mensaje}</p>
+                <div>
+                  <p className="text-sm text-ink-700">{a.mensaje}</p>
+                  {a.sucursal && <p className="text-xs text-ink-500">{a.sucursal}</p>}
+                </div>
               </div>
               <button
                 onClick={() => descartar.mutate(a.id)}
@@ -113,11 +127,11 @@ export default function AlertasPage() {
       ) : (
         <EmptyState
           title="Sin alertas activas"
-          description="Dale a 'Revisar ahora' para escanear stock bajo, cajas sin cerrar y cuentas por vencer."
+          description={administra ? "Usa Revisar ahora para actualizar las alertas de la empresa." : "No hay alertas activas en tus sucursales asignadas."}
         />
       )}
 
-      <ConfiguracionAlertasModal isOpen={modalConfigAbierto} onClose={() => setModalConfigAbierto(false)} />
+      {administra && modalConfigAbierto && <ConfiguracionAlertasModal isOpen onClose={() => setModalConfigAbierto(false)} />}
     </div>
   );
 }
